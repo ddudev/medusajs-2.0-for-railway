@@ -108,6 +108,8 @@ export default defineConfig(({ mode }) => {
       __BASE__: JSON.stringify(BASE),
       __BACKEND_URL__: JSON.stringify(BACKEND_URL),
       __STOREFRONT_URL__: JSON.stringify(STOREFRONT_URL),
+      __AUTH_TYPE__: JSON.stringify(env.VITE_MEDUSA_AUTH_TYPE || "session"),
+      __JWT_TOKEN_STORAGE_KEY__: JSON.stringify(env.VITE_MEDUSA_JWT_TOKEN_STORAGE_KEY || undefined),
     },
     optimizeDeps: {
       include: ["@agilo/medusa-analytics-plugin/admin"],

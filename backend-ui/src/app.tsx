@@ -3,6 +3,7 @@ import { DashboardPlugin } from "./dashboard-app/types"
 
 import displayModule from "virtual:medusa/displays"
 import formModule from "virtual:medusa/forms"
+import i18nModule from "virtual:medusa/i18n"
 import menuItemModule from "virtual:medusa/menu-items"
 import routeModule from "virtual:medusa/routes"
 import widgetModule from "virtual:medusa/widgets"
@@ -19,6 +20,7 @@ const localPlugin = {
   displayModule,
   formModule,
   menuItemModule,
+  i18nModule,
 }
 
 interface AppProps {
@@ -51,11 +53,7 @@ function App({ plugins = [] }: AppProps) {
   // The virtual modules from vite plugin are already processed, so we just need to pass them through
   // and add the plugin's modules as a separate plugin entry
   const mergedPlugin = {
-    widgetModule: localPlugin.widgetModule,
-    routeModule: localPlugin.routeModule,
-    menuItemModule: localPlugin.menuItemModule,
-    formModule: localPlugin.formModule,
-    displayModule: localPlugin.displayModule,
+    ...localPlugin,
   }
   
   // Add the Agilo plugin as a separate plugin entry

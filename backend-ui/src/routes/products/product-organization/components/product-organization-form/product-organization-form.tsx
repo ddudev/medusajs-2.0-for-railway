@@ -102,7 +102,20 @@ export const ProductOrganizationForm = ({
         collection_id: data.collection_id || null,
         categories: data.category_ids.map((c) => ({ id: c })),
         tags: data.tag_ids?.map((t) => ({ id: t })),
-      })
+      },
+      {
+        onSuccess: ({ product }) => {
+        toast.success(
+          t("products.organization.edit.toasts.success", {
+            title: product.title,
+          })
+        )
+        handleSuccess()
+      },
+      onError: (error) => {
+        toast.error(error.message)
+      },
+    })
 
       // Update brand link separately
       await updateBrand({

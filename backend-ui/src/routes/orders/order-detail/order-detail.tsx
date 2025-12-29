@@ -38,7 +38,7 @@ export const OrderDetail = () => {
 
   // TODO: Retrieve endpoints don't have an order ability, so a JS sort until this is available
   if (order) {
-    order.items = order.items.sort((itemA, itemB) => {
+    order.items = order.items.sort((itemA: any, itemB: any) => {
       if (itemA.created_at > itemB.created_at) {
         return 1
       }
@@ -79,7 +79,7 @@ export const OrderDetail = () => {
       hasOutlet
     >
       <TwoColumnPage.Main>
-        <OrderActiveEditSection order={order} />
+        <OrderActiveEditSection order={order} quantity={0} />
         <ActiveOrderClaimSection orderPreview={orderPreview!} />
         <ActiveOrderExchangeSection orderPreview={orderPreview!} />
         <ActiveOrderReturnSection orderPreview={orderPreview!} />

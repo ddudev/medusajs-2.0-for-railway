@@ -2,15 +2,18 @@ import { FetchError } from "@medusajs/js-sdk"
 import { HttpTypes } from "@medusajs/types"
 import {
   QueryKey,
+  UseInfiniteQueryOptions,
   useMutation,
   UseMutationOptions,
   useQuery,
   UseQueryOptions,
 } from "@tanstack/react-query"
+import { InfiniteData } from "@tanstack/query-core"
 import { sdk, backendUrl } from "../../lib/client"
 import { queryClient } from "../../lib/query-client"
 import { queryKeysFactory } from "../../lib/query-key-factory"
 import { inventoryItemsQueryKeys } from "./inventory.tsx"
+import { useInfiniteList } from "../use-infinite-list.tsx"
 
 const PRODUCTS_QUERY_KEY = "products" as const
 export const productsQueryKeys = queryKeysFactory(PRODUCTS_QUERY_KEY)
@@ -310,6 +313,32 @@ export const useProducts = (
   return { ...data, ...rest }
 }
 
+export const useInfiniteProducts = (
+  query?: HttpTypes.AdminProductListParams,
+  options?: Omit<
+    UseInfiniteQueryOptions<
+      HttpTypes.AdminProductListResponse,
+      FetchError,
+      InfiniteData<HttpTypes.AdminProductListResponse, number>,
+      HttpTypes.AdminProductListResponse,
+      QueryKey,
+      number
+    >,
+    "queryFn" | "queryKey" | "initialPageParam" | "getNextPageParam"
+  >
+) => {
+  return useInfiniteList<
+    HttpTypes.AdminProductListResponse,
+    HttpTypes.AdminProductListParams,
+    FetchError,
+    QueryKey
+  >({
+    queryKey: (params) => productsQueryKeys.list(params),
+    queryFn: (params) => sdk.admin.product.list(params),
+    query,
+    options,
+  })
+}
 export const useCreateProduct = (
   options?: UseMutationOptions<
     HttpTypes.AdminProductResponse,
@@ -340,7 +369,11 @@ export const useUpdateProduct = (
   >
 ) => {
   return useMutation({
-    mutationFn: (payload) => sdk.admin.product.update(id, payload),
+    mutationFn: (payload) =>
+      sdk.admin.product.update(id, payload, {
+        fields:
+          "-type,-collection,-options,-tags,-images,-variants,-sales_channels",
+      }),
     onSuccess: async (data, variables, context) => {
       await queryClient.invalidateQueries({
         queryKey: productsQueryKeys.lists(),
@@ -414,6 +447,60 @@ export const useConfirmImportProducts = (
   return useMutation({
     mutationFn: (payload) => sdk.admin.product.confirmImport(payload),
     onSuccess: (data, variables, context) => {
+      options?.onSuccess?.(data, variables, context)
+    },
+    ...options,
+  })
+}
+
+export const useBatchImageVariants = (
+  productId: string,
+  imageId: string,
+  options?: UseMutationOptions<
+    HttpTypes.AdminBatchImageVariantResponse,
+    FetchError,
+    HttpTypes.AdminBatchImageVariantRequest
+  >
+) => {
+  return useMutation({
+    mutationFn: (payload) =>
+      sdk.admin.product.batchImageVariants(productId, imageId, payload),
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({
+        queryKey: productsQueryKeys.detail(productId),
+      })
+      queryClient.invalidateQueries({ queryKey: variantsQueryKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: variantsQueryKeys.details() })
+
+      options?.onSuccess?.(data, variables, context)
+    },
+    ...options,
+  })
+}
+
+export const useBatchVariantImages = (
+  productId: string,
+  variantId: string,
+  options?: UseMutationOptions<
+    HttpTypes.AdminBatchVariantImagesResponse,
+    FetchError,
+    HttpTypes.AdminBatchVariantImagesRequest
+  >
+) => {
+  return useMutation({
+    mutationFn: (payload) =>
+      sdk.admin.product.batchVariantImages(productId, variantId, payload),
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({
+        queryKey: productsQueryKeys.detail(productId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: variantsQueryKeys.list({ productId }),
+      })
+      queryClient.invalidateQueries({
+        queryKey: variantsQueryKeys.detail(variantId),
+      })
+
       options?.onSuccess?.(data, variables, context)
     },
     ...options,
