@@ -3,6 +3,7 @@ import Summary from "./summary"
 import EmptyCartMessage from "../components/empty-cart-message"
 import SignInPrompt from "../components/sign-in-prompt"
 import Divider from "@modules/common/components/divider"
+import FreeShippingProgressWrapper from "../components/free-shipping-progress/free-shipping-progress-wrapper"
 import { HttpTypes } from "@medusajs/types"
 
 const CartTemplate = ({
@@ -30,6 +31,10 @@ const CartTemplate = ({
               <div className="flex flex-col gap-y-8 sticky top-12">
                 {cart && cart.region && (
                   <>
+                    {/* Free Shipping Progress Bar */}
+                    <div className="bg-white py-6 px-6">
+                      <FreeShippingProgressWrapper cartId={cart.id} variant="default" />
+                    </div>
                     <div className="bg-white py-6">
                       <Summary cart={cart as any} />
                     </div>

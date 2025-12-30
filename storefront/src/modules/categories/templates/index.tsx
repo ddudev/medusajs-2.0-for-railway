@@ -95,22 +95,37 @@ export default async function CategoryTemplate({
   const filterKey = `${JSON.stringify([category.id])}-${sort}-${pageNumber}`
 
   return (
-    <div
-      className="flex flex-col small:flex-row small:items-start small:gap-x-8 py-6 content-container"
-      data-testid="category-container"
+    <StoreTemplateClient
+      collections={collections || []}
+      categories={categories}
+      brands={brands}
+      maxPrice={maxPrice}
+      filterKey={filterKey}
+      sort={sort}
+      pageNumber={pageNumber}
+      countryCode={countryCode}
+      collectionIds={[]}
+      categoryIds={[category.id]}
+      brandIds={[]}
+      priceRange={undefined}
+      translations={{}}
     >
-      <RefinementList 
-        collections={collections || []} 
-        categories={categories}
-        brands={brands}
-        maxPrice={maxPrice}
-        sortBy={sort} 
-        data-testid="sort-by-container" 
-      />
-      <div className="w-full">
-        {/* Header with breadcrumbs and sort dropdown - matches store page layout */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex flex-row text-2xl-semi gap-4">
+      <div
+        className="flex flex-col small:flex-row small:items-start small:gap-x-8 py-6 content-container"
+        data-testid="category-container"
+      >
+        <RefinementList 
+          collections={collections || []} 
+          categories={categories}
+          brands={brands}
+          maxPrice={maxPrice}
+          sortBy={sort} 
+          data-testid="sort-by-container" 
+        />
+        <div className="w-full">
+          {/* Header with breadcrumbs and sort dropdown - matches store page layout */}
+          <div className="mb-6">
+            <div className="flex flex-row text-2xl-semi gap-4 mb-4 md:mb-0">
             {parents &&
               parents.map((parent) => (
                 <span key={parent.id} className="text-ui-fg-subtle">
@@ -127,8 +142,14 @@ export default async function CategoryTemplate({
               ))}
             <h1 data-testid="category-page-title">{category.name}</h1>
           </div>
-          <SortDropdown />
-        </div>
+            <div className="flex items-center gap-4 md:hidden">
+              <FilterButton />
+              <SortDropdown />
+            </div>
+            <div className="hidden md:flex items-center justify-end">
+              <SortDropdown />
+            </div>
+          </div>
         
         {/* Category description and children - category-specific content */}
         {category.description && (
@@ -174,5 +195,6 @@ export default async function CategoryTemplate({
         </Suspense>
       </div>
     </div>
+    </StoreTemplateClient>
   )
 }

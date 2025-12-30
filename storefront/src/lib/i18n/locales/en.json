@@ -45,7 +45,14 @@
     "quantity": "Quantity",
     "remove": "Remove",
     "product": "Product",
-    "price": "Price"
+    "price": "Price",
+    "freeShipping": {
+      "title": "Free Shipping",
+      "progress": "Add {amount} more for free shipping",
+      "minimum": "Free shipping on orders over {amount}",
+      "only": "Only {amount}",
+      "left": "{amount} left till free shipping"
+    }
   },
   "product": {
     "addToCart": "Add to cart",
@@ -65,6 +72,8 @@
     "priceNotAvailable": "Price not available"
   },
   "filters": {
+    "title": "Filters",
+    "apply": "Apply",
     "filter": "Filter",
     "sortBy": "Sort by",
     "results": "results",

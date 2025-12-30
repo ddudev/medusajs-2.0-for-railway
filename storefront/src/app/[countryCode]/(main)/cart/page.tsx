@@ -5,6 +5,7 @@ import { enrichLineItems, retrieveCart } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import { getCustomer } from "@lib/data/customer"
 import { getTranslations, getTranslation } from "@lib/i18n/server"
+import { Suspense } from "react"
 
 export async function generateMetadata({ params }: { params: Promise<{ countryCode: string }> }): Promise<Metadata> {
   const resolvedParams = await params

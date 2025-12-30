@@ -85,7 +85,7 @@ export const RulesFormField = ({
       }
     : {}
 
-  const { rules, isLoading } = usePromotionRules(
+  const { rules: apiRules, isLoading } = usePromotionRules(
     promotion?.id || null,
     ruleType,
     query,
@@ -93,6 +93,49 @@ export const RulesFormField = ({
       enabled: !!promotion?.id || (!!promotionType && !!applicationMethodType),
     }
   )
+
+  // In edit mode, merge API rules with promotion rules to ensure all rules are displayed
+  // The API might not return custom attributes like "subtotal", so we need to merge both sources
+  const getPromotionRules = () => {
+    if (!promotion) return []
+    if (ruleType === "rules") return promotion.rules || []
+    if (ruleType === "target-rules") return promotion.application_method?.target_rules || []
+    if (ruleType === "buy-rules") return promotion.application_method?.buy_rules || []
+    return []
+  }
+
+  const promotionRules = formType === "edit" ? getPromotionRules() : []
+  
+  // Merge API rules with promotion rules (like we do in the detail page)
+  const mergeRules = (apiRulesList: any[] | undefined, promotionRulesList: any[] | undefined) => {
+    const apiRulesMap = new Map((apiRulesList || []).map((r: any) => [r.id, r]))
+    const promotionRulesMap = new Map((promotionRulesList || []).map((r: any) => [r.id, r]))
+    
+    // Start with API rules (they have proper labels and field_type)
+    const merged = [...(apiRulesList || [])]
+    
+    // Add promotion rules that aren't in API response (like subtotal)
+    for (const [id, rule] of promotionRulesMap) {
+      if (!apiRulesMap.has(id)) {
+        // Transform promotion rule to match API format
+        merged.push({
+          id: rule.id,
+          attribute: rule.attribute,
+          operator: rule.operator,
+          values: rule.values,
+          required: rule.required,
+          disguised: rule.disguised,
+          field_type: rule.attribute === "subtotal" || rule.attribute === "item_total" ? "number" : "text",
+        })
+      }
+    }
+    
+    return merged
+  }
+
+  const rules = formType === "edit" 
+    ? mergeRules(apiRules, promotionRules)
+    : (apiRules || [])
 
   useEffect(() => {
     if (isLoading) {

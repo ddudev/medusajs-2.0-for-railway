@@ -11,7 +11,46 @@ type RuleProps = {
   rule: HttpTypes.AdminPromotionRule
 }
 
+// Map custom attributes to their labels
+const CUSTOM_ATTRIBUTE_LABELS: Record<string, string> = {
+  subtotal: "Subtotal",
+  item_total: "Item Total",
+}
+
+// Map operators to their labels
+const OPERATOR_LABELS: Record<string, string> = {
+  gte: "Greater than or equal to",
+  gt: "Greater than",
+  lte: "Less than or equal to",
+  lt: "Less than",
+  eq: "Equal to",
+  ne: "Not equal to",
+}
+
 function RuleBlock({ rule }: RuleProps) {
+  // Use custom labels if attribute_label is missing (for custom attributes like subtotal)
+  const attributeLabel = rule.attribute_label || CUSTOM_ATTRIBUTE_LABELS[rule.attribute || ""] || rule.attribute || ""
+  
+  // Use custom labels if operator_label is missing
+  const operatorLabel = rule.operator_label || OPERATOR_LABELS[rule.operator || ""] || rule.operator || ""
+  
+  // Handle values - for number fields, extract the value from the array if needed
+  let displayValues: string[] = []
+  if (rule.field_type === "number") {
+    // For number fields, values might be an array of objects [{value: "40"}] or a single value
+    if (Array.isArray(rule.values)) {
+      if (typeof rule.values[0] === "object" && rule.values[0]?.value) {
+        displayValues = [rule.values[0].value]
+      } else {
+        displayValues = [String(rule.values[0] || rule.values)]
+      }
+    } else {
+      displayValues = [String(rule.values || "")]
+    }
+  } else {
+    displayValues = rule.values?.map((v: any) => (typeof v === "object" ? v.label : String(v))) || []
+  }
+
   return (
     <div className="bg-ui-bg-subtle shadow-borders-base align-center flex justify-around rounded-md p-2">
       <div className="text-ui-fg-subtle txt-compact-xsmall flex items-center whitespace-nowrap">
@@ -20,21 +59,17 @@ function RuleBlock({ rule }: RuleProps) {
           key="rule-attribute"
           className="txt-compact-xsmall-plus tag-neutral-text mx-1 inline-block truncate"
         >
-          {rule.attribute_label}
+          {attributeLabel}
         </Badge>
 
         <span className="txt-compact-2xsmall mx-1 inline-block">
-          {rule.operator_label}
+          {operatorLabel}
         </span>
 
         <BadgeListSummary
           inline
           className="!txt-compact-small-plus"
-          list={
-            rule.field_type === "number"
-              ? [rule.values]
-              : rule.values?.map((v) => v.label)
-          }
+          list={displayValues}
         />
       </div>
     </div>

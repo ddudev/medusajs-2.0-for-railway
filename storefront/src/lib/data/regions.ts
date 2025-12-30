@@ -38,11 +38,11 @@ export async function retrieveRegion(id: string) {
 export async function getRegion(countryCode: string) {
   "use cache"
   cacheLife("hours") // Cache for 1 hour
-  
+
   try {
     // Normalize country code to lowercase for consistent lookup
     const normalizedCode = countryCode?.toLowerCase() || ""
-    
+
     const regions = await listRegions()
 
     if (!regions) {

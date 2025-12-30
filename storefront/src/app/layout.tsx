@@ -23,7 +23,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
   const backendHost = backendUrl ? new URL(backendUrl).origin : ""
   
   return (
-    <html lang="en" data-mode="light" className={inter.variable}>
+    <html lang="en" data-mode="light" className={inter.variable} suppressHydrationWarning>
       <head>
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
@@ -57,7 +57,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
             </Suspense>
           </main>
           <Suspense fallback={null}>
-            <PWAComponents />
+          <PWAComponents />
           </Suspense>
         </MuiProviders>
       </body>
