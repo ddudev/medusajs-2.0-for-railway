@@ -82,10 +82,23 @@ export const EditRulesWrapper = ({
       rulesToCreate.length &&
         (await addPromotionRules({
           rules: rulesToCreate.map((rule) => {
+            // The backend API expects values to be arrays of strings
+            // Even for number-type attributes like subtotal, we need to send as array of strings
+            // Based on the script, values should always be an array: ["4000"] not "4000"
+            let processedValues: string[]
+            
+            if (Array.isArray(rule.values)) {
+              // Convert array to array of strings
+              processedValues = rule.values.map((v: any) => String(v))
+            } else {
+              // Convert single value to array of strings
+              processedValues = [String(rule.values)]
+            }
+            
             return {
               attribute: rule.attribute,
               operator: rule.operator,
-              values: rule.values,
+              values: processedValues,
             } as any
           }),
         }))
@@ -98,11 +111,24 @@ export const EditRulesWrapper = ({
       rulesToUpdate.length &&
         (await updatePromotionRules({
           rules: rulesToUpdate.map((rule: PromotionRuleResponse) => {
+            // The backend API expects values to be arrays of strings
+            // Even for number-type attributes like subtotal, we need to send as array of strings
+            // Based on the script, values should always be an array: ["4000"] not "4000"
+            let processedValues: string[]
+            
+            if (Array.isArray(rule.values)) {
+              // Convert array to array of strings
+              processedValues = rule.values.map((v: any) => String(v))
+            } else {
+              // Convert single value to array of strings
+              processedValues = [String(rule.values)]
+            }
+            
             return {
               id: rule.id!,
               attribute: rule.attribute,
               operator: rule.operator as PromotionRuleOperatorValues,
-              values: rule.values as unknown as string | string[],
+              values: processedValues,
             }
           }),
         }))

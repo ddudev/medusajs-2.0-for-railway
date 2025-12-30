@@ -39,9 +39,15 @@ function useDebounce<T>(value: T, delay: number): T {
 const SearchBarContentWrapper = ({
   isSearchActive,
   setIsSearchActive,
+  isExpanded,
+  setIsExpanded,
+  onClose,
 }: {
   isSearchActive: boolean
   setIsSearchActive: (active: boolean) => void
+  isExpanded: boolean
+  setIsExpanded: (expanded: boolean) => void
+  onClose?: () => void
 }) => {
   const { t } = useTranslation()
   const router = useRouter()
@@ -74,6 +80,15 @@ const SearchBarContentWrapper = ({
 
   const handleFocus = () => {
     setIsSearchActive(true)
+    setIsExpanded(true)
+  }
+
+  const handleIconClick = () => {
+    setIsExpanded(true)
+    // Focus input after a small delay to ensure it's rendered
+    setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
   }
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -90,8 +105,38 @@ const SearchBarContentWrapper = ({
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="relative">
-        <div className="relative flex items-center">
+      {/* Mobile: Icon button when not expanded */}
+      {!isExpanded && (
+        <button
+          type="button"
+          onClick={handleIconClick}
+          className="md:hidden p-2 text-text-secondary hover:text-primary transition-colors"
+          aria-label={t("common.searchPlaceholder") || "Search"}
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </button>
+      )}
+
+      {/* Search input form - hidden on mobile when not expanded, always visible on desktop */}
+      <form 
+        onSubmit={handleSubmit} 
+        className={`relative ${!isExpanded ? "hidden md:block" : "block"} ${
+          isExpanded ? "w-full md:w-auto" : ""
+        }`}
+      >
+        <div className="relative flex items-center gap-2 md:gap-2">
           <input
             ref={inputRef}
             autoComplete="off"
@@ -104,14 +149,19 @@ const SearchBarContentWrapper = ({
             onChange={handleChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            className="w-full h-12 px-4 pr-12 rounded-lg border-2 border-border-base focus:border-primary focus:outline-none text-text-primary placeholder:text-text-tertiary bg-background-base"
+            className={`flex-1 h-12 md:h-12 px-4 rounded-lg border-2 border-border-base focus:border-primary focus:outline-none text-text-primary placeholder:text-text-tertiary bg-background-base text-base ${
+              isExpanded 
+                ? "pr-16 md:pr-12 shadow-lg md:shadow-none" 
+                : "pr-12 md:pr-12"
+            }`}
           />
-          <div className="absolute right-2 flex items-center gap-2">
+          {/* Buttons inside input (clear and search) - hidden on mobile */}
+          <div className="hidden md:flex absolute right-2 items-center gap-2">
             {searchValue && (
               <button
                 onClick={handleReset}
                 type="button"
-                className="p-1 text-text-secondary hover:text-text-primary transition-colors"
+                className="p-1.5 text-text-secondary hover:text-text-primary transition-colors"
                 aria-label={t("search.clear")}
               >
                 <svg
@@ -131,7 +181,7 @@ const SearchBarContentWrapper = ({
             )}
             <button
               type="submit"
-              className="p-2 text-text-secondary hover:text-primary transition-colors"
+              className="p-1.5 text-text-secondary hover:text-primary transition-colors"
               aria-label={t("search.submit")}
             >
               <svg
@@ -149,6 +199,34 @@ const SearchBarContentWrapper = ({
               </svg>
             </button>
           </div>
+          {/* Mobile close button - only shown when expanded */}
+          {isExpanded && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchValue("")
+                setIsExpanded(false)
+                setIsSearchActive(false)
+                onClose?.()
+              }}
+              className="md:hidden p-2 text-text-secondary hover:text-text-primary transition-colors flex-shrink-0"
+              aria-label="Close search"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          )}
         </div>
       </form>
 
@@ -170,7 +248,10 @@ const SearchBarContentWrapper = ({
 
 const SearchBar = () => {
   const [isSearchActive, setIsSearchActive] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [topPosition, setTopPosition] = useState(0)
   const searchContainerRef = useRef<HTMLDivElement>(null)
+  const headerRowRef = useRef<HTMLElement | null>(null)
 
   // Close search on escape key
   useEffect(() => {
@@ -208,6 +289,10 @@ const SearchBar = () => {
         !searchContainerRef.current.contains(event.target as Node)
       ) {
         setIsSearchActive(false)
+        // On mobile, also collapse the search input
+        if (typeof window !== "undefined" && window.innerWidth < 768) {
+          setIsExpanded(false)
+        }
       }
     }
 
@@ -219,25 +304,71 @@ const SearchBar = () => {
     }
   }, [isSearchActive])
 
+  // Handle window resize - if desktop, always show search
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== "undefined") {
+        if (window.innerWidth >= 768) {
+          setIsExpanded(true)
+        } else if (!isSearchActive) {
+          setIsExpanded(false)
+        }
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", handleResize)
+      // Set initial state
+      handleResize()
+      return () => window.removeEventListener("resize", handleResize)
+    }
+  }, [isSearchActive])
+
+  // Calculate top position for fixed search on mobile
+  useEffect(() => {
+    if (isExpanded && typeof window !== "undefined" && window.innerWidth < 768) {
+      const headerRow = document.getElementById("header-bottom-row")
+      if (headerRow) {
+        const rect = headerRow.getBoundingClientRect()
+        setTopPosition(rect.top)
+      }
+    }
+  }, [isExpanded])
+
   return (
     <>
-      {/* Backdrop overlay when search is active - covers content but header stays visible (header is z-50) */}
-      {isSearchActive && (
+      {/* Backdrop overlay when search is active - only on mobile when expanded */}
+      {isExpanded && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[49]"
-          onClick={() => setIsSearchActive(false)}
+          className="fixed inset-0 bg-black/50 z-[48] md:hidden"
+          onClick={() => {
+            setIsSearchActive(false)
+            setIsExpanded(false)
+          }}
         />
       )}
 
       {/* Search Container */}
       <div
         ref={searchContainerRef}
-        className={`relative z-[51] transition-all ${isSearchActive ? "w-full max-w-4xl mx-auto" : "w-full"
-          }`}
+        className={`md:relative z-40 md:z-[51] ${
+          isExpanded 
+            ? "fixed md:relative left-0 md:left-auto right-0 md:right-auto w-screen md:w-auto px-6 md:px-0 z-[51] md:z-[51]" 
+            : "relative w-full"
+        }`}
+        style={isExpanded && typeof window !== "undefined" && window.innerWidth < 768 ? {
+          top: `${topPosition}px`,
+        } : {}}
       >
         <SearchBarContentWrapper
           isSearchActive={isSearchActive}
           setIsSearchActive={setIsSearchActive}
+          isExpanded={isExpanded}
+          setIsExpanded={setIsExpanded}
+          onClose={() => {
+            setIsExpanded(false)
+            setIsSearchActive(false)
+          }}
         />
       </div>
     </>

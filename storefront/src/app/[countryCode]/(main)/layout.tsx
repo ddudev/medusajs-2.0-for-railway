@@ -30,7 +30,7 @@ export default async function PageLayout(props: {
       <Suspense fallback={
         <div className="sticky top-0 inset-x-0 z-50 h-20 bg-background-base animate-pulse" />
       }>
-        <Nav countryCode={countryCode} />
+      <Nav countryCode={countryCode} />
       </Suspense>
       {props.children}
       <Footer />

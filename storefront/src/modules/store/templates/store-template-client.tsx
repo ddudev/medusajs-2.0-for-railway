@@ -1,31 +1,51 @@
 "use client"
 
+import { useState, createContext, useContext } from "react"
+import { HttpTypes } from "@medusajs/types"
+import { Brand } from "@lib/data/brands"
+import MobileFilterDrawer from "@modules/store/components/refinement-list/mobile-filter-drawer"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback } from "react"
-import { HttpTypes } from "@medusajs/types"
 
-import FilterCollection from "./filter-collection"
-import FilterCategory from "./filter-category"
-import FilterPrice from "./filter-price"
-import FilterBrand from "./filter-brand"
-import { Brand } from "@lib/data/brands"
-
-type RefinementListProps = {
+type StoreTemplateClientProps = {
+  children: React.ReactNode
   collections: HttpTypes.StoreCollection[]
   categories: HttpTypes.StoreProductCategory[]
   brands?: Brand[]
   maxPrice?: number
-  search?: boolean
-  'data-testid'?: string
+  filterKey: string
+  sort: string
+  pageNumber: number
+  countryCode: string
+  collectionIds?: string[]
+  categoryIds?: string[]
+  brandIds?: string[]
+  priceRange?: string
+  translations: any
 }
 
-const RefinementList = ({
+type FilterContextType = {
+  openFilterDrawer: () => void
+}
+
+const FilterContext = createContext<FilterContextType | null>(null)
+
+export const useFilterContext = () => {
+  const context = useContext(FilterContext)
+  if (!context) {
+    throw new Error("useFilterContext must be used within StoreTemplateClient")
+  }
+  return context
+}
+
+const StoreTemplateClient = ({
+  children,
   collections,
   categories,
   brands,
   maxPrice,
-  'data-testid': dataTestId,
-}: RefinementListProps) => {
+}: StoreTemplateClientProps) => {
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -58,7 +78,7 @@ const RefinementList = ({
     [searchParams]
   )
 
-  const setQueryParams = (name: string, value: string | string[]) => {
+  const setQueryParams = (name: string, value: string) => {
     const query = createQueryString(name, value)
     router.push(`${pathname}?${query}`, { scroll: false })
   }
@@ -68,26 +88,26 @@ const RefinementList = ({
     router.push(`${pathname}?${query}`, { scroll: false })
   }
 
+  const openFilterDrawer = useCallback(() => {
+    setIsFilterDrawerOpen(true)
+  }, [])
+
   return (
-    <div className="hidden md:flex small:flex-col gap-8 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem]">
-      <FilterCollection
+    <FilterContext.Provider value={{ openFilterDrawer }}>
+      {children}
+      <MobileFilterDrawer
+        isOpen={isFilterDrawerOpen}
+        onClose={() => setIsFilterDrawerOpen(false)}
         collections={collections}
-        setQueryParamsArray={setQueryParamsArray}
-      />
-      <FilterCategory
         categories={categories}
-        setQueryParamsArray={setQueryParamsArray}
-      />
-      <FilterBrand
-        brands={brands || []}
-        setQueryParamsArray={setQueryParamsArray}
-      />
-      <FilterPrice
-        setQueryParams={setQueryParams}
+        brands={brands}
         maxPrice={maxPrice}
+        setQueryParams={setQueryParams}
+        setQueryParamsArray={setQueryParamsArray}
       />
-    </div>
+    </FilterContext.Provider>
   )
 }
 
-export default RefinementList
+export default StoreTemplateClient
+

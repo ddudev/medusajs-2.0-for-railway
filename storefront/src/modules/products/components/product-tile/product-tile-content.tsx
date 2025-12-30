@@ -137,7 +137,7 @@ export default function ProductTileContent({
         {/* Image Section with Lazy Loading */}
         <CardMedia
           component="div"
-          className="relative h-48 bg-gray-100 overflow-hidden"
+          className="relative h-40 md:h-48 bg-gray-100 overflow-hidden flex items-center justify-center"
           style={{ aspectRatio: '4/3' }} // Prevent CLS
         >
           {thumbnail ? (
@@ -153,7 +153,7 @@ export default function ProductTileContent({
                 return parts.join(' - ')
               })()}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+              className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
               sizes="(max-width: 640px) 200px, (max-width: 1024px) 240px, 280px"
               priority={priority}
               loading={priority ? 'eager' : 'lazy'}

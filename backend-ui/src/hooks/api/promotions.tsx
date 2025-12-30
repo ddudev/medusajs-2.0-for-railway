@@ -123,12 +123,94 @@ export const usePromotionRuleAttributes = (
       promotionType,
       applicationMethodTargetType
     ),
-    queryFn: async () =>
-      sdk.admin.promotion.listRuleAttributes(
-        ruleType,
-        promotionType,
-        applicationMethodTargetType
-      ),
+    queryFn: async () => {
+      // First, try to get attributes from Medusa's built-in endpoint
+      // Then merge in our custom attributes (subtotal, item_total)
+      try {
+        const medusaAttributes = await sdk.admin.promotion.listRuleAttributes(
+          ruleType,
+          promotionType,
+          applicationMethodTargetType
+        )
+
+        // Add our custom attributes if they don't already exist
+        const existingValues = new Set(
+          (medusaAttributes?.attributes || []).map((attr: any) => attr.value)
+        )
+
+        const customAttributes = [
+          {
+            id: "subtotal",
+            value: "subtotal",
+            label: "Subtotal",
+            field_type: "number",
+            description: "Cart subtotal (items total before shipping and taxes)",
+            operators: [
+              { value: "gte", label: "Greater than or equal to" },
+              { value: "gt", label: "Greater than" },
+              { value: "lte", label: "Less than or equal to" },
+              { value: "lt", label: "Less than" },
+              { value: "eq", label: "Equal to" },
+              { value: "ne", label: "Not equal to" },
+            ],
+          },
+          {
+            id: "item_total",
+            value: "item_total",
+            label: "Item Total",
+            field_type: "number",
+            description: "Total value of items in the cart",
+            operators: [
+              { value: "gte", label: "Greater than or equal to" },
+              { value: "gt", label: "Greater than" },
+              { value: "lte", label: "Less than or equal to" },
+              { value: "lt", label: "Less than" },
+              { value: "eq", label: "Equal to" },
+              { value: "ne", label: "Not equal to" },
+            ],
+          },
+        ]
+
+        // Only add custom attributes if they're not already present
+        const newAttributes = customAttributes.filter(
+          (attr) => !existingValues.has(attr.value)
+        )
+
+        return {
+          ...medusaAttributes,
+          attributes: [
+            ...(medusaAttributes?.attributes || []),
+            ...newAttributes,
+          ],
+        }
+      } catch (error) {
+        // If Medusa's endpoint fails, try our custom endpoint as fallback
+        const backendUrl = sdk.config.baseUrl || "/"
+        const queryParams = new URLSearchParams({
+          rule_type: ruleType,
+          ...(promotionType && { promotion_type: promotionType }),
+          ...(applicationMethodTargetType && {
+            application_method_target_type: applicationMethodTargetType,
+          }),
+        })
+
+        const baseUrl = backendUrl.endsWith("/") ? backendUrl.slice(0, -1) : backendUrl
+        const url = `${baseUrl}/admin/promotions/rules/attributes?${queryParams.toString()}`
+
+        const response = await fetch(url, {
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch rule attributes: ${response.statusText}`)
+        }
+
+        return await response.json()
+      }
+    },
     ...options,
   })
 
@@ -235,7 +317,16 @@ export const usePromotionAddRules = (
     mutationFn: (payload) =>
       sdk.admin.promotion.addRules(id, ruleType, payload),
     onSuccess: (data, variables, context) => {
+      // Invalidate all promotion queries
       queryClient.invalidateQueries({ queryKey: promotionsQueryKeys.all })
+      // Specifically invalidate the rules list for this promotion and rule type
+      queryClient.invalidateQueries({ 
+        queryKey: promotionsQueryKeys.listRules(id, ruleType) 
+      })
+      // Also invalidate the promotion detail to refresh the full promotion object
+      queryClient.invalidateQueries({ 
+        queryKey: promotionsQueryKeys.detail(id) 
+      })
 
       options?.onSuccess?.(data, variables, context)
     },

@@ -12,6 +12,7 @@ import LineItemOptions from "@modules/common/components/line-item-options"
 import LineItemPrice from "@modules/common/components/line-item-price"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Thumbnail from "@modules/products/components/thumbnail"
+import FreeShippingProgressWrapper from "@modules/cart/components/free-shipping-progress/free-shipping-progress-wrapper"
 
 const CartDropdown = ({
   cart: cartState,
@@ -103,6 +104,12 @@ const CartDropdown = ({
             </div>
             {cartState && cartState.items?.length ? (
               <>
+                {/* Free Shipping Progress Bar */}
+                {cartState.id && (
+                  <div className="px-4 pt-4 pb-2">
+                    <FreeShippingProgressWrapper cartId={cartState.id} variant="compact" />
+                  </div>
+                )}
                 <div className="overflow-y-scroll max-h-[402px] px-4 grid grid-cols-1 gap-y-8 no-scrollbar p-px">
                   {cartState.items
                     .sort((a, b) => {

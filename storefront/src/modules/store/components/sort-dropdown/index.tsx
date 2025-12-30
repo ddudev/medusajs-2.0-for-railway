@@ -59,7 +59,7 @@ const SortDropdown = ({
 
   return (
     <div className="flex items-center gap-2" data-testid={dataTestId}>
-      <span className="text-sm text-gray-600">{t("filters.sortBy")}:</span>
+      <span className="hidden md:inline text-sm text-gray-600">{t("filters.sortBy")}:</span>
       <FormControl 
         size="small" 
         sx={{ 

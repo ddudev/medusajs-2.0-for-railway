@@ -30,7 +30,7 @@ export function useTranslation() {
   }, [locale])
 
   const t = useMemo(() => {
-    return (key: string): string => {
+    return (key: string, options?: { [key: string]: string | number }): string => {
       const keys = key.split(".")
       let value: any = translations
 
@@ -42,7 +42,27 @@ export function useTranslation() {
         }
       }
 
-      return typeof value === "string" ? value : key
+      if (typeof value !== "string") {
+        return key
+      }
+
+      // Handle interpolation: replace {key} with values from options
+      if (options) {
+        let interpolated = value
+        for (const [optionKey, optionValue] of Object.entries(options)) {
+          // Skip defaultValue as it's not a placeholder
+          if (optionKey === "defaultValue") {
+            continue
+          }
+          interpolated = interpolated.replace(
+            new RegExp(`\\{${optionKey}\\}`, "g"),
+            String(optionValue)
+          )
+        }
+        return interpolated
+      }
+
+      return value
     }
   }, [translations])
 

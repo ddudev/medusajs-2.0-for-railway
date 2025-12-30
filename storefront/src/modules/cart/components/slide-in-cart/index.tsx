@@ -9,6 +9,7 @@ import CartItem from "./cart-item"
 import CartActions from "./cart-actions"
 import EmptyCartMessage from "../../components/empty-cart-message"
 import CartTotals from "@modules/common/components/cart-totals"
+import FreeShippingProgressWrapper from "../free-shipping-progress/free-shipping-progress-wrapper"
 import { convertToLocale } from "@lib/util/money"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
@@ -71,6 +72,12 @@ const SlideInCart = ({ cart }: SlideInCartProps) => {
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 {cart?.items?.length ? (
                   <>
+                    {/* Free Shipping Progress Bar */}
+                    {cart.id && (
+                      <div className="mb-4">
+                        <FreeShippingProgressWrapper cartId={cart.id} variant="compact" />
+                      </div>
+                    )}
                     <div className="space-y-4">
                       {cart.items
                         .sort((a, b) => {

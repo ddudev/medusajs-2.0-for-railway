@@ -5,6 +5,8 @@ import RefinementList from "@modules/store/components/refinement-list"
 import SortDropdown, { SortOptions } from "@modules/store/components/sort-dropdown"
 import ActiveFilters from "@modules/store/components/active-filters"
 import ProductCount from "@modules/store/components/product-count"
+import FilterButton from "@modules/store/components/filter-button"
+import MobileFilterDrawer from "@modules/store/components/refinement-list/mobile-filter-drawer"
 import { getCollectionsList } from "@lib/data/collections"
 import { getCategoriesList } from "@lib/data/categories"
 import { getActiveBrands } from "@lib/data/brands"
@@ -12,6 +14,7 @@ import { getMaxProductPrice } from "@lib/data/products"
 import { getTranslations, getTranslation } from "@lib/i18n/server"
 
 import PaginatedProducts from "./paginated-products"
+import StoreTemplateClient from "./store-template-client"
 
 async function PaginatedProductsWrapper({
   sortBy,
@@ -107,9 +110,20 @@ const StoreTemplate = async ({
   const filterKey = `${JSON.stringify(collectionIds || [])}-${JSON.stringify(categoryIds || [])}-${JSON.stringify(brandIds || [])}-${priceRange}-${sort}-${pageNumber}`
 
   return (
-    <div
-      className="flex flex-col small:flex-row small:items-start py-6 content-container"
-      data-testid="category-container"
+    <StoreTemplateClient
+      collections={collections}
+      categories={categories}
+      brands={brands}
+      maxPrice={maxPrice}
+      filterKey={filterKey}
+      sort={sort}
+      pageNumber={pageNumber}
+      countryCode={countryCode}
+      collectionIds={collectionIds}
+      categoryIds={categoryIds}
+      brandIds={brandIds}
+      priceRange={priceRange}
+      translations={translations}
     >
       <RefinementList
         collections={collections}
@@ -118,11 +132,17 @@ const StoreTemplate = async ({
         maxPrice={maxPrice}
       />
       <div className="w-full">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl-semi" data-testid="store-page-title">
+        <div className="mb-6">
+          <h1 className="text-2xl-semi mb-4 md:mb-0" data-testid="store-page-title">
             {getTranslation(translations, "common.allProducts")}
           </h1>
-          <SortDropdown />
+          <div className="flex items-center gap-4 md:hidden">
+            <FilterButton />
+            <SortDropdown />
+          </div>
+          <div className="hidden md:flex items-center justify-end">
+            <SortDropdown />
+          </div>
         </div>
         <Suspense 
           key={filterKey}
@@ -149,7 +169,7 @@ const StoreTemplate = async ({
           />
         </Suspense>
       </div>
-    </div>
+    </StoreTemplateClient>
   )
 }
 

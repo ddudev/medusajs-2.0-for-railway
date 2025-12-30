@@ -16,7 +16,7 @@ const CategoryNav = async ({ countryCode }: { countryCode: string }) => {
       : []
 
   return (
-    <div className="w-full bg-background-elevated border-b border-border-base">
+    <div className="hidden md:block w-full bg-background-elevated border-b border-border-base">
       <div className="content-container">
         <nav className="flex items-center gap-6 py-3">
           {/* All Products Menu */}

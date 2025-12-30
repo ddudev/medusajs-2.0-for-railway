@@ -5,10 +5,20 @@ import CartButton from "@modules/layout/components/cart-button"
 import SearchBar from "./search-bar"
 import HeaderLinks from "./header-links"
 import AccountLink from "./account-link"
+import MobileMenu from "@modules/layout/components/mobile-menu"
 import { getTranslations } from "@lib/i18n/server"
+import { getCategoriesList } from "@lib/data/categories"
+import { listRegions } from "@lib/data/regions"
 
 const MainHeader = async ({ countryCode }: { countryCode: string }) => {
   const translations = await getTranslations(countryCode)
+  const { product_categories } = await getCategoriesList(0, 100)
+  const regions = await listRegions()
+
+  const displayCategories =
+    product_categories && product_categories.length > 0
+      ? product_categories.filter((cat) => !cat.parent_category).slice(0, 20)
+      : []
 
   return (
     <div className="w-full bg-background-base border-b border-border-base">
@@ -44,10 +54,14 @@ const MainHeader = async ({ countryCode }: { countryCode: string }) => {
       </div>
 
       {/* Bottom Row: Logo, Search, Actions */}
-      <div className="content-container py-4">
+      <div id="header-bottom-row" className="content-container py-4 relative">
         <div className="flex items-center justify-between gap-4">
-          {/* Left: Logo */}
-          <div className="flex-shrink-0">
+          {/* Left: Mobile Menu + Logo */}
+          <div className="flex items-center gap-3 flex-shrink-0 md:flex-shrink-0">
+            {/* Mobile Menu (hamburger) */}
+            <MobileMenu regions={regions} categories={displayCategories} />
+            
+            {/* Logo */}
             <LocalizedClientLink
               href="/"
               className="text-3xl md:text-4xl font-bold text-text-primary hover:opacity-80 transition-opacity"
@@ -58,12 +72,12 @@ const MainHeader = async ({ countryCode }: { countryCode: string }) => {
           </div>
 
           {/* Center: Search Bar */}
-          <div className="flex-1 max-w-2xl mx-4">
+          <div className="flex-1 max-w-2xl mx-4 relative">
             <SearchBar />
           </div>
 
           {/* Right: Phone, Account, Cart */}
-          <div className="flex items-center gap-4 md:gap-6 flex-shrink-0">
+          <div className="flex items-center gap-4 md:gap-6 flex-shrink-0 md:flex-shrink-0">
             {/* Phone */}
             <div className="hidden md:flex items-center gap-2 text-text-secondary">
               <Phone className="w-5 h-5" />

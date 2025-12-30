@@ -45,7 +45,14 @@
     "quantity": "Количество",
     "remove": "Премахни",
     "product": "Продукт",
-    "price": "Цена"
+    "price": "Цена",
+    "freeShipping": {
+      "title": "Безплатна доставка",
+      "progress": "Добавете още {amount} за безплатна доставка",
+      "minimum": "Безплатна доставка при поръчки над {amount}",
+      "only": "Само {amount}",
+      "left": "{amount} остават до безплатна доставка"
+    }
   },
   "product": {
     "addToCart": "Добави в кошницата",
@@ -65,6 +72,8 @@
     "priceNotAvailable": "Цената не е налична"
   },
   "filters": {
+    "title": "Филтри",
+    "apply": "Приложи",
     "filter": "Филтър",
     "sortBy": "Подреждане по",
     "results": "резултата",
