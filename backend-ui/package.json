@@ -72,6 +72,8 @@
     "i18next-browser-languagedetector": "7.2.0",
     "i18next-http-backend": "2.4.2",
     "lodash": "^4.17.21",
+    "lodash.debounce": "^4.0.8",
+    "lodash.isequal": "^4.5.0",
     "match-sorter": "^6.3.4",
     "motion": "^11.15.0",
     "qs": "^6.12.0",

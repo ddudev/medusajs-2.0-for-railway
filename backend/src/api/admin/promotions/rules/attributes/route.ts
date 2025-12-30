@@ -28,8 +28,17 @@ export async function GET(
     // but we're creating our own at the same path, so we need to call it differently
     // Actually, we'll construct the response ourselves and include all known attributes
     
+    // Type for promotion rule attributes
+    type Attribute = {
+      value: string
+      label: string
+      field_type: string
+      description?: string
+      operators?: Array<{ value: string; label: string }>
+    }
+
     // Standard attributes that Medusa provides (based on Medusa 2.0 promotion rules)
-    const standardAttributes = [
+    const standardAttributes: Attribute[] = [
       { value: "customer_id", label: "Customer ID", field_type: "text" },
       { value: "customer_email", label: "Customer Email", field_type: "text" },
       { value: "customer_group", label: "Customer Group", field_type: "text" },
@@ -46,7 +55,7 @@ export async function GET(
     ]
 
     // Custom attributes for cart totals (supported by Medusa backend but not in UI)
-    const customAttributes = [
+    const customAttributes: Attribute[] = [
       {
         value: "subtotal",
         label: "Subtotal",

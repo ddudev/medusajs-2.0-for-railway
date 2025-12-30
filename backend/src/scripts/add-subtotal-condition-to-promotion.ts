@@ -41,31 +41,25 @@ export default async function addSubtotalConditionToPromotion({ container }: any
       logger.info(`Promotion already has a subtotal condition. Updating...`)
       
       // Update existing rule
-      await promotionModuleService.updatePromotionRules({
-        id: promotion.id,
-        rules: [
-          {
-            id: existingSubtotalRule.id,
-            attribute: "subtotal",
-            operator: "gte",
-            values: [MINIMUM_CART_TOTAL.toString()],
-          },
-        ],
-      })
+      await promotionModuleService.updatePromotionRules([
+        {
+          id: existingSubtotalRule.id,
+          attribute: "subtotal",
+          operator: "gte",
+          values: [MINIMUM_CART_TOTAL.toString()],
+        },
+      ])
       
       logger.info(`✅ Updated subtotal condition successfully!`)
     } else {
       // Add new rule
-      await promotionModuleService.addPromotionRules({
-        id: promotion.id,
-        rules: [
-          {
-            attribute: "subtotal",
-            operator: "gte",
-            values: [MINIMUM_CART_TOTAL.toString()],
-          },
-        ],
-      })
+      await promotionModuleService.addPromotionRules(promotion.id, [
+        {
+          attribute: "subtotal",
+          operator: "gte",
+          values: [MINIMUM_CART_TOTAL.toString()],
+        },
+      ])
       
       logger.info(`✅ Added subtotal condition successfully!`)
     }
