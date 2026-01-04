@@ -50,20 +50,22 @@ async function CheckoutContent() {
   const customer = await getCustomer()
 
   return (
-    <div className="grid grid-cols-1 small:grid-cols-[1fr_416px] content-container gap-x-40 py-12">
-      <Wrapper cart={cart}>
-        <CheckoutForm cart={cart} customer={customer} />
-      </Wrapper>
-      <Suspense
-        fallback={
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded mb-4"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
-          </div>
-        }
-      >
-        <CheckoutSummary cart={cart} />
-      </Suspense>
+    <div className="content-container py-12">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 small:grid-cols-2 gap-x-8 small:gap-x-12">
+        <Wrapper cart={cart}>
+          <CheckoutForm cart={cart} customer={customer} />
+        </Wrapper>
+        <Suspense
+          fallback={
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded mb-4"></div>
+              <div className="h-64 bg-gray-200 rounded"></div>
+            </div>
+          }
+        >
+          <CheckoutSummary cart={cart} />
+        </Suspense>
+      </div>
     </div>
   )
 }
@@ -72,10 +74,12 @@ export default async function Checkout() {
   // Checkout is always dynamic - wrap in Suspense to defer rendering
   return (
     <Suspense fallback={
-      <div className="grid grid-cols-1 small:grid-cols-[1fr_416px] content-container gap-x-40 py-12">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded mb-4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+      <div className="content-container py-12">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 small:grid-cols-2 gap-x-8 small:gap-x-12">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded mb-4"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
         </div>
       </div>
     }>

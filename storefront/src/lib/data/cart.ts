@@ -307,6 +307,65 @@ export async function submitPromotionForm(
   }
 }
 
+export async function updateContactInfo(data: {
+  email?: string
+  first_name?: string
+  last_name?: string
+  phone?: string
+}) {
+  try {
+    const cartId = await getCartId()
+    if (!cartId) {
+      throw new Error("No existing cart found when updating contact info")
+    }
+
+    const cart = await retrieveCart()
+    if (!cart) {
+      throw new Error("Cart not found")
+    }
+
+    // Build update data - only include fields that were provided
+    const updateData: HttpTypes.StoreUpdateCart = {} as any
+
+    // Update email if provided
+    if (data.email !== undefined) {
+      updateData.email = data.email
+    }
+
+    // Build shipping address with updates
+    // Create minimal address if it doesn't exist (for Econt Office or other methods that don't require full address)
+    const defaultCountryCode = cart.region?.countries?.[0]?.iso_2?.toLowerCase() || "bg"
+    const shippingAddress = {
+      ...(cart.shipping_address || {}),
+      // Set defaults if address doesn't exist
+      address_1: cart.shipping_address?.address_1 || "",
+      city: cart.shipping_address?.city || "",
+      country_code: cart.shipping_address?.country_code || defaultCountryCode,
+      postal_code: cart.shipping_address?.postal_code || "",
+      province: cart.shipping_address?.province || "",
+      company: cart.shipping_address?.company || "",
+    } as any
+
+    if (data.first_name !== undefined) {
+      shippingAddress.first_name = data.first_name
+    }
+    if (data.last_name !== undefined) {
+      shippingAddress.last_name = data.last_name
+    }
+    if (data.phone !== undefined) {
+      shippingAddress.phone = data.phone
+    }
+
+    // Always set billing_address = shipping_address (Bulgaria requirement)
+    updateData.shipping_address = shippingAddress
+    updateData.billing_address = shippingAddress
+
+    await updateCart(updateData)
+  } catch (e: any) {
+    throw new Error(e.message || "Failed to update contact information")
+  }
+}
+
 // TODO: Pass a POJO instead of a form entity here
 export async function setAddresses(currentState: unknown, formData: FormData) {
   try {
@@ -318,52 +377,98 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       throw new Error("No existing cart found when setting addresses")
     }
 
-    const data = {
-      shipping_address: {
-        first_name: formData.get("shipping_address.first_name"),
-        last_name: formData.get("shipping_address.last_name"),
-        address_1: formData.get("shipping_address.address_1"),
-        address_2: "",
-        company: formData.get("shipping_address.company"),
-        postal_code: formData.get("shipping_address.postal_code"),
-        city: formData.get("shipping_address.city"),
-        country_code: formData.get("shipping_address.country_code"),
-        province: formData.get("shipping_address.province"),
-        phone: formData.get("shipping_address.phone"),
-      },
-      email: formData.get("email"),
+    const cart = await retrieveCart()
+    if (!cart) {
+      throw new Error("Cart not found")
+    }
+
+    // Get default country code from cart region (Bulgaria: "bg")
+    const defaultCountryCode =
+      cart.region?.countries?.[0]?.iso_2?.toLowerCase() || "bg"
+
+    const shippingAddress = {
+      address_1: formData.get("shipping_address.address_1"),
+      address_2: "",
+      // TODO: Uncomment when needed - Company field for business addresses
+      company: "", // formData.get("shipping_address.company"),
+      postal_code: formData.get("shipping_address.postal_code"),
+      city: formData.get("shipping_address.city"),
+      // TODO: Uncomment when needed - Country field for international shipping
+      country_code: defaultCountryCode, // formData.get("shipping_address.country_code") || defaultCountryCode,
+      // TODO: Uncomment when needed - Province field for regions/states
+      province: "", // formData.get("shipping_address.province"),
     } as any
 
-    const sameAsBilling = formData.get("same_as_billing")
-    if (sameAsBilling === "on") data.billing_address = data.shipping_address
+    // Preserve contact info from cart (set via Contact component)
+    if (cart.shipping_address) {
+      shippingAddress.first_name =
+        cart.shipping_address.first_name || undefined
+      shippingAddress.last_name = cart.shipping_address.last_name || undefined
+      shippingAddress.phone = cart.shipping_address.phone || undefined
+    }
 
-    if (sameAsBilling !== "on")
-      data.billing_address = {
-        first_name: formData.get("billing_address.first_name"),
-        last_name: formData.get("billing_address.last_name"),
-        address_1: formData.get("billing_address.address_1"),
-        address_2: "",
-        company: formData.get("billing_address.company"),
-        postal_code: formData.get("billing_address.postal_code"),
-        city: formData.get("billing_address.city"),
-        country_code: formData.get("billing_address.country_code"),
-        province: formData.get("billing_address.province"),
-        phone: formData.get("billing_address.phone"),
-      }
+    const data = {
+      shipping_address: shippingAddress,
+      // Always set billing_address = shipping_address (Bulgaria requirement)
+      billing_address: shippingAddress,
+      // Preserve email from cart (set via Contact component)
+      email: cart.email,
+    } as any
+
     await updateCart(data)
+    return null // Success
   } catch (e: any) {
     return e.message
   }
-
-  redirect(
-    `/${formData.get("shipping_address.country_code")}/checkout?step=delivery`
-  )
 }
 
 export async function placeOrder() {
   const cartId = await getCartId()
   if (!cartId) {
     throw new Error("No existing cart found when placing an order")
+  }
+
+  let cart = await retrieveCart()
+  if (!cart) {
+    throw new Error("Cart not found")
+  }
+
+  // Check if Econt Office is selected (doesn't require shipping address)
+  const selectedShippingMethod = cart.shipping_methods?.[0]
+  const isEcontOffice = selectedShippingMethod?.name?.toLowerCase().includes("econt") && 
+                        selectedShippingMethod?.name?.toLowerCase().includes("office")
+
+  // For Econt Office, create minimal shipping address from contact info if not present
+  // This ensures Medusa validation passes while not requiring full address
+  // Note: Contact info (first_name, last_name, phone) should already be in cart from Contact component
+  if (isEcontOffice && !cart.shipping_address && cart.email) {
+    const defaultCountryCode = cart.region?.countries?.[0]?.iso_2?.toLowerCase() || "bg"
+    
+    // Get contact info - it should be in cart from Contact component
+    // If not available, use email as fallback for first_name
+    const minimalAddress = {
+      first_name: "Customer", // Will be updated by contact info if available
+      last_name: "",
+      address_1: "Econt Office Delivery", // Placeholder for Econt Office
+      city: "",
+      country_code: defaultCountryCode,
+      postal_code: "",
+      phone: "",
+    } as any
+
+    // Note: Contact component should have already set first_name, last_name, phone
+    // But we create minimal address here as fallback to ensure Medusa validation passes
+    await updateCart({
+      shipping_address: minimalAddress,
+      billing_address: minimalAddress,
+    })
+    
+    // Re-fetch cart to get updated address
+    const updatedCart = await retrieveCart()
+    if (updatedCart?.shipping_address) {
+      // Use updated cart for completion
+      cart = updatedCart
+    }
   }
 
   const authHeaders = await getAuthHeaders()

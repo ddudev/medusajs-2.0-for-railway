@@ -1,23 +1,21 @@
 import { HttpTypes } from "@medusajs/types"
 import { Container } from "@medusajs/ui"
-import Checkbox from "@modules/common/components/checkbox"
 import Input from "@modules/common/components/input"
 import { mapKeys } from "lodash"
 import React, { useEffect, useMemo, useState } from "react"
 import AddressSelect from "../address-select"
-import CountrySelect from "../country-select"
+import { useTranslation } from "@lib/i18n/hooks/use-translation"
+// TODO: Uncomment when needed - CountrySelect for international shipping
+// import CountrySelect from "../country-select"
 
 const ShippingAddress = ({
   customer,
   cart,
-  checked,
-  onChange,
 }: {
   customer: HttpTypes.StoreCustomer | null
   cart: HttpTypes.StoreCart | null
-  checked: boolean
-  onChange: () => void
 }) => {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState<Record<string, any>>({})
 
   const countriesInRegion = useMemo(
@@ -41,32 +39,27 @@ const ShippingAddress = ({
     address &&
       setFormData((prevState: Record<string, any>) => ({
         ...prevState,
-        "shipping_address.first_name": address?.first_name || "",
-        "shipping_address.last_name": address?.last_name || "",
+        // Note: first_name, last_name, phone moved to Contact section
+        // Note: company, country_code, province commented out for later use
         "shipping_address.address_1": address?.address_1 || "",
-        "shipping_address.company": address?.company || "",
         "shipping_address.postal_code": address?.postal_code || "",
         "shipping_address.city": address?.city || "",
-        "shipping_address.country_code": address?.country_code || "",
-        "shipping_address.province": address?.province || "",
-        "shipping_address.phone": address?.phone || "",
+        // TODO: Uncomment when needed - Company field for business addresses
+        // "shipping_address.company": address?.company || "",
+        // TODO: Uncomment when needed - Country field for international shipping
+        // "shipping_address.country_code": address?.country_code || "",
+        // TODO: Uncomment when needed - Province field for regions/states
+        // "shipping_address.province": address?.province || "",
       }))
 
-    email &&
-      setFormData((prevState: Record<string, any>) => ({
-        ...prevState,
-        email: email,
-      }))
+    // Note: email moved to Contact section
   }
 
   useEffect(() => {
     // Ensure cart is not null and has a shipping_address before setting form data
+    // Note: Contact info (email, name, phone) is handled by Contact component
     if (cart && cart.shipping_address) {
-      setFormAddress(cart?.shipping_address, cart?.email)
-    }
-
-    if (cart && !cart.email && customer?.email) {
-      setFormAddress(undefined, customer.email)
+      setFormAddress(cart?.shipping_address)
     }
   }, [cart]) // Add cart as a dependency
 
@@ -100,60 +93,45 @@ const ShippingAddress = ({
         </Container>
       )}
       <div className="grid grid-cols-2 gap-4">
+        {/* Note: First name, Last name, Phone, Email moved to Contact section */}
         <Input
-          label="First name"
-          name="shipping_address.first_name"
-          autoComplete="given-name"
-          value={formData["shipping_address.first_name"]}
-          onChange={handleChange}
-          required
-          data-testid="shipping-first-name-input"
-        />
-        <Input
-          label="Last name"
-          name="shipping_address.last_name"
-          autoComplete="family-name"
-          value={formData["shipping_address.last_name"]}
-          onChange={handleChange}
-          required
-          data-testid="shipping-last-name-input"
-        />
-        <Input
-          label="Address"
+          label={t("checkout.addressLine1")}
           name="shipping_address.address_1"
           autoComplete="address-line1"
-          value={formData["shipping_address.address_1"]}
+          value={formData["shipping_address.address_1"] || ""}
           onChange={handleChange}
           required
           data-testid="shipping-address-input"
         />
-        <Input
-          label="Company"
+        {/* TODO: Uncomment when needed - Company field for business addresses */}
+        {/* <Input
+          label={t("checkout.company")}
           name="shipping_address.company"
           value={formData["shipping_address.company"]}
           onChange={handleChange}
           autoComplete="organization"
           data-testid="shipping-company-input"
-        />
+        /> */}
         <Input
-          label="Postal code"
+          label={t("checkout.postalCode")}
           name="shipping_address.postal_code"
           autoComplete="postal-code"
-          value={formData["shipping_address.postal_code"]}
+          value={formData["shipping_address.postal_code"] || ""}
           onChange={handleChange}
           required
           data-testid="shipping-postal-code-input"
         />
         <Input
-          label="City"
+          label={t("checkout.city")}
           name="shipping_address.city"
           autoComplete="address-level2"
-          value={formData["shipping_address.city"]}
+          value={formData["shipping_address.city"] || ""}
           onChange={handleChange}
           required
           data-testid="shipping-city-input"
         />
-        <CountrySelect
+        {/* TODO: Uncomment when needed - Country field for international shipping */}
+        {/* <CountrySelect
           name="shipping_address.country_code"
           autoComplete="country"
           region={cart?.region}
@@ -161,8 +139,9 @@ const ShippingAddress = ({
           onChange={handleChange}
           required
           data-testid="shipping-country-select"
-        />
-        <Input
+        /> */}
+        {/* TODO: Uncomment when needed - Province field for regions/states */}
+        {/* <Input
           label="State / Province"
           name="shipping_address.province"
           autoComplete="address-level1"
@@ -170,38 +149,9 @@ const ShippingAddress = ({
           onChange={handleChange}
           required
           data-testid="shipping-province-input"
-        />
+        /> */}
       </div>
-      <div className="my-8">
-        <Checkbox
-          label="Billing address same as shipping address"
-          name="same_as_billing"
-          checked={checked}
-          onChange={onChange}
-          data-testid="billing-address-checkbox"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <Input
-          label="Email"
-          name="email"
-          type="email"
-          title="Enter a valid email address."
-          autoComplete="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          data-testid="shipping-email-input"
-        />
-        <Input
-          label="Phone"
-          name="shipping_address.phone"
-          autoComplete="tel"
-          value={formData["shipping_address.phone"]}
-          onChange={handleChange}
-          data-testid="shipping-phone-input"
-        />
-      </div>
+      {/* Note: Billing address always same as shipping for Bulgaria - checkbox removed */}
     </>
   )
 }

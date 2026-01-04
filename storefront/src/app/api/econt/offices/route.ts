@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text()
+      console.error(`[ECONT OFFICES API] Backend error: ${errorText}`)
       return NextResponse.json(
         { message: errorText || "Failed to fetch offices" },
         { status: response.status }
@@ -55,6 +56,18 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
+    console.log(`[ECONT OFFICES API] Received data:`, {
+      hasOffices: !!data.offices,
+      officesCount: Array.isArray(data.offices) ? data.offices.length : 0,
+      dataKeys: Object.keys(data),
+    })
+    
+    // Ensure we return the correct structure
+    if (!data.offices) {
+      console.warn(`[ECONT OFFICES API] No offices in response, returning empty array`)
+      return NextResponse.json({ offices: [] })
+    }
+    
     return NextResponse.json(data)
   } catch (error: any) {
     console.error("Error proxying Econt offices request:", error)

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { getEcontCities, type EcontCity } from "@lib/data/econt"
+import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
 // Debounce utility hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -33,6 +34,7 @@ const CitySelector: React.FC<CitySelectorProps> = ({
   selectedCityName,
   selectedCityPostcode,
 }) => {
+  const { t } = useTranslation()
   const [cities, setCities] = useState<EcontCity[]>([])
   const [selectedCity, setSelectedCity] = useState<EcontCity | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -143,7 +145,7 @@ const CitySelector: React.FC<CitySelectorProps> = ({
   return (
     <div className="relative">
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        Град (City) *
+        {t("checkout.econt.cityRequired")}
       </label>
       <div className="relative">
         <input
@@ -165,26 +167,26 @@ const CitySelector: React.FC<CitySelectorProps> = ({
             }
             setIsOpen(true)
           }}
-          placeholder={selectedCity ? "" : "Въведете поне 2 символа за търсене..."}
+          placeholder={selectedCity ? "" : t("checkout.econt.citySearchPlaceholder")}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {isOpen && (
           <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
             {searchQuery.trim().length < 2 ? (
               <div className="px-4 py-2 text-sm text-gray-500">
-                Въведете поне 2 символа за търсене
+                {t("checkout.econt.citySearchPlaceholder")}
               </div>
             ) : isLoading ? (
               <div className="px-4 py-2 text-sm text-gray-500">
-                Зареждане на градове...
+                {t("checkout.econt.loadingCities")}
               </div>
             ) : error ? (
               <div className="px-4 py-2 text-sm text-red-500">
-                Грешка: {error}
+                {t("common.error")}: {error}
               </div>
             ) : filteredCities.length === 0 ? (
               <div className="px-4 py-2 text-sm text-gray-500">
-                Няма намерени градове
+                {t("checkout.econt.noCitiesFound")}
               </div>
             ) : (
               filteredCities.map((city) => (
@@ -198,8 +200,8 @@ const CitySelector: React.FC<CitySelectorProps> = ({
                     {city.type} {city.name}
                   </div>
                   <div className="text-sm text-gray-500">
-                    п.к.: {city.post_code}
-                    {city.region && ` | област: ${city.region}`}
+                    {t("checkout.econt.postcode")}: {city.post_code}
+                    {city.region && ` | ${t("checkout.econt.region")}: ${city.region}`}
                   </div>
                 </button>
               ))
@@ -209,7 +211,7 @@ const CitySelector: React.FC<CitySelectorProps> = ({
       </div>
       {selectedCity && (
         <div className="mt-2 text-sm text-gray-600">
-          Избран: {selectedCity.type} {selectedCity.name} ({selectedCity.post_code})
+          {t("checkout.econt.selected")}: {selectedCity.type} {selectedCity.name} ({selectedCity.post_code})
         </div>
       )}
       {/* Close dropdown when clicking outside */}

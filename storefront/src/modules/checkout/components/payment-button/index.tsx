@@ -11,6 +11,7 @@ import Spinner from "@modules/common/icons/spinner"
 import { placeOrder } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import { isManual, isPaypal, isStripe } from "@lib/constants"
+import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
 // Lazy load Stripe payment request component (heavy)
 const StripePaymentRequest = dynamic(
@@ -27,12 +28,21 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
   cart,
   "data-testid": dataTestId,
 }) => {
+  const { t } = useTranslation()
+  // Check if Econt Office is selected (doesn't require shipping address)
+  const selectedShippingMethod = cart.shipping_methods?.[0]
+  const isEcontOffice = selectedShippingMethod?.name?.toLowerCase().includes("econt") && 
+                        selectedShippingMethod?.name?.toLowerCase().includes("office")
+  
+  // Shipping address is optional for Econt Office, required for other methods
+  // Billing address is always set to shipping address (Bulgaria requirement)
+  // For Econt Office, we can complete without shipping_address
   const notReady =
     !cart ||
-    !cart.shipping_address ||
-    !cart.billing_address ||
     !cart.email ||
-    (cart.shipping_methods?.length ?? 0) < 1
+    (cart.shipping_methods?.length ?? 0) < 1 ||
+    (!isEcontOffice && !cart.shipping_address) ||
+    (!isEcontOffice && !cart.billing_address)
 
   // TODO: Add this once gift cards are implemented
   // const paidByGiftcard =
@@ -66,11 +76,12 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
         />
       )
     default:
-      return <Button disabled>Select a payment method</Button>
+      return <Button disabled>{t("checkout.selectPaymentMethod")}</Button>
   }
 }
 
 const GiftCardPaymentButton = () => {
+  const { t } = useTranslation()
   const [submitting, setSubmitting] = useState(false)
 
   const handleOrder = async () => {
@@ -82,9 +93,10 @@ const GiftCardPaymentButton = () => {
     <Button
       onClick={handleOrder}
       isLoading={submitting}
+      className="w-full"
       data-testid="submit-order-button"
     >
-      Place order
+      {t("checkout.placeOrder")}
     </Button>
   )
 }
@@ -98,6 +110,7 @@ const StripePaymentButton = ({
   notReady: boolean
   "data-testid"?: string
 }) => {
+  const { t } = useTranslation()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -129,25 +142,26 @@ const StripePaymentButton = ({
       return
     }
 
+    // Use shipping address for billing (Bulgaria requirement - billing always same as shipping)
     await stripe
       .confirmCardPayment(session?.data.client_secret as string, {
         payment_method: {
           card: card,
           billing_details: {
             name:
-              cart.billing_address?.first_name +
+              (cart.shipping_address?.first_name || "Customer") +
               " " +
-              cart.billing_address?.last_name,
+              (cart.shipping_address?.last_name || ""),
             address: {
-              city: cart.billing_address?.city ?? undefined,
-              country: cart.billing_address?.country_code ?? undefined,
-              line1: cart.billing_address?.address_1 ?? undefined,
-              line2: cart.billing_address?.address_2 ?? undefined,
-              postal_code: cart.billing_address?.postal_code ?? undefined,
-              state: cart.billing_address?.province ?? undefined,
+              city: cart.shipping_address?.city ?? undefined,
+              country: cart.shipping_address?.country_code ?? undefined,
+              line1: cart.shipping_address?.address_1 ?? undefined,
+              line2: cart.shipping_address?.address_2 ?? undefined,
+              postal_code: cart.shipping_address?.postal_code ?? undefined,
+              state: cart.shipping_address?.province ?? undefined,
             },
             email: cart.email,
-            phone: cart.billing_address?.phone ?? undefined,
+            phone: cart.shipping_address?.phone ?? undefined,
           },
         },
       })
@@ -204,9 +218,10 @@ const StripePaymentButton = ({
         onClick={handlePayment}
         size="large"
         isLoading={submitting}
+        className="w-full"
         data-testid={dataTestId}
       >
-        Place order
+        {t("checkout.placeOrder")}
       </Button>
       <ErrorMessage
         error={errorMessage}
@@ -225,6 +240,7 @@ const PayPalPaymentButton = ({
   notReady: boolean
   "data-testid"?: string
 }) => {
+  const { t } = useTranslation()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -287,6 +303,7 @@ const PayPalPaymentButton = ({
 }
 
 const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
+  const { t } = useTranslation()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -313,9 +330,10 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
         isLoading={submitting}
         onClick={handlePayment}
         size="large"
+        className="w-full"
         data-testid="submit-order-button"
       >
-        Place order
+        {t("checkout.placeOrder")}
       </Button>
       <ErrorMessage
         error={errorMessage}

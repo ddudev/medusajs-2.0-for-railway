@@ -3,6 +3,7 @@ import dynamic from "next/dynamic"
 import { listCartShippingMethods } from "@lib/data/fulfillment"
 import { listCartPaymentMethods } from "@lib/data/payment"
 import { HttpTypes } from "@medusajs/types"
+import Contact from "@modules/checkout/components/contact"
 import Addresses from "@modules/checkout/components/addresses"
 import Shipping from "@modules/checkout/components/shipping"
 
@@ -46,14 +47,25 @@ export default async function CheckoutForm({
   return (
     <div>
       <div className="w-full grid grid-cols-1 gap-y-8">
+        {/* Contact Section - First Name, Last Name, Email, Phone */}
         <div>
-          <Addresses cart={cart} customer={customer} />
+          <Contact cart={cart} customer={customer} />
         </div>
 
+        {/* TODO: Uncomment when needed - Shipping Address Section
+          Only show when Econt Address/Door is selected (not for Econt Office)
+          For Econt Office, shipping address is not required
+        */}
+        {/* <div>
+          <Addresses cart={cart} customer={customer} />
+        </div> */}
+
+        {/* Shipping Method Section - Econt integration */}
         <div>
           <Shipping cart={cart} availableShippingMethods={shippingMethods} />
         </div>
 
+        {/* Payment Section - Payment method selection and card input (conditional) */}
         <Suspense
           fallback={
             <div className="animate-pulse">
@@ -67,6 +79,7 @@ export default async function CheckoutForm({
           </div>
         </Suspense>
 
+        {/* Review Section - Order summary and place order button */}
         <Suspense
           fallback={
             <div className="animate-pulse">

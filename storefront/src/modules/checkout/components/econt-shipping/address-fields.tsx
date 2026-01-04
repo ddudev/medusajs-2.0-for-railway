@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react"
 import { getEcontStreets, getEcontQuarters, type EcontStreet, type EcontQuarter, type EcontData } from "@lib/data/econt"
+import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
 // Debounce utility hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -31,6 +32,7 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
   onAddressChange,
   initialData,
 }) => {
+  const { t } = useTranslation()
   const [streets, setStreets] = useState<EcontStreet[]>([])
   const [quarters, setQuarters] = useState<EcontQuarter[]>([])
   const [isLoadingStreets, setIsLoadingStreets] = useState(true)
@@ -182,7 +184,7 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       {/* Street */}
       <div className="relative">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Улица (Street) *
+          {t("checkout.econt.street")} *
         </label>
         <input
           type="text"
@@ -192,7 +194,7 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
             setStreetDropdownOpen(true)
           }}
           onFocus={() => setStreetDropdownOpen(true)}
-          placeholder="Търсене на улица..."
+          placeholder={t("checkout.econt.streetSearchPlaceholder")}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {streetDropdownOpen && filteredStreets.length > 0 && (
@@ -214,7 +216,7 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       {/* Quarter (optional) */}
       <div className="relative">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Квартал (Quarter)
+          {t("checkout.econt.quarter")}
         </label>
         <input
           type="text"
@@ -224,7 +226,7 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
             setQuarterDropdownOpen(true)
           }}
           onFocus={() => setQuarterDropdownOpen(true)}
-          placeholder="Търсене на квартал..."
+          placeholder={t("checkout.econt.quarterSearchPlaceholder")}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {quarterDropdownOpen && filteredQuarters.length > 0 && (
@@ -246,13 +248,13 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       {/* Street number */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Номер (Number) *
+          {t("checkout.econt.streetNumber")} *
         </label>
         <input
           type="text"
           value={streetNum}
           onChange={(e) => setStreetNum(e.target.value)}
-          placeholder="Номер на улица"
+          placeholder={t("checkout.econt.streetNumberPlaceholder")}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -260,13 +262,13 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       {/* Building number */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Блок (Building)
+          {t("checkout.econt.buildingNumber")}
         </label>
         <input
           type="text"
           value={buildingNum}
           onChange={(e) => setBuildingNum(e.target.value)}
-          placeholder="Номер на блок"
+          placeholder={t("checkout.econt.buildingNumberPlaceholder")}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -274,13 +276,13 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       {/* Entrance */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Вход (Entrance)
+          {t("checkout.econt.entranceNumber")}
         </label>
         <input
           type="text"
           value={entranceNum}
           onChange={(e) => setEntranceNum(e.target.value)}
-          placeholder="Номер на вход"
+          placeholder={t("checkout.econt.entranceNumberPlaceholder")}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -288,13 +290,13 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       {/* Floor */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Етаж (Floor)
+          {t("checkout.econt.floorNumber")}
         </label>
         <input
           type="text"
           value={floorNum}
           onChange={(e) => setFloorNum(e.target.value)}
-          placeholder="Номер на етаж"
+          placeholder={t("checkout.econt.floorNumberPlaceholder")}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -302,13 +304,13 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       {/* Apartment */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Апартамент (Apartment)
+          {t("checkout.econt.apartmentNumber")}
         </label>
         <input
           type="text"
           value={apartmentNum}
           onChange={(e) => setApartmentNum(e.target.value)}
-          placeholder="Номер на апартамент"
+          placeholder={t("checkout.econt.apartmentNumberPlaceholder")}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -316,12 +318,12 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       {/* Other notes */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Допълнителна информация (Additional Notes)
+          {t("checkout.econt.other")}
         </label>
         <textarea
           value={other}
           onChange={(e) => setOther(e.target.value)}
-          placeholder="Допълнителна информация за адреса"
+          placeholder={t("checkout.econt.otherPlaceholder")}
           rows={3}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />

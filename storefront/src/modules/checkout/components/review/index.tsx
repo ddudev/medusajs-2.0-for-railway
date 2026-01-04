@@ -1,47 +1,40 @@
 "use client"
 
-import { Heading, Text, clx } from "@medusajs/ui"
+import { Heading, Text } from "@medusajs/ui"
 
 import PaymentButton from "../payment-button"
-import { useSearchParams } from "next/navigation"
+import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
 const Review = ({ cart }: { cart: any }) => {
-  const searchParams = useSearchParams()
-
-  const isOpen = searchParams.get("step") === "review"
-
+  const { t } = useTranslation()
   const paidByGiftcard =
     cart?.gift_cards && cart?.gift_cards?.length > 0 && cart?.total === 0
 
+  // Check if Econt Office is selected (doesn't require shipping address)
+  const selectedShippingMethod = cart.shipping_methods?.[0]
+  const isEcontOffice = selectedShippingMethod?.name?.toLowerCase().includes("econt") && 
+                        selectedShippingMethod?.name?.toLowerCase().includes("office")
+  
+  // Shipping address is optional for Econt Office
   const previousStepsCompleted =
-    cart.shipping_address &&
     cart.shipping_methods.length > 0 &&
-    (cart.payment_collection || paidByGiftcard)
+    (cart.payment_collection || paidByGiftcard) &&
+    (isEcontOffice || cart.shipping_address) // Shipping address only required for non-Econt Office methods
 
   return (
     <div className="bg-white">
-      <div className="flex flex-row items-center justify-between mb-6">
-        <Heading
-          level="h2"
-          className={clx(
-            "flex flex-row text-3xl-regular gap-x-2 items-baseline",
-            {
-              "opacity-50 pointer-events-none select-none": !isOpen,
-            }
-          )}
-        >
-          Review
-        </Heading>
-      </div>
-      {isOpen && previousStepsCompleted && (
+      <Heading
+        level="h2"
+        className="flex flex-row text-3xl-regular gap-x-2 items-baseline mb-6"
+      >
+        {t("checkout.review")}
+      </Heading>
+      {previousStepsCompleted && (
         <>
           <div className="flex items-start gap-x-1 w-full mb-6">
             <div className="w-full">
               <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                By clicking the Place Order button, you confirm that you have
-                read, understand and accept our Terms of Use, Terms of Sale and
-                Returns Policy and acknowledge that you have read MS
-                Store&apos;s Privacy Policy.
+                {t("checkout.termsAndConditions")}
               </Text>
             </div>
           </div>

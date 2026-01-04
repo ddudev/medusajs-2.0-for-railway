@@ -13,7 +13,7 @@ const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     if (!PUBLISHABLE_API_KEY) {
@@ -23,7 +23,7 @@ export async function POST(
       )
     }
 
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
 
     const response = await fetch(

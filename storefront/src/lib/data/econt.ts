@@ -91,19 +91,35 @@ export async function getEcontOffices(cityId: number): Promise<EcontOffice[]> {
   const response = await fetch(
     `${API_BASE_URL}/offices?city_id=${cityId}`,
     {
-      // Use ISR: revalidate every 24 hours, but allow stale-while-revalidate
-      next: {
-        revalidate: 86400, // Revalidate once per day
-      },
+      // Don't cache - always fetch fresh data for offices
+      cache: "no-store",
     }
   )
 
   if (!response.ok) {
-    throw new Error("Failed to fetch offices")
+    const errorText = await response.text()
+    console.error(`[getEcontOffices] API error for city_id=${cityId}:`, errorText)
+    throw new Error(`Failed to fetch offices: ${errorText || response.statusText}`)
   }
 
   const data = await response.json()
-  return data.offices || []
+  console.log(`[getEcontOffices] Response for city_id=${cityId}:`, {
+    hasOffices: !!data.offices,
+    officesCount: Array.isArray(data.offices) ? data.offices.length : 0,
+    dataStructure: Object.keys(data),
+  })
+  
+  // Handle both { offices: [...] } and direct array response
+  if (Array.isArray(data)) {
+    return data
+  }
+  
+  if (data.offices && Array.isArray(data.offices)) {
+    return data.offices
+  }
+  
+  console.warn(`[getEcontOffices] Unexpected response structure:`, data)
+  return []
 }
 
 /**
