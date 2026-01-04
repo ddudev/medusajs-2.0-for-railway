@@ -5,57 +5,57 @@ const path = require("path")
 // In a production setup, you might want to compile these to JS or use a different approach
 const themeColors = {
   primary: {
-    base: "#519717",
-    hover: "#468a0e",
-    active: "#3d760e",
-    disabled: "#9CA3AF",
-    light: "#66ba20",
-    dark: "#3d760e",
+    base: "#1976D2", // Main - medium-dark blue
+    hover: "#1565C0",
+    active: "#0D47A1",
+    disabled: "#9E9E9E",
+    light: "#2196F3", // Primary - bright medium blue
+    dark: "#1565C0",
   },
   secondary: {
-    base: "#FCC100",
-    hover: "#FCC100",
-    active: "#FCC100",
-    disabled: "#E5E7EB",
-    light: "#FCC100",
-    dark: "#FCC100",
+    base: "#26A69A", // Main - teal/cyan
+    hover: "#00897B",
+    active: "#00695C",
+    disabled: "#9E9E9E",
+    light: "#4DB6AC",
+    dark: "#00897B",
   },
   accent: {
-    base: "#FCC100",
-    hover: "#FCC100",
-    light: "#FCC100",
-    dark: "#FCC100",
+    base: "#9C27B0", // Contrast - medium purple
+    hover: "#7B1FA2",
+    light: "#BA68C8",
+    dark: "#6A1B9A",
   },
   interactive: {
-    base: "#3B82F6",
-    hover: "#2563EB",
-    active: "#1D4ED8",
-    disabled: "#637daa",
-    light: "#60A5FA",
-    dark: "#1D4ED8",
+    base: "#2196F3", // Primary/Interactive - bright medium blue
+    hover: "#1976D2", // Main - medium-dark blue
+    active: "#1565C0",
+    disabled: "#9E9E9E",
+    light: "#90CAF9", // Primary - light pastel blue
+    dark: "#1976D2",
   },
   success: {
-    base: "#10B981",
-    hover: "#059669",
-    light: "#D1FAE5",
-    dark: "#047857",
+    base: "#4CAF50", // Sec - medium green
+    hover: "#43A047",
+    light: "#66BB6A",
+    dark: "#2E7D32",
   },
   error: {
-    base: "#EF4444",
-    hover: "#DC2626",
-    light: "#FEE2E2",
-    dark: "#B91C1C",
+    base: "#F44336", // Sec - medium red
+    hover: "#E53935",
+    light: "#EF5350",
+    dark: "#C62828",
   },
   warning: {
-    base: "#F59E0B",
-    hover: "#D97706",
-    light: "#FEF3C7",
-    dark: "#B45309",
+    base: "#FF9800", // Sec - bright orange
+    hover: "#FB8C00",
+    light: "#FFB74D",
+    dark: "#F57C00",
   },
   text: {
-    primary: "#111827",
-    secondary: "#6B7280",
-    tertiary: "#9CA3AF",
+    primary: "#424242", // Text - very dark gray
+    secondary: "#616161", // Text - dark gray
+    tertiary: "#9E9E9E", // Text - medium-light gray
     inverse: "#FFFFFF",
   },
   background: {
@@ -66,7 +66,7 @@ const themeColors = {
   border: {
     base: "#E5E7EB",
     hover: "#D1D5DB",
-    focus: "#3B82F6",
+    focus: "#1976D2", // Primary main
   },
 }
 

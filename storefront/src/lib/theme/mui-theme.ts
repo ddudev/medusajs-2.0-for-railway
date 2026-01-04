@@ -43,41 +43,41 @@ const theme = createTheme({
   },
   palette: {
     primary: {
-      main: '#519717', // Your primary green
-      light: '#66ba20',
-      dark: '#3d760e',
+      main: '#1976D2', // Main - medium-dark blue
+      light: '#2196F3', // Primary - bright medium blue
+      dark: '#1565C0', // Darker shade for hover/active
       contrastText: '#FFFFFF',
     },
     secondary: {
-      main: '#FCC100', // Your secondary yellow
-      light: '#FCC100',
-      dark: '#FCC100',
-      contrastText: '#111827',
+      main: '#26A69A', // Main - teal/cyan
+      light: '#4DB6AC',
+      dark: '#00897B',
+      contrastText: '#FFFFFF',
     },
     error: {
-      main: '#EF4444',
-      light: '#FEE2E2',
-      dark: '#B91C1C',
+      main: '#F44336', // Sec - medium red
+      light: '#EF5350',
+      dark: '#C62828',
     },
     success: {
-      main: '#10B981',
-      light: '#D1FAE5',
-      dark: '#047857',
+      main: '#4CAF50', // Sec - medium green
+      light: '#66BB6A',
+      dark: '#2E7D32',
     },
     warning: {
-      main: '#F59E0B',
-      light: '#FEF3C7',
-      dark: '#B45309',
+      main: '#FF9800', // Sec - bright orange
+      light: '#FFB74D',
+      dark: '#F57C00',
     },
     info: {
-      main: '#3B82F6',
-      light: '#DBEAFE',
-      dark: '#1D4ED8',
+      main: '#2196F3', // Primary/Interactive - bright medium blue
+      light: '#90CAF9', // Primary - light pastel blue
+      dark: '#1976D2', // Main - medium-dark blue
     },
     text: {
-      primary: '#111827',
-      secondary: '#6B7280',
-      disabled: '#9CA3AF',
+      primary: '#424242', // Text - very dark gray
+      secondary: '#616161', // Text - dark gray
+      disabled: '#9E9E9E', // Text - medium-light gray
     },
     background: {
       default: '#FFFFFF',
@@ -119,7 +119,7 @@ const theme = createTheme({
               borderColor: '#D1D5DB',
             },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#3B82F6',
+              borderColor: '#1976D2', // Primary main
               borderWidth: '2px',
             },
             // Completely remove Chrome autofill styling - hybrid approach
@@ -131,9 +131,9 @@ const theme = createTheme({
                 animationFillMode: 'both',
                 WebkitBoxShadow: '0 0 0 1000px #FFFFFF inset !important',
                 boxShadow: '0 0 0 1000px #FFFFFF inset !important',
-                WebkitTextFillColor: '#111827 !important',
-                color: '#111827 !important',
-                caretColor: '#111827 !important',
+                WebkitTextFillColor: '#424242 !important',
+                color: '#424242 !important',
+                caretColor: '#424242 !important',
                 transition: 'background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s !important',
                 backgroundColor: '#FFFFFF !important',
               },
@@ -144,8 +144,8 @@ const theme = createTheme({
                 animationFillMode: 'both',
                 WebkitBoxShadow: '0 0 0 1000px #FFFFFF inset !important',
                 boxShadow: '0 0 0 1000px #FFFFFF inset !important',
-                WebkitTextFillColor: '#111827 !important',
-                color: '#111827 !important',
+                WebkitTextFillColor: '#424242 !important',
+                color: '#424242 !important',
               },
               '&:-webkit-autofill:focus': {
                 WebkitAnimationName: 'autofill',
@@ -154,8 +154,8 @@ const theme = createTheme({
                 animationFillMode: 'both',
                 WebkitBoxShadow: '0 0 0 1000px #FFFFFF inset !important',
                 boxShadow: '0 0 0 1000px #FFFFFF inset !important',
-                WebkitTextFillColor: '#111827 !important',
-                color: '#111827 !important',
+                WebkitTextFillColor: '#424242 !important',
+                color: '#424242 !important',
               },
               '&:-webkit-autofill:active': {
                 WebkitAnimationName: 'autofill',
@@ -164,8 +164,8 @@ const theme = createTheme({
                 animationFillMode: 'both',
                 WebkitBoxShadow: '0 0 0 1000px #FFFFFF inset !important',
                 boxShadow: '0 0 0 1000px #FFFFFF inset !important',
-                WebkitTextFillColor: '#111827 !important',
-                color: '#111827 !important',
+                WebkitTextFillColor: '#424242 !important',
+                color: '#424242 !important',
               },
             },
           },
@@ -207,9 +207,9 @@ const theme = createTheme({
                 animationFillMode: 'both',
                 WebkitBoxShadow: '0 0 0 1000px #FFFFFF inset !important',
                 boxShadow: '0 0 0 1000px #FFFFFF inset !important',
-                WebkitTextFillColor: '#111827 !important',
-                color: '#111827 !important',
-                caretColor: '#111827 !important',
+                WebkitTextFillColor: '#424242 !important',
+                color: '#424242 !important',
+                caretColor: '#424242 !important',
                 transition: 'background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s !important',
                 backgroundColor: '#FFFFFF !important',
               },
@@ -220,8 +220,8 @@ const theme = createTheme({
                 animationFillMode: 'both',
                 WebkitBoxShadow: '0 0 0 1000px #FFFFFF inset !important',
                 boxShadow: '0 0 0 1000px #FFFFFF inset !important',
-                WebkitTextFillColor: '#111827 !important',
-                color: '#111827 !important',
+                WebkitTextFillColor: '#424242 !important',
+                color: '#424242 !important',
               },
               '&:-webkit-autofill:focus': {
                 WebkitAnimationName: 'autofill',
@@ -230,8 +230,8 @@ const theme = createTheme({
                 animationFillMode: 'both',
                 WebkitBoxShadow: '0 0 0 1000px #FFFFFF inset !important',
                 boxShadow: '0 0 0 1000px #FFFFFF inset !important',
-                WebkitTextFillColor: '#111827 !important',
-                color: '#111827 !important',
+                WebkitTextFillColor: '#424242 !important',
+                color: '#424242 !important',
               },
             },
           },

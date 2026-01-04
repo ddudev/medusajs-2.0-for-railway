@@ -5,7 +5,7 @@
 /* Global Chrome Autofill Fix - Must be outside layers for maximum specificity */
 @-webkit-keyframes autofill {
   to {
-    color: #111827 !important;
+    color: #424242 !important;
     background: #FFFFFF !important;
     background-color: #FFFFFF !important;
   }
@@ -13,7 +13,7 @@
 
 @keyframes autofill {
   to {
-    color: #111827 !important;
+    color: #424242 !important;
     background: #FFFFFF !important;
     background-color: #FFFFFF !important;
   }
@@ -38,9 +38,9 @@
   animation-fill-mode: both !important;
   -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
   box-shadow: 0 0 0 1000px #FFFFFF inset !important;
-  -webkit-text-fill-color: #111827 !important;
-  color: #111827 !important;
-  caret-color: #111827 !important;
+  -webkit-text-fill-color: #424242 !important;
+  color: #424242 !important;
+  caret-color: #424242 !important;
   transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s !important;
   background-color: #FFFFFF !important;
   background: #FFFFFF !important;
@@ -48,65 +48,65 @@
 
 /* Theme CSS Variables - Can be overridden for client customization */
 :root {
-  /* Primary Color System - Green */
-  --color-primary: #519717;
-  --color-primary-hover: #468a0e;
-  --color-primary-active: #3d760e;
-  --color-primary-disabled: #9CA3AF;
-  --color-primary-light: #66ba20;
-  --color-primary-dark: #3d760e;
+  /* Primary Color System - Blue (Main) */
+  --color-primary: #1976D2;
+  --color-primary-hover: #1565C0;
+  --color-primary-active: #0D47A1;
+  --color-primary-disabled: #9E9E9E;
+  --color-primary-light: #2196F3;
+  --color-primary-dark: #1565C0;
 
-  /* Secondary Color System - Yellow/Orange */
-  --color-secondary: #FCC100;
-  --color-secondary-hover: #FCC100;
-  --color-secondary-active: #FCC100;
-  --color-secondary-disabled: #E5E7EB;
-  --color-secondary-light: #FCC100;
-  --color-secondary-dark: #FCC100;
+  /* Secondary Color System - Teal/Cyan (Main) */
+  --color-secondary: #26A69A;
+  --color-secondary-hover: #00897B;
+  --color-secondary-active: #00695C;
+  --color-secondary-disabled: #9E9E9E;
+  --color-secondary-light: #4DB6AC;
+  --color-secondary-dark: #00897B;
 
-  /* Accent Colors */
-  --color-accent: #FCC100;
-  --color-accent-hover: #FCC100;
-  --color-accent-light: #FCC100;
-  --color-accent-dark: #FCC100;
+  /* Accent Colors - Purple (Contrast) */
+  --color-accent: #9C27B0;
+  --color-accent-hover: #7B1FA2;
+  --color-accent-light: #BA68C8;
+  --color-accent-dark: #6A1B9A;
 
-  /* Interactive Colors - Blue */
-  --color-interactive: #3B82F6;
-  --color-interactive-hover: #2563EB;
-  --color-interactive-active: #1D4ED8;
-  --color-interactive-disabled: #637daa;
+  /* Interactive Colors - Blue (Primary/Interactive) */
+  --color-interactive: #2196F3;
+  --color-interactive-hover: #1976D2;
+  --color-interactive-active: #1565C0;
+  --color-interactive-disabled: #9E9E9E;
 
-  /* Success Colors */
-  --color-success: #10B981;
-  --color-success-hover: #059669;
-  --color-success-light: #D1FAE5;
-  --color-success-dark: #047857;
+  /* Success Colors - Green (Sec) */
+  --color-success: #4CAF50;
+  --color-success-hover: #43A047;
+  --color-success-light: #66BB6A;
+  --color-success-dark: #2E7D32;
 
-  /* Error/Danger Colors */
-  --color-error: #EF4444;
-  --color-error-hover: #DC2626;
-  --color-error-light: #FEE2E2;
-  --color-error-dark: #B91C1C;
-  --color-danger: #EF4444;
-  --color-danger-hover: #DC2626;
-  --color-danger-light: #FEE2E2;
-  --color-danger-dark: #B91C1C;
+  /* Error/Danger Colors - Red (Sec) */
+  --color-error: #F44336;
+  --color-error-hover: #E53935;
+  --color-error-light: #EF5350;
+  --color-error-dark: #C62828;
+  --color-danger: #F44336;
+  --color-danger-hover: #E53935;
+  --color-danger-light: #EF5350;
+  --color-danger-dark: #C62828;
 
-  /* Warning/Alert Colors */
-  --color-warning: #F59E0B;
-  --color-warning-hover: #D97706;
-  --color-warning-light: #FEF3C7;
-  --color-warning-dark: #B45309;
-  --color-alert: #F59E0B;
-  --color-alert-hover: #D97706;
-  --color-alert-light: #FEF3C7;
-  --color-alert-dark: #B45309;
+  /* Warning/Alert Colors - Orange (Sec) */
+  --color-warning: #FF9800;
+  --color-warning-hover: #FB8C00;
+  --color-warning-light: #FFB74D;
+  --color-warning-dark: #F57C00;
+  --color-alert: #FF9800;
+  --color-alert-hover: #FB8C00;
+  --color-alert-light: #FFB74D;
+  --color-alert-dark: #F57C00;
 
   /* Text Colors */
-  --color-text-primary: #111827;
-  --color-text-secondary: #6B7280;
-  --color-text-tertiary: #9CA3AF;
-  --color-text-muted: #9CA3AF;
+  --color-text-primary: #424242;
+  --color-text-secondary: #616161;
+  --color-text-tertiary: #9E9E9E;
+  --color-text-muted: #9E9E9E;
   --color-text-white: #FFFFFF;
   --color-text-inverse: #FFFFFF;
 
@@ -123,12 +123,13 @@
   /* Contrast Colors */
   --color-contrast-white: #FFFFFF;
   --color-contrast-black: #000000;
-  --color-contrast-gray: #6B7280;
+  --color-contrast-gray: #616161;
+  --color-contrast-purple: #9C27B0;
 
   /* Border Colors */
   --color-border-base: #E5E7EB;
   --color-border-hover: #D1D5DB;
-  --color-border-focus: #3B82F6;
+  --color-border-focus: #1976D2;
   --color-border: #E5E7EB;
   --color-border-light: #F3F4F6;
   --color-border-dark: #D1D5DB;
@@ -136,7 +137,7 @@
   /* Shadow Colors */
   --color-shadow: rgba(0, 0, 0, 0.1);
   --color-shadow-hover: rgba(0, 0, 0, 0.15);
-  --color-shadow-focus: rgba(59, 130, 246, 0.25);
+  --color-shadow-focus: rgba(25, 118, 210, 0.25);
 }
 
 @layer utilities {
@@ -329,7 +330,7 @@
   /* Keyframe animation to completely remove Chrome autofill styling */
   @-webkit-keyframes autofill {
     to {
-      color: #111827 !important;
+      color: #424242 !important;
       background: #FFFFFF !important;
       background-color: #FFFFFF !important;
     }
@@ -337,7 +338,7 @@
 
   @keyframes autofill {
     to {
-      color: #111827 !important;
+      color: #424242 !important;
       background: #FFFFFF !important;
       background-color: #FFFFFF !important;
     }
@@ -362,9 +363,9 @@
     -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
     box-shadow: 0 0 0 1000px #FFFFFF inset !important;
     /* Text color override */
-    -webkit-text-fill-color: #111827 !important;
-    color: #111827 !important;
-    caret-color: #111827 !important;
+    -webkit-text-fill-color: #424242 !important;
+    color: #424242 !important;
+    caret-color: #424242 !important;
     /* Long transition to prevent Chrome from changing styles */
     transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s !important;
     /* Explicit background color */
