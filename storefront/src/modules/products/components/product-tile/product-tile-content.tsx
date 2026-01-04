@@ -22,6 +22,7 @@ import { addToCartAction } from '@modules/products/actions/add-to-cart'
 import { useTranslation } from '@lib/i18n/hooks/use-translation'
 import { useCartDrawer } from '@modules/cart/context/cart-context'
 import QuickViewModal from './quick-view-modal'
+import { PriceDisplayParts } from '@modules/common/components/price-display'
 
 /**
  * Client Component for Product Tile with interactive features
@@ -211,12 +212,19 @@ export default function ProductTileContent({
                   <Typography
                     variant="body2"
                     className="line-through text-gray-400"
+                    component="span"
                   >
-                    {cheapestPrice.original_price}
+                    <PriceDisplayParts
+                      parts={cheapestPrice.original_price_parts}
+                      bgnClassName="text-xs"
+                    />
                   </Typography>
                   <Box className="flex items-center gap-2">
-                    <Typography variant="h6" color="error" className="font-bold">
-                      {cheapestPrice.calculated_price}
+                    <Typography variant="h6" color="error" className="font-bold" component="span">
+                      <PriceDisplayParts
+                        parts={cheapestPrice.calculated_price_parts}
+                        bgnClassName="text-sm"
+                      />
                     </Typography>
                     {cheapestPrice.percentage_diff && (
                       <Chip
@@ -228,8 +236,11 @@ export default function ProductTileContent({
                   </Box>
                 </Box>
               ) : (
-                <Typography variant="h6" color="primary" className="font-bold">
-                  {cheapestPrice.calculated_price}
+                <Typography variant="h6" color="primary" className="font-bold" component="span">
+                  <PriceDisplayParts
+                    parts={cheapestPrice.calculated_price_parts}
+                    bgnClassName="text-sm"
+                  />
                 </Typography>
               )}
             </Box>

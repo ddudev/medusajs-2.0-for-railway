@@ -5,6 +5,7 @@ import { InformationCircleSolid } from "@medusajs/icons"
 import { Tooltip } from "@medusajs/ui"
 import React from "react"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import PriceDisplay from "@modules/common/components/price-display"
 
 type CartTotalsProps = {
   totals: {
@@ -38,7 +39,11 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
             {t("checkout.subtotal")}
           </span>
           <span data-testid="cart-subtotal" data-value={subtotal || 0}>
-            {convertToLocale({ amount: subtotal ?? 0, currency_code })}
+            <PriceDisplay
+              amount={subtotal ?? 0}
+              currency_code={currency_code}
+              bgnClassName="text-xs"
+            />
           </span>
         </div>
         {!!discount_total && (
@@ -50,20 +55,32 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
               data-value={discount_total || 0}
             >
               -{" "}
-              {convertToLocale({ amount: discount_total ?? 0, currency_code })}
+              <PriceDisplay
+                amount={discount_total ?? 0}
+                currency_code={currency_code}
+                bgnClassName="text-xs"
+              />
             </span>
           </div>
         )}
         <div className="flex items-center justify-between">
           <span>{t("checkout.shipping")}</span>
           <span data-testid="cart-shipping" data-value={shipping_total || 0}>
-            {convertToLocale({ amount: shipping_total ?? 0, currency_code })}
+            <PriceDisplay
+              amount={shipping_total ?? 0}
+              currency_code={currency_code}
+              bgnClassName="text-xs"
+            />
           </span>
         </div>
         <div className="flex justify-between">
           <span className="flex gap-x-1 items-center ">{t("checkout.taxes")}</span>
           <span data-testid="cart-taxes" data-value={tax_total || 0}>
-            {convertToLocale({ amount: tax_total ?? 0, currency_code })}
+            <PriceDisplay
+              amount={tax_total ?? 0}
+              currency_code={currency_code}
+              bgnClassName="text-xs"
+            />
           </span>
         </div>
         {!!gift_card_total && (
@@ -75,7 +92,11 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
               data-value={gift_card_total || 0}
             >
               -{" "}
-              {convertToLocale({ amount: gift_card_total ?? 0, currency_code })}
+              <PriceDisplay
+                amount={gift_card_total ?? 0}
+                currency_code={currency_code}
+                bgnClassName="text-xs"
+              />
             </span>
           </div>
         )}
@@ -88,7 +109,11 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
           data-testid="cart-total"
           data-value={total || 0}
         >
-          {convertToLocale({ amount: total ?? 0, currency_code })}
+          <PriceDisplay
+            amount={total ?? 0}
+            currency_code={currency_code}
+            bgnClassName="text-sm"
+          />
         </span>
       </div>
       <div className="h-px w-full border-b border-gray-200 mt-4" />

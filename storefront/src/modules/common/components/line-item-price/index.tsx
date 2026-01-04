@@ -4,6 +4,7 @@ import { getPercentageDiff } from "@lib/util/get-precentage-diff"
 import { getPricesForVariant } from "@lib/util/get-product-price"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
+import PriceDisplay from "@modules/common/components/price-display"
 
 type LineItemPriceProps = {
   item: HttpTypes.StoreCartLineItem | HttpTypes.StoreOrderLineItem
@@ -36,10 +37,11 @@ const LineItemPrice = ({ item, style = "default" }: LineItemPriceProps) => {
                 className="line-through text-ui-fg-muted"
                 data-testid="product-original-price"
               >
-                {convertToLocale({
-                  amount: originalPrice,
-                  currency_code,
-                })}
+                <PriceDisplay
+                  amount={originalPrice}
+                  currency_code={currency_code}
+                  bgnClassName="text-xs"
+                />
               </span>
             </p>
             {style === "default" && (
@@ -55,10 +57,11 @@ const LineItemPrice = ({ item, style = "default" }: LineItemPriceProps) => {
           })}
           data-testid="product-price"
         >
-          {convertToLocale({
-            amount: currentPrice,
-            currency_code,
-          })}
+          <PriceDisplay
+            amount={currentPrice}
+            currency_code={currency_code}
+            bgnClassName="text-xs"
+          />
         </span>
       </div>
     </div>

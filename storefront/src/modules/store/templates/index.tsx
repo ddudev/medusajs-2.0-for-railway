@@ -111,75 +111,75 @@ const StoreTemplate = async ({
 
   return (
     <div className="content-container py-8 md:py-12">
-      <StoreTemplateClient
-        collections={collections}
-        categories={categories}
-        brands={brands}
-        maxPrice={maxPrice}
-        filterKey={filterKey}
-        sort={sort}
-        pageNumber={pageNumber}
-        countryCode={countryCode}
-        collectionIds={collectionIds}
-        categoryIds={categoryIds}
-        brandIds={brandIds}
-        priceRange={priceRange}
-        translations={translations}
-      >
+    <StoreTemplateClient
+      collections={collections}
+      categories={categories}
+      brands={brands}
+      maxPrice={maxPrice}
+      filterKey={filterKey}
+      sort={sort}
+      pageNumber={pageNumber}
+      countryCode={countryCode}
+      collectionIds={collectionIds}
+      categoryIds={categoryIds}
+      brandIds={brandIds}
+      priceRange={priceRange}
+      translations={translations}
+    >
         {/* Mobile: Filters in drawer, Products full width */}
         {/* Desktop: Filters sidebar + Products grid */}
         <div className="flex flex-col md:flex-row gap-8">
           {/* Filters Sidebar - Hidden on mobile, shown on desktop */}
           <aside className="hidden md:block md:w-64 lg:w-80 flex-shrink-0">
-            <RefinementList
-              collections={collections}
-              categories={categories}
-              brands={brands}
-              maxPrice={maxPrice}
-            />
+      <RefinementList
+        collections={collections}
+        categories={categories}
+        brands={brands}
+        maxPrice={maxPrice}
+      />
           </aside>
           
           {/* Products Section */}
           <div className="flex-1 min-w-0">
-            <div className="mb-6">
-              <h1 className="text-2xl-semi mb-4 md:mb-0" data-testid="store-page-title">
-                {getTranslation(translations, "common.allProducts")}
-              </h1>
-              <div className="flex items-center gap-4 md:hidden">
-                <FilterButton />
-                <SortDropdown />
-              </div>
-              <div className="hidden md:flex items-center justify-end">
-                <SortDropdown />
-              </div>
-            </div>
-            <Suspense 
-              key={filterKey}
-              fallback={
-                <>
-                  <div className="mb-4">
-                    <div className="h-6 w-48 bg-gray-200 animate-pulse rounded" />
-                  </div>
-                  <SkeletonProductGrid />
-                </>
-              }
-            >
-              <PaginatedProductsWrapper
-                sortBy={sort}
-                page={pageNumber}
-                countryCode={countryCode}
-                collectionIds={collectionIds}
-                categoryIds={categoryIds}
-                brandIds={brandIds}
-                priceRange={priceRange}
-                collections={collections}
-                categories={categories}
-                brands={brands}
-              />
-            </Suspense>
+        <div className="mb-6">
+          <h1 className="text-2xl-semi mb-4 md:mb-0" data-testid="store-page-title">
+            {getTranslation(translations, "common.allProducts")}
+          </h1>
+          <div className="flex items-center gap-4 md:hidden">
+            <FilterButton />
+            <SortDropdown />
+          </div>
+          <div className="hidden md:flex items-center justify-end">
+            <SortDropdown />
           </div>
         </div>
-      </StoreTemplateClient>
+        <Suspense 
+          key={filterKey}
+          fallback={
+            <>
+              <div className="mb-4">
+                <div className="h-6 w-48 bg-gray-200 animate-pulse rounded" />
+              </div>
+              <SkeletonProductGrid />
+            </>
+          }
+        >
+          <PaginatedProductsWrapper
+            sortBy={sort}
+            page={pageNumber}
+            countryCode={countryCode}
+            collectionIds={collectionIds}
+            categoryIds={categoryIds}
+            brandIds={brandIds}
+            priceRange={priceRange}
+            collections={collections}
+            categories={categories}
+            brands={brands}
+          />
+        </Suspense>
+          </div>
+      </div>
+    </StoreTemplateClient>
     </div>
   )
 }

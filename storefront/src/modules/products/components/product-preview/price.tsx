@@ -1,5 +1,6 @@
 import { Text, clx } from "@medusajs/ui"
 import { VariantPrice } from "types/global"
+import { PriceDisplayParts } from "@modules/common/components/price-display"
 
 export default async function PreviewPrice({ price }: { price: VariantPrice }) {
   if (!price) {
@@ -8,22 +9,30 @@ export default async function PreviewPrice({ price }: { price: VariantPrice }) {
 
   return (
     <>
-      {price.price_type === "sale" && (
+      {price.price_type === "sale" && price.original_price_parts && (
         <Text
           className="line-through text-ui-fg-muted"
           data-testid="original-price"
         >
-          {price.original_price}
+          <PriceDisplayParts
+            parts={price.original_price_parts}
+            bgnClassName="text-xs"
+          />
         </Text>
       )}
-      <Text
-        className={clx("text-ui-fg-muted", {
-          "text-ui-fg-interactive": price.price_type === "sale",
-        })}
-        data-testid="price"
-      >
-        {price.calculated_price}
-      </Text>
+      {price.calculated_price_parts && (
+        <Text
+          className={clx("text-ui-fg-muted", {
+            "text-ui-fg-interactive": price.price_type === "sale",
+          })}
+          data-testid="price"
+        >
+          <PriceDisplayParts
+            parts={price.calculated_price_parts}
+            bgnClassName="text-xs"
+          />
+        </Text>
+      )}
     </>
   )
 }

@@ -2,6 +2,7 @@ import { clx } from "@medusajs/ui"
 
 import { getProductPrice } from "@lib/util/get-product-price"
 import { HttpTypes } from "@medusajs/types"
+import { PriceDisplayParts } from "@modules/common/components/price-display"
 
 export default function ProductPrice({
   product,
@@ -35,7 +36,10 @@ export default function ProductPrice({
             data-testid="product-price"
             data-value={selectedPrice.calculated_price_number}
           >
-            {selectedPrice.calculated_price}
+            <PriceDisplayParts
+              parts={selectedPrice.calculated_price_parts}
+              bgnClassName="text-lg md:text-xl"
+            />
           </span>
         </span>
         {selectedPrice.price_type === "sale" && (
@@ -52,7 +56,10 @@ export default function ProductPrice({
             data-testid="original-product-price"
             data-value={selectedPrice.original_price_number}
           >
-            {selectedPrice.original_price}
+            <PriceDisplayParts
+              parts={selectedPrice.original_price_parts}
+              bgnClassName="text-sm"
+            />
           </span>
         </p>
       )}
