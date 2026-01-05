@@ -6,6 +6,8 @@ import ProductActions from "@modules/products/components/product-actions"
 import ProductOnboardingCta from "@modules/products/components/product-onboarding-cta"
 import ProductInfo from "@modules/products/templates/product-info"
 import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-related-products"
+import SkeletonLastViewedProducts from "@modules/skeletons/templates/skeleton-last-viewed-products"
+import ProductViewTracker from "@modules/products/components/product-view-tracker"
 import { notFound } from "next/navigation"
 import ProductActionsWrapper from "./product-actions-wrapper"
 import { HttpTypes } from "@medusajs/types"
@@ -13,6 +15,13 @@ import { HttpTypes } from "@medusajs/types"
 // Lazy load heavy components for better code splitting
 const ProductTabs = dynamicImport(
   () => import("@modules/products/components/product-tabs"),
+  {
+    ssr: true, // Keep SSR for SEO
+  }
+)
+
+const LastViewedProducts = dynamicImport(
+  () => import("@modules/products/components/last-viewed-products"),
   {
     ssr: true, // Keep SSR for SEO
   }
@@ -42,6 +51,9 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
 
   return (
     <>
+      {/* Product View Tracker - Invisible client component that tracks views */}
+      <ProductViewTracker productId={product.id!} />
+
       <div
         className="content-container py-8 md:py-12"
         data-testid="product-container"
@@ -81,6 +93,19 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
             <ProductTabs product={product} />
           </Suspense>
         </div>
+      </div>
+
+      {/* Last Viewed Products - Lazy loaded */}
+      <div
+        className="content-container my-16 small:my-32"
+        data-testid="last-viewed-products-container"
+      >
+        <Suspense fallback={<SkeletonLastViewedProducts />}>
+          <LastViewedProducts 
+            currentProductId={product.id!} 
+            countryCode={countryCode} 
+          />
+        </Suspense>
       </div>
 
       {/* Related Products - Lazy loaded */}

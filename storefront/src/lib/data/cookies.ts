@@ -48,3 +48,28 @@ export const removeCartId = async () => {
   const cookieStore = await cookies()
   cookieStore.set("_medusa_cart_id", "", { maxAge: -1 })
 }
+
+export const getLastViewedProductIds = async (): Promise<string[]> => {
+  try {
+    const cookieStore = await cookies()
+    const cookieValue = cookieStore.get("_medusa_last_viewed_products")?.value
+
+    if (!cookieValue) {
+      return []
+    }
+
+    const productIds = JSON.parse(cookieValue)
+    if (!Array.isArray(productIds)) {
+      return []
+    }
+
+    // Filter out any invalid values and ensure strings
+    return productIds.filter(
+      (id): id is string => typeof id === "string" && id.length > 0
+    )
+  } catch (error) {
+    // If parsing fails, return empty array
+    console.warn("Failed to parse last viewed products cookie:", error)
+    return []
+  }
+}

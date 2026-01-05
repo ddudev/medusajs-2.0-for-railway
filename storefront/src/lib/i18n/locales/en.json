@@ -69,7 +69,12 @@
     "shipping": "Shipping",
     "returns": "Returns",
     "noImage": "No Image",
-    "priceNotAvailable": "Price not available"
+    "priceNotAvailable": "Price not available",
+    "lastViewed": {
+      "title": "Last viewed products",
+      "heading": "Recently viewed items",
+      "empty": "No recently viewed products"
+    }
   },
   "filters": {
     "title": "Filters",
