@@ -103,8 +103,8 @@ export const convertToLocale = ({
   const parts = convertToLocaleParts({
     amount,
     currency_code,
-    minimumFractionDigits,
-    maximumFractionDigits,
+        minimumFractionDigits,
+        maximumFractionDigits,
     locale,
   })
   return parts.full

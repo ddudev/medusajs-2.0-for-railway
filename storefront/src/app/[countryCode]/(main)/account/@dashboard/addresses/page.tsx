@@ -4,6 +4,7 @@ import { Suspense } from "react"
 import { connection } from "next/server"
 
 import AddressBook from "@modules/account/components/address-book"
+import SuspenseLoading from "@modules/common/components/suspense-loading"
 
 import { getRegion } from "@lib/data/regions"
 import { getCustomer } from "@lib/data/customer"
@@ -73,7 +74,7 @@ export default async function Addresses({
 
   // Addresses page is always dynamic (user-specific) - wrap in Suspense
   return (
-    <Suspense fallback={<div>Loading addresses...</div>}>
+    <Suspense fallback={<SuspenseLoading />}>
       <AddressesContent countryCode={countryCode} />
     </Suspense>
   )

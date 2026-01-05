@@ -21,17 +21,17 @@ export default async function PreviewPrice({ price }: { price: VariantPrice }) {
         </Text>
       )}
       {price.calculated_price_parts && (
-        <Text
-          className={clx("text-ui-fg-muted", {
-            "text-ui-fg-interactive": price.price_type === "sale",
-          })}
-          data-testid="price"
-        >
+      <Text
+        className={clx("text-ui-fg-muted", {
+          "text-ui-fg-interactive": price.price_type === "sale",
+        })}
+        data-testid="price"
+      >
           <PriceDisplayParts
             parts={price.calculated_price_parts}
             bgnClassName="text-xs"
           />
-        </Text>
+      </Text>
       )}
     </>
   )

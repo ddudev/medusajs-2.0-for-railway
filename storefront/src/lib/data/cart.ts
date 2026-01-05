@@ -387,12 +387,12 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       cart.region?.countries?.[0]?.iso_2?.toLowerCase() || "bg"
 
     const shippingAddress = {
-      address_1: formData.get("shipping_address.address_1"),
-      address_2: "",
+        address_1: formData.get("shipping_address.address_1"),
+        address_2: "",
       // TODO: Uncomment when needed - Company field for business addresses
       company: "", // formData.get("shipping_address.company"),
-      postal_code: formData.get("shipping_address.postal_code"),
-      city: formData.get("shipping_address.city"),
+        postal_code: formData.get("shipping_address.postal_code"),
+        city: formData.get("shipping_address.city"),
       // TODO: Uncomment when needed - Country field for international shipping
       country_code: defaultCountryCode, // formData.get("shipping_address.country_code") || defaultCountryCode,
       // TODO: Uncomment when needed - Province field for regions/states
@@ -481,10 +481,21 @@ export async function placeOrder() {
     .catch(medusaError)
 
   if (cartRes?.type === "order") {
+    const order = cartRes.order
     const countryCode =
-      cartRes.order.shipping_address?.country_code?.toLowerCase()
+      order.shipping_address?.country_code?.toLowerCase()
+    
+    // Track purchase completion (server-side)
+    try {
+      const { trackPurchase } = await import("@lib/analytics/server")
+      await trackPurchase(order)
+    } catch (error) {
+      // Don't block order completion if analytics fails
+      console.error("Failed to track purchase:", error)
+    }
+    
     await removeCartId()
-    redirect(`/${countryCode}/order/confirmed/${cartRes?.order.id}`)
+    redirect(`/${countryCode}/order/confirmed/${order.id}`)
   }
 
   return cartRes.cart

@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 import CartTemplate from "@modules/cart/templates"
+import CartPageTracker from "@modules/cart/components/cart-page-tracker"
 
 import { enrichLineItems, retrieveCart } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
@@ -49,7 +50,12 @@ async function CartContent() {
   const cart = await fetchCart()
   const customer = await getCustomer()
 
-  return <CartTemplate cart={cart} customer={customer} />
+  return (
+    <>
+      <CartPageTracker cart={cart} />
+      <CartTemplate cart={cart} customer={customer} />
+    </>
+  )
 }
 
 export default async function Cart({ params }: { params: Promise<{ countryCode: string }> }) {

@@ -5,6 +5,7 @@ import RefinementList from "@modules/store/components/refinement-list"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import PaginatedProducts from "@modules/store/templates/paginated-products"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import SearchTracker from "@modules/search/components/search-tracker"
 
 type SearchResultsTemplateProps = {
   query: string
@@ -25,6 +26,7 @@ const SearchResultsTemplate = ({
 
   return (
     <>
+      <SearchTracker query={query} resultsCount={ids.length} />
       <div className="flex justify-between border-b w-full py-6 px-8 small:px-14 items-center">
         <div className="flex flex-col items-start">
           <Text className="text-ui-fg-muted">Search Results for:</Text>

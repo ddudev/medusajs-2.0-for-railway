@@ -13,6 +13,7 @@ import { getCanonicalUrl } from "@lib/seo/utils"
 import { getTranslations, getTranslation } from "@lib/i18n/server"
 import JsonLdScript from "components/seo/json-ld-script"
 import NewsletterWrapper from "./newsletter-wrapper"
+import SuspenseLoading from "@modules/common/components/suspense-loading"
 
 // Lazy load components for better performance and code splitting
 const BannerSliderLazy = dynamicImport(
@@ -231,7 +232,7 @@ export default async function Home({
   const countryCode = resolvedParams.countryCode.toLowerCase()
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<SuspenseLoading />}>
       <HomeContent countryCode={countryCode} />
     </Suspense>
   )

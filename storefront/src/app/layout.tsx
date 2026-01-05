@@ -5,6 +5,10 @@ import { Suspense } from "react"
 import "styles/globals.css"
 import { MuiProviders } from "./mui-providers"
 import { PWAComponents } from "./pwa-components"
+import { PostHogProviderWrapper } from "@lib/analytics/posthog-provider"
+import { PostHogSurveys } from "@lib/analytics/posthog-surveys"
+import { WebVitalsTracker } from "@lib/analytics/web-vitals-tracker"
+import { ScrollDepthTracker } from "@lib/analytics/scroll-depth-tracker"
 
 const inter = Inter({
   weight: ['300', '400', '500', '600', '700'],
@@ -50,16 +54,21 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         )}
       </head>
       <body>
-        <MuiProviders>
-          <main className="relative">
-            <Suspense fallback={<div className="min-h-screen animate-pulse bg-background-base" />}>
-              {props.children}
+        <PostHogProviderWrapper>
+          <MuiProviders>
+            <main className="relative">
+              <Suspense fallback={<div className="min-h-screen animate-pulse bg-background-base" />}>
+                {props.children}
+              </Suspense>
+            </main>
+            <Suspense fallback={null}>
+              <PWAComponents />
             </Suspense>
-          </main>
-          <Suspense fallback={null}>
-          <PWAComponents />
-          </Suspense>
-        </MuiProviders>
+            <PostHogSurveys />
+            <WebVitalsTracker />
+            <ScrollDepthTracker />
+          </MuiProviders>
+        </PostHogProviderWrapper>
       </body>
     </html>
   )

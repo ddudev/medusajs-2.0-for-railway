@@ -12,6 +12,8 @@ import CartTotals from "@modules/common/components/cart-totals"
 import FreeShippingProgressWrapper from "../free-shipping-progress/free-shipping-progress-wrapper"
 import { convertToLocale } from "@lib/util/money"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import { useAnalytics } from "@lib/analytics/use-analytics"
+import { useEffect } from "react"
 
 type SlideInCartProps = {
   cart: HttpTypes.StoreCart | null
@@ -20,11 +22,24 @@ type SlideInCartProps = {
 const SlideInCart = ({ cart }: SlideInCartProps) => {
   const { isOpen, closeCart } = useCartDrawer()
   const { t } = useTranslation()
+  const { trackCartViewed } = useAnalytics()
 
   const totalItems =
     cart?.items?.reduce((acc, item) => {
       return acc + item.quantity
     }, 0) || 0
+
+  // Track cart viewed when drawer opens
+  useEffect(() => {
+    if (isOpen && cart && cart.items && cart.items.length > 0) {
+      trackCartViewed({
+        cart_value: cart.total ? Number(cart.total) / 100 : 0,
+        item_count: totalItems,
+        currency: cart.currency_code || 'EUR',
+        cart_id: cart.id,
+      })
+    }
+  }, [isOpen, cart, totalItems, trackCartViewed])
 
   return (
     <Transition show={isOpen} as={Fragment}>

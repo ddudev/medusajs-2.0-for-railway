@@ -16,6 +16,7 @@ import { addToCart } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import { useStorefrontConfig } from "@lib/hooks/use-storefront-config"
 import { useCartDrawer } from "@modules/cart/context/cart-context"
+import { useAnalytics } from "@lib/analytics/use-analytics"
 
 type ProductActionsProps = {
   product: HttpTypes.StoreProduct
@@ -43,6 +44,7 @@ export default function ProductActions({
   const router = useRouter()
   const { openCart } = useCartDrawer()
   const config = useStorefrontConfig()
+  const { trackProductAddedToCart, trackEvent } = useAnalytics()
 
   // If there is only 1 variant, preselect the options
   useEffect(() => {
@@ -69,6 +71,18 @@ export default function ProductActions({
       ...prev,
       [title]: value,
     }))
+    
+    // Track variant selection
+    if (selectedVariant) {
+      trackEvent('product_variant_selected', {
+        product_id: product.id,
+        product_name: product.title,
+        variant_id: selectedVariant.id,
+        variant_name: selectedVariant.title,
+        option_name: title,
+        option_value: value,
+      })
+    }
   }
 
   // check if the selected variant is in stock
@@ -106,11 +120,30 @@ export default function ProductActions({
     setIsAdding(true)
 
     try {
-    await addToCart({
-      variantId: selectedVariant.id,
-      quantity: 1,
-      countryCode,
-    })
+      await addToCart({
+        variantId: selectedVariant.id,
+        quantity: 1,
+        countryCode,
+      })
+
+      // Track product added to cart
+      const price = selectedVariant.calculated_price?.calculated_amount
+        ? Number(selectedVariant.calculated_price.calculated_amount) / 100
+        : undefined
+      const currency = selectedVariant.calculated_price?.currency_code || region.currency_code || 'EUR'
+
+      trackProductAddedToCart({
+        product_id: product.id!,
+        product_name: product.title,
+        product_price: price,
+        product_category: product.categories?.[0]?.name,
+        currency: currency,
+        variant_id: selectedVariant.id,
+        variant_name: selectedVariant.title,
+        quantity: 1,
+        // Cart value will be updated after router.refresh(), track with product price for now
+        cart_value: price || 0,
+      })
 
       // Refresh the router to update cart data
       router.refresh()
@@ -119,7 +152,7 @@ export default function ProductActions({
     } catch (error) {
       console.error('Failed to add to cart:', error)
     } finally {
-    setIsAdding(false)
+      setIsAdding(false)
     }
   }
 

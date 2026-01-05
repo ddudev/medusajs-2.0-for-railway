@@ -12,6 +12,7 @@ import CollectionTemplate from "@modules/collections/templates"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import { stripHtml, htmlToMetaDescription } from "@lib/util/strip-html"
 import { getTranslations, getTranslation } from "@lib/i18n/server"
+import SuspenseLoading from "@modules/common/components/suspense-loading"
 
 type Props = {
   params: Promise<{ handle: string; countryCode: string }>
@@ -114,7 +115,7 @@ export default async function CollectionPage({ params, searchParams }: Props) {
   }
 
   return (
-    <Suspense fallback={<div>Loading collection...</div>}>
+    <Suspense fallback={<SuspenseLoading />}>
       <CollectionTemplate
         collection={collection}
         page={page}

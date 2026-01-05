@@ -5,6 +5,8 @@ import dynamicImport from "next/dynamic"
 
 import Wrapper from "@modules/checkout/components/payment-wrapper"
 import CheckoutForm from "@modules/checkout/templates/checkout-form"
+import CheckoutTracker from "@modules/checkout/components/checkout-tracker"
+import SuspenseLoading from "@modules/common/components/suspense-loading"
 import { enrichLineItems, retrieveCart } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import { getCustomer } from "@lib/data/customer"
@@ -51,20 +53,14 @@ async function CheckoutContent() {
 
   return (
     <div className="content-container py-12">
+      <CheckoutTracker cart={cart} />
       <div className="max-w-6xl mx-auto grid grid-cols-1 small:grid-cols-2 gap-x-8 small:gap-x-12">
-        <Wrapper cart={cart}>
-          <CheckoutForm cart={cart} customer={customer} />
-        </Wrapper>
-        <Suspense
-          fallback={
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded mb-4"></div>
-              <div className="h-64 bg-gray-200 rounded"></div>
-            </div>
-          }
-        >
-          <CheckoutSummary cart={cart} />
-        </Suspense>
+      <Wrapper cart={cart}>
+        <CheckoutForm cart={cart} customer={customer} />
+      </Wrapper>
+      <Suspense fallback={<SuspenseLoading />}>
+        <CheckoutSummary cart={cart} />
+      </Suspense>
       </div>
     </div>
   )
@@ -73,16 +69,7 @@ async function CheckoutContent() {
 export default async function Checkout() {
   // Checkout is always dynamic - wrap in Suspense to defer rendering
   return (
-    <Suspense fallback={
-      <div className="content-container py-12">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 small:grid-cols-2 gap-x-8 small:gap-x-12">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded mb-4"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<SuspenseLoading />}>
       <CheckoutContent />
     </Suspense>
   )

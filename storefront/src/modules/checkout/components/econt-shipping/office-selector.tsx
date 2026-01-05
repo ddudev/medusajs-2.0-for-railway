@@ -53,7 +53,7 @@ const OfficeSelector: React.FC<OfficeSelectorProps> = ({
       isFetchingRef.current = false
       return
     }
-    
+
     // If we're currently fetching, don't start another fetch
     if (isFetchingRef.current) {
       return
@@ -198,7 +198,7 @@ const OfficeSelector: React.FC<OfficeSelectorProps> = ({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {t("checkout.econt.officeRequired")}
         </label>
-        <div className="text-sm text-red-500">
+      <div className="text-sm text-red-500">
           {t("checkout.econt.errorLoadingOffices")}: {error}
         </div>
       </div>
@@ -229,10 +229,10 @@ const OfficeSelector: React.FC<OfficeSelectorProps> = ({
 
       {/* Input field - moved below map */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
           {t("checkout.econt.officeRequired")}
-        </label>
-        <div className="relative">
+      </label>
+      <div className="relative">
         <input
           type="text"
           value={isOpen ? searchQuery : selectedOffice?.name || ""}
@@ -247,21 +247,21 @@ const OfficeSelector: React.FC<OfficeSelectorProps> = ({
         {isOpen && filteredOffices.length > 0 && (
           <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
             {filteredOffices.map((office) => (
-              <button
-                key={office.office_code}
-                type="button"
-                onClick={() => handleOfficeClick(office)}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-              >
-                <div className="font-medium">{office.name}</div>
-                <div className="text-sm text-gray-500">{office.address}</div>
-                {office.phone && (
-                  <div className="text-xs text-gray-400">{office.phone}</div>
-                )}
-              </button>
+                <button
+                  key={office.office_code}
+                  type="button"
+                  onClick={() => handleOfficeClick(office)}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                >
+                  <div className="font-medium">{office.name}</div>
+                  <div className="text-sm text-gray-500">{office.address}</div>
+                  {office.phone && (
+                    <div className="text-xs text-gray-400">{office.phone}</div>
+                  )}
+                </button>
             ))}
           </div>
-        )}
+            )}
         {isOpen && filteredOffices.length === 0 && searchQuery.trim() && (
           <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
             <div className="px-4 py-2 text-sm text-gray-500">
@@ -269,13 +269,13 @@ const OfficeSelector: React.FC<OfficeSelectorProps> = ({
             </div>
           </div>
         )}
-        </div>
-        {selectedOffice && (
-          <div className="mt-2 text-sm text-gray-600">
-            {t("checkout.econt.selected")}: {selectedOffice.name} - {selectedOffice.address}
-          </div>
-        )}
       </div>
+      {selectedOffice && (
+        <div className="mt-2 text-sm text-gray-600">
+            {t("checkout.econt.selected")}: {selectedOffice.name} - {selectedOffice.address}
+            </div>
+          )}
+        </div>
 
       {/* Close dropdown when clicking outside */}
       {isOpen && (

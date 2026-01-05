@@ -52,7 +52,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
   return (
     <>
       {/* Product View Tracker - Invisible client component that tracks views */}
-      <ProductViewTracker productId={product.id!} />
+      <ProductViewTracker productId={product.id!} product={product} region={region} />
 
       <div
         className="content-container py-8 md:py-12"

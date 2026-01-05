@@ -16,6 +16,7 @@ import { getCanonicalUrl } from "@lib/seo/utils"
 import { stripHtml, htmlToMetaDescription } from "@lib/util/strip-html"
 import { getTranslations, getTranslation } from "@lib/i18n/server"
 import JsonLdScript from "components/seo/json-ld-script"
+import SuspenseLoading from "@modules/common/components/suspense-loading"
 
 type Props = {
   params: Promise<{ category: string[]; countryCode: string }>
@@ -236,7 +237,7 @@ async function CategoryPageContent({ params, searchParams }: Props) {
       <JsonLdScript id="breadcrumb-schema" data={breadcrumbSchema} />
 
       {/* CategoryTemplate may access product prices (NOT cached) - wrap in Suspense */}
-      <Suspense fallback={<div>Loading category...</div>}>
+      <Suspense fallback={<SuspenseLoading />}>
         <CategoryTemplate
           categories={product_categories}
           collections={collections || []}
@@ -252,7 +253,7 @@ async function CategoryPageContent({ params, searchParams }: Props) {
 export default async function CategoryPage({ params, searchParams }: Props) {
   // Category page may access product prices (NOT cached) - wrap in Suspense
   return (
-    <Suspense fallback={<div className="min-h-screen animate-pulse bg-background-base" />}>
+    <Suspense fallback={<SuspenseLoading />}>
       <CategoryPageContent params={params} searchParams={searchParams} />
     </Suspense>
   )

@@ -8,6 +8,8 @@ import { updateContactInfo } from "@lib/data/cart"
 import Divider from "@modules/common/components/divider"
 import ErrorMessage from "../error-message"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import { useAnalytics } from "@lib/analytics/use-analytics"
+import { useRef } from "react"
 
 const Contact = ({
   cart,
@@ -17,9 +19,11 @@ const Contact = ({
   customer: HttpTypes.StoreCustomer | null
 }) => {
   const { t } = useTranslation()
+  const { trackCheckoutStepCompleted, trackCheckoutContactCompleted } = useAnalytics()
   const [formData, setFormData] = useState<Record<string, any>>({})
   const [isSaving, setIsSaving] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
+  const hasTrackedContactRef = useRef(false)
 
   useEffect(() => {
     // Pre-fill from cart if available
@@ -77,6 +81,32 @@ const Contact = ({
       }
 
       await updateContactInfo(data)
+      
+      // Track contact completed when email and phone are both filled
+      if (cart && !hasTrackedContactRef.current) {
+        const hasEmail = fieldName === "email" ? !!value : !!formData.email || !!cart.email
+        const hasPhone = fieldName === "phone" ? !!value : !!formData.phone || !!cart.shipping_address?.phone
+        
+        if (hasEmail && hasPhone) {
+          trackCheckoutContactCompleted({
+            cart_value: cart.total ? Number(cart.total) / 100 : 0,
+            item_count: cart.items?.length || 0,
+            currency: cart.currency_code || 'EUR',
+            has_email: hasEmail,
+            has_phone: hasPhone,
+            country_code: cart.shipping_address?.country_code || cart.region?.countries?.[0]?.iso_2 || '',
+          })
+          
+          trackCheckoutStepCompleted({
+            cart_value: cart.total ? Number(cart.total) / 100 : 0,
+            item_count: cart.items?.length || 0,
+            currency: cart.currency_code || 'EUR',
+            step_name: 'contact',
+          })
+          
+          hasTrackedContactRef.current = true
+        }
+      }
     } catch (err: any) {
       setError(err.message || "Failed to save contact information")
     } finally {

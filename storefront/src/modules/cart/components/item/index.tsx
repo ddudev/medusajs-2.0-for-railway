@@ -14,6 +14,7 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 import Spinner from "@modules/common/icons/spinner"
 import Thumbnail from "@modules/products/components/thumbnail"
 import { useState } from "react"
+import { useAnalytics } from "@lib/analytics/use-analytics"
 
 type ItemProps = {
   item: HttpTypes.StoreCartLineItem
@@ -23,6 +24,7 @@ type ItemProps = {
 const Item = ({ item, type = "full" }: ItemProps) => {
   const [updating, setUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { trackCartUpdated } = useAnalytics()
 
   const { handle } = item.variant?.product ?? {}
 
@@ -30,10 +32,21 @@ const Item = ({ item, type = "full" }: ItemProps) => {
     setError(null)
     setUpdating(true)
 
-    const message = await updateLineItem({
+    await updateLineItem({
       lineId: item.id,
       quantity,
     })
+      .then(() => {
+        // Track cart updated
+        const currency = item.currency_code || 'EUR'
+        trackCartUpdated({
+          cart_value: 0, // Will be updated after cart refresh
+          item_count: quantity,
+          currency: currency,
+          line_item_id: item.id,
+          new_quantity: quantity,
+        })
+      })
       .catch((err) => {
         setError(err.message)
       })
@@ -78,7 +91,7 @@ const Item = ({ item, type = "full" }: ItemProps) => {
       {type === "full" && (
         <Table.Cell>
           <div className="flex gap-2 items-center w-28">
-            <DeleteButton id={item.id} data-testid="product-delete-button" />
+            <DeleteButton id={item.id} item={item} data-testid="product-delete-button" />
             <CartItemSelect
               value={item.quantity}
               onChange={(value) => changeQuantity(parseInt(value.target.value))}

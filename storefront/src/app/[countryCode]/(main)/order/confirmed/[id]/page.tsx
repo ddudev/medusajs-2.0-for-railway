@@ -38,5 +38,22 @@ export default async function OrderConfirmedPage({ params }: Props) {
     return notFound()
   }
 
+  // Track order confirmation page view (server-side)
+  try {
+    const { trackOrderConfirmed } = await import("@lib/analytics/server")
+    const orderTotal = order.total ? Number(order.total) / 100 : 0
+    const itemsCount = order.items?.length || 0
+    await trackOrderConfirmed(
+      order.id,
+      orderTotal,
+      itemsCount,
+      order.customer_id,
+      order.email
+    )
+  } catch (error) {
+    // Don't block page render if analytics fails
+    console.error("Failed to track order confirmation:", error)
+  }
+
   return <OrderCompletedTemplate order={order} />
 }

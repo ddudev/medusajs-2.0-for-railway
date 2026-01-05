@@ -15,6 +15,7 @@ import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 import { sdk } from "@lib/config"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import { useAnalytics } from "@lib/analytics/use-analytics"
 
 type ShippingProps = {
   cart: HttpTypes.StoreCart
@@ -29,6 +30,7 @@ const Shipping: React.FC<ShippingProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [availableShippingMethods, setAvailableShippingMethods] = useState<HttpTypes.StoreCartShippingOption[] | null>(initialShippingMethods)
   const { t } = useTranslation()
+  const { trackCheckoutShippingMethodSelected, trackCheckoutStepCompleted } = useAnalytics()
 
   const selectedShippingMethod = availableShippingMethods?.find(
     // To do: remove the previously selected shipping method instead of using the last one
@@ -42,7 +44,32 @@ const Shipping: React.FC<ShippingProps> = ({
   const set = async (id: string) => {
     setIsLoading(true)
     setError(null)
+    
+    const selectedMethod = availableShippingMethods?.find(m => m.id === id)
+    
     await setShippingMethod({ cartId: cart.id, shippingMethodId: id })
+      .then(() => {
+        // Track shipping method selected
+        if (selectedMethod) {
+          const shippingPrice = selectedMethod.amount ? Number(selectedMethod.amount) / 100 : 0
+          const cartValue = cart.total ? Number(cart.total) / 100 : 0
+          
+          trackCheckoutShippingMethodSelected({
+            cart_value: cartValue,
+            item_count: cart.items?.length || 0,
+            currency: cart.currency_code || 'EUR',
+            shipping_method: selectedMethod.name || selectedMethod.id,
+            shipping_price: shippingPrice,
+          })
+          
+          trackCheckoutStepCompleted({
+            cart_value: cartValue,
+            item_count: cart.items?.length || 0,
+            currency: cart.currency_code || 'EUR',
+            step_name: 'shipping',
+          })
+        }
+      })
       .catch((err) => {
         setError(err.message)
       })
@@ -93,75 +120,75 @@ const Shipping: React.FC<ShippingProps> = ({
 
   return (
     <div className="bg-white">
-      <Heading
-        level="h2"
+        <Heading
+          level="h2"
         className="flex flex-row text-3xl-regular gap-x-2 items-baseline mb-6"
       >
         {t("checkout.delivery")}
         {(cart.shipping_methods?.length ?? 0) > 0 && <CheckCircleSolid />}
-      </Heading>
-      <div data-testid="delivery-options-container">
-        <div className="pb-8">
-          <RadioGroup value={selectedShippingMethod?.id} onChange={set}>
-            {availableShippingMethods?.map((option) => {
-              return (
-                <RadioGroup.Option
-                  key={option.id}
-                  value={option.id}
-                  data-testid="delivery-option-radio"
-                  className={clx(
-                    "flex items-center justify-between text-small-regular cursor-pointer py-4 border rounded-rounded px-8 mb-2 hover:shadow-borders-interactive-with-active",
-                    {
-                      "border-ui-border-interactive":
-                        option.id === selectedShippingMethod?.id,
-                    }
-                  )}
-                >
-                  <div className="flex items-center gap-x-4">
-                    <Radio
-                      checked={option.id === selectedShippingMethod?.id}
-                    />
-                    <span className="text-base-regular">{option.name}</span>
-                  </div>
-                  <span className="justify-self-end text-ui-fg-base">
-                    {(() => {
-                      // Check if this option is selected and has a calculated amount in cart
-                      const isSelected = option.id === selectedCartShippingMethod?.shipping_option_id
-                      
-                      // Use cart method amount if available (calculated price), otherwise use option amount
-                      // Use != null to properly handle 0 (free shipping) vs null/undefined
-                      const displayAmount = isSelected && calculatedAmount != null
-                        ? calculatedAmount 
-                        : option.amount
-                      
-                      if (displayAmount != null && !isNaN(displayAmount) && displayAmount > 0) {
-                        return convertToLocale({
-                          amount: displayAmount,
-                      currency_code: cart?.currency_code,
-                        })
-                      } else {
-                        return <span className="text-gray-400">{t("checkout.waitingForInput")}</span>
+        </Heading>
+        <div data-testid="delivery-options-container">
+          <div className="pb-8">
+            <RadioGroup value={selectedShippingMethod?.id} onChange={set}>
+              {availableShippingMethods?.map((option) => {
+                return (
+                  <RadioGroup.Option
+                    key={option.id}
+                    value={option.id}
+                    data-testid="delivery-option-radio"
+                    className={clx(
+                      "flex items-center justify-between text-small-regular cursor-pointer py-4 border rounded-rounded px-8 mb-2 hover:shadow-borders-interactive-with-active",
+                      {
+                        "border-ui-border-interactive":
+                          option.id === selectedShippingMethod?.id,
                       }
-                    })()}
-                  </span>
-                </RadioGroup.Option>
-              )
-            })}
-          </RadioGroup>
-        </div>
-
-        {/* Show Econt shipping fields if Econt shipping method is selected */}
-        {selectedShippingMethod?.name?.toLowerCase().includes("econt") && (
-          <div className="mt-6">
-            <EcontShipping cart={cart} shippingMethod={selectedShippingMethod} />
+                    )}
+                  >
+                    <div className="flex items-center gap-x-4">
+                      <Radio
+                        checked={option.id === selectedShippingMethod?.id}
+                      />
+                      <span className="text-base-regular">{option.name}</span>
+                    </div>
+                    <span className="justify-self-end text-ui-fg-base">
+                      {(() => {
+                        // Check if this option is selected and has a calculated amount in cart
+                        const isSelected = option.id === selectedCartShippingMethod?.shipping_option_id
+                        
+                        // Use cart method amount if available (calculated price), otherwise use option amount
+                        // Use != null to properly handle 0 (free shipping) vs null/undefined
+                        const displayAmount = isSelected && calculatedAmount != null
+                          ? calculatedAmount 
+                          : option.amount
+                        
+                        if (displayAmount != null && !isNaN(displayAmount) && displayAmount > 0) {
+                          return convertToLocale({
+                            amount: displayAmount,
+                        currency_code: cart?.currency_code,
+                          })
+                        } else {
+                          return <span className="text-gray-400">{t("checkout.waitingForInput")}</span>
+                        }
+                      })()}
+                    </span>
+                  </RadioGroup.Option>
+                )
+              })}
+            </RadioGroup>
           </div>
-        )}
 
-        <ErrorMessage
-          error={error}
-          data-testid="delivery-option-error-message"
-        />
-      </div>
+          {/* Show Econt shipping fields if Econt shipping method is selected */}
+          {selectedShippingMethod?.name?.toLowerCase().includes("econt") && (
+            <div className="mt-6">
+              <EcontShipping cart={cart} shippingMethod={selectedShippingMethod} />
+            </div>
+          )}
+
+          <ErrorMessage
+            error={error}
+            data-testid="delivery-option-error-message"
+          />
+        </div>
       <Divider className="mt-8" />
     </div>
   )

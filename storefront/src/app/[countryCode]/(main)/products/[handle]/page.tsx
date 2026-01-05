@@ -17,6 +17,7 @@ import { stripHtml, htmlToMetaDescription } from "@lib/util/strip-html"
 import { getTranslations, getTranslation } from "@lib/i18n/server"
 import JsonLdScript from "components/seo/json-ld-script"
 import PreloadImage from "components/seo/preload-image"
+import SuspenseLoading from "@modules/common/components/suspense-loading"
 
 type Props = {
   params: Promise<{ countryCode: string; handle: string }>
@@ -326,7 +327,7 @@ export default async function ProductPage({ params }: Props) {
       <JsonLdScript id="breadcrumb-schema" data={breadcrumbSchema} />
       <JsonLdScript id="organization-schema" data={organizationSchema} />
 
-      <Suspense fallback={<div>Loading product...</div>}>
+      <Suspense fallback={<SuspenseLoading />}>
         <ProductTemplate
           product={pricedProduct}
           region={region}

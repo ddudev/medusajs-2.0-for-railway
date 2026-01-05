@@ -24,22 +24,22 @@ const Addresses = ({
 
   return (
     <div className="bg-white">
-      <Heading
-        level="h2"
+        <Heading
+          level="h2"
         className="flex flex-row text-3xl-regular gap-x-2 items-baseline mb-6"
-      >
+        >
         {t("checkout.shippingAddress")}
-      </Heading>
-      <form action={formAction}>
-        <div className="pb-8">
+        </Heading>
+        <form action={formAction}>
+          <div className="pb-8">
           <ShippingAddress customer={customer} cart={cart} />
           {/* Note: Billing address always same as shipping for Bulgaria - removed */}
-          <SubmitButton className="mt-6" data-testid="submit-address-button">
+            <SubmitButton className="mt-6" data-testid="submit-address-button">
             {t("checkout.continue")}
-          </SubmitButton>
-          <ErrorMessage error={message} data-testid="address-error-message" />
-        </div>
-      </form>
+            </SubmitButton>
+            <ErrorMessage error={message} data-testid="address-error-message" />
+          </div>
+        </form>
       <Divider className="mt-8" />
     </div>
   )

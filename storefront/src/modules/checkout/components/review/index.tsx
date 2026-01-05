@@ -23,12 +23,12 @@ const Review = ({ cart }: { cart: any }) => {
 
   return (
     <div className="bg-white">
-      <Heading
-        level="h2"
+        <Heading
+          level="h2"
         className="flex flex-row text-3xl-regular gap-x-2 items-baseline mb-6"
       >
         {t("checkout.review")}
-      </Heading>
+        </Heading>
       {previousStepsCompleted && (
         <>
           <div className="flex items-start gap-x-1 w-full mb-6">

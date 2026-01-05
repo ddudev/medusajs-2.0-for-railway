@@ -79,6 +79,27 @@ export async function login(_currentState: unknown, formData: FormData) {
       .then(async (token) => {
         await setAuthToken(typeof token === 'string' ? token : token.location)
         revalidateTag("customer")
+        
+        // Track user login (server-side)
+        try {
+          const customer = await getCustomer()
+          if (customer) {
+            const { identifyUser } = await import("@lib/analytics/server")
+            await identifyUser(customer.id, {
+              email: customer.email,
+              name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || undefined,
+            })
+            
+            const { trackEvent } = await import("@lib/analytics/server")
+            await trackEvent('user_logged_in', {
+              user_id: customer.id,
+              login_method: 'email',
+            }, customer.id)
+          }
+        } catch (error) {
+          // Don't block login if analytics fails
+          console.error("Failed to track user login:", error)
+        }
       })
   } catch (error: any) {
     return error.toString()
@@ -86,6 +107,20 @@ export async function login(_currentState: unknown, formData: FormData) {
 }
 
 export async function signout(countryCode: string) {
+  // Track logout before signing out
+  try {
+    const customer = await getCustomer()
+    if (customer) {
+      const { trackEvent } = await import("@lib/analytics/server")
+      await trackEvent('user_logged_out', {
+        user_id: customer.id,
+      }, customer.id)
+    }
+  } catch (error) {
+    // Don't block logout if analytics fails
+    console.error("Failed to track user logout:", error)
+  }
+  
   await sdk.auth.logout()
   await removeAuthToken()
   revalidateTag("auth")
