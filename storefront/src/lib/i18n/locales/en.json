@@ -290,5 +290,72 @@
       "description": "Install our app for a better shopping experience with offline access.",
       "installButton": "Install"
     }
+  },
+  "faq": {
+    "title": "FAQ",
+    "description": "Frequently asked questions"
+  },
+  "contact": {
+    "title": "Contact",
+    "description": "Get in touch with us",
+    "form": {
+      "title": "Contact Form",
+      "description": "We welcome your feedback, suggestions, and complaints. They will be carefully reviewed.",
+      "name": "Name",
+      "email": "Email Address",
+      "message": "Write your question, suggestion or comment",
+      "submit": "Submit",
+      "submitting": "Submitting...",
+      "success": "Thank you for your message! We will get back to you soon.",
+      "requiredNote": "* Fields marked with an asterisk are mandatory",
+      "errors": {
+        "nameRequired": "Name is required",
+        "emailRequired": "Email is required",
+        "emailInvalid": "Invalid email address",
+        "messageRequired": "Message is required"
+      }
+    },
+    "details": {
+      "title": "Contact Details",
+      "centralOffice": "Central Management",
+      "phone": "Phone Number",
+      "email": "Email",
+      "workingHours": "Working Hours",
+      "mondayThursday": "Monday - Thursday: 8:00 - 16:00",
+      "friday": "Friday: 8:00 - 14:00",
+      "weekend": "Saturday and Sunday: Closed",
+      "map": "Map",
+      "openMap": "Open Google Map"
+    }
+  },
+  "about": {
+    "title": "About Us",
+    "description": "Learn more about our company",
+    "content": {
+      "title": "FutuNatura - the path to your health!",
+      "paragraph1": "We are an international online store that sells food supplements, cosmetics and medical devices since 2016.",
+      "paragraph2": "Our principles are evident from the name FutuNatura, as 'Futu' is related to the English word 'future' and strives to meet the needs of modern man, 'Natura' is related to nature and everything that comes from it.",
+      "findOnWebsite": "On our website you will find:",
+      "productCount": "over 3000 products,",
+      "pricesQuality": "top prices and guaranteed quality,",
+      "freeEbooks": "free e-books,",
+      "calculators": "5 calculators for calculating body needs and cycles.",
+      "vision": "Our vision is to become the largest online store with health products in Europe. We have excellent success in this, as we are currently in 15 countries of the European Union, and soon new markets will join us.",
+      "mapPlaceholder": "Europe Map Visualization",
+      "mapAlt": "Europe Map - Countries where we operate"
+    },
+    "stats": {
+      "clients": "satisfied customers",
+      "consultation": "consultation",
+      "rating": "out of 10 according to customer reviews",
+      "processing": "order processing",
+      "visits": "website visits"
+    }
+  },
+  "footer": {
+    "information": "Information",
+    "categories": "Categories",
+    "collections": "Collections",
+    "copyright": "© {year} MS Store. All rights reserved."
   }
 }

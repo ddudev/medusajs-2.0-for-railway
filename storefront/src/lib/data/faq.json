@@ -1,0 +1,273 @@
+{
+  "categories": [
+    {
+      "id": "order",
+      "name": {
+        "en": "ORDER",
+        "bg": "ПОРЪЧКА"
+      },
+      "icon": "document",
+      "questions": [
+        {
+          "id": "order-1",
+          "question": {
+            "en": "ORDERING: How can I order products?",
+            "bg": "ПОРЪЧВАНЕ: Как мога да поръчам продукти?"
+          },
+          "answer": {
+            "en": "You can order products by adding them to your cart and proceeding to checkout. Select your shipping method, enter your contact information, and complete the payment.",
+            "bg": "Можете да поръчате продукти, като ги добавите в кошницата си и продължите към плащане. Изберете метода на доставка, въведете вашата контактна информация и завършете плащането."
+          }
+        },
+        {
+          "id": "order-2",
+          "question": {
+            "en": "CART: How can I change the quantity of products in my cart or remove them?",
+            "bg": "КОШНИЦА: Как мога да променя количеството на продуктите в кошницата си или да ги премахна?"
+          },
+          "answer": {
+            "en": "In your cart, you can change the quantity using the quantity selector next to each product. To remove a product, click the remove button or set the quantity to zero.",
+            "bg": "В кошницата си можете да промените количеството, като използвате селектора за количество до всеки продукт. За да премахнете продукт, кликнете върху бутона за премахване или задайте количеството на нула."
+          }
+        },
+        {
+          "id": "order-3",
+          "question": {
+            "en": "PROBLEMS WITH SUBMITTING AN ORDER ON THE PAGE: What should I do if clicking the \"Submit order\" button does not complete the order?",
+            "bg": "ПРОБЛЕМИ С ПОДАВАНЕТО НА ПОРЪЧКА НА СТРАНИЦАТА: Какво да направя, ако при кликването на бутона \"Подайте поръчка\" поръчката не е завършена?"
+          },
+          "answer": {
+            "en": "If the order submission fails, please check your internet connection and try again. If the problem persists, contact our customer service team for assistance.",
+            "bg": "Ако подаването на поръчката не успее, моля проверете интернет връзката си и опитайте отново. Ако проблемът продължава, свържете се с нашия екип за обслужване на клиенти за помощ."
+          }
+        },
+        {
+          "id": "order-4",
+          "question": {
+            "en": "DELIVERY ADDRESS: Can I enter a different delivery address when ordering?",
+            "bg": "АДРЕС ЗА ДОСТАВКА: Мога ли да въведа друг адрес за доставка, когато поръчвам?"
+          },
+          "answer": {
+            "en": "Yes, you can enter a different delivery address during checkout. Simply enter the address where you want your order to be delivered.",
+            "bg": "Да, можете да въведете друг адрес за доставка по време на плащането. Просто въведете адреса, на който искате да бъде доставена поръчката ви."
+          }
+        },
+        {
+          "id": "order-5",
+          "question": {
+            "en": "ORDER CANCELLATION: How can I cancel my order?",
+            "bg": "АНУЛИРАНЕ НА ПОРЪЧКА: Как мога да анулирам поръчката?"
+          },
+          "answer": {
+            "en": "You can cancel your order by contacting our customer service team. Please note that orders that have already been shipped cannot be cancelled.",
+            "bg": "Можете да анулирате поръчката си, като се свържете с нашия екип за обслужване на клиенти. Моля, имайте предвид, че поръчки, които вече са изпратени, не могат да бъдат анулирани."
+          }
+        },
+        {
+          "id": "order-6",
+          "question": {
+            "en": "CANCELLATION OF ALREADY SENT ORDER: How can I cancel an order that has already been sent?",
+            "bg": "АНУЛИРАНЕ НА ВЕЧЕ ИЗПРАТЕНА ПОРЪЧКА: Как мога да анулирам поръчка, която вече е изпратена?"
+          },
+          "answer": {
+            "en": "Once an order has been shipped, it cannot be cancelled. However, you can return the products within our return policy timeframe after receiving them.",
+            "bg": "След като поръчката е изпратена, тя не може да бъде анулирана. Въпреки това, можете да върнете продуктите в рамките на срока за връщане след получаването им."
+          }
+        },
+        {
+          "id": "order-7",
+          "question": {
+            "en": "ORDER CHANGE: How can I change products for an already submitted order?",
+            "bg": "ПРОМЯНА НА ПОРЪЧКАТА: Как мога да променя продукти при вече подадена поръчка?"
+          },
+          "answer": {
+            "en": "To change products in a submitted order, please contact our customer service team as soon as possible. Changes may not be possible if the order has already been processed.",
+            "bg": "За да промените продукти в подадена поръчка, моля свържете се с нашия екип за обслужване на клиенти възможно най-скоро. Промените може да не са възможни, ако поръчката вече е обработена."
+          }
+        },
+        {
+          "id": "order-8",
+          "question": {
+            "en": "ORDER CONFIRMATION: I have not received order confirmation in my email, what should I do?",
+            "bg": "ПОТВЪРЖДЕНИЕ НА ПОРЪЧКАТА: Не съм получил потвърждение на поръчката в електронната си поща, какво да направя?"
+          },
+          "answer": {
+            "en": "Please check your spam folder. If you still haven't received the confirmation email, contact our customer service team with your order number.",
+            "bg": "Моля проверете папката си за спам. Ако все още не сте получили имейла за потвърждение, свържете се с нашия екип за обслужване на клиенти с номера на поръчката си."
+          }
+        },
+        {
+          "id": "order-9",
+          "question": {
+            "en": "LEGAL ENTITIES: Can I order products from the company?",
+            "bg": "ЮРИДИЧЕСКИ ЛИЦА: Мога ли да поръчам продукти от фирмата?"
+          },
+          "answer": {
+            "en": "Yes, legal entities can place orders. Please contact our customer service team for business account setup and invoicing options.",
+            "bg": "Да, юридическите лица могат да правят поръчки. Моля свържете се с нашия екип за обслужване на клиенти за настройка на бизнес акаунт и опции за фактуриране."
+          }
+        }
+      ]
+    },
+    {
+      "id": "coupons",
+      "name": {
+        "en": "COUPONS AND BENEFITS",
+        "bg": "КУПОНИ И ПРЕДИМСТВА"
+      },
+      "icon": "tag",
+      "questions": [
+        {
+          "id": "coupons-1",
+          "question": {
+            "en": "How do I use a coupon code?",
+            "bg": "Как да използвам купон код?"
+          },
+          "answer": {
+            "en": "Enter your coupon code in the designated field during checkout. The discount will be applied automatically to your order total.",
+            "bg": "Въведете кода на купона в посоченото поле по време на плащането. Отстъпката ще бъде приложена автоматично към общата сума на поръчката ви."
+          }
+        },
+        {
+          "id": "coupons-2",
+          "question": {
+            "en": "Can I combine multiple coupons?",
+            "bg": "Мога ли да комбинирам няколко купона?"
+          },
+          "answer": {
+            "en": "Generally, only one coupon code can be used per order. Please check the terms and conditions of each coupon for specific details.",
+            "bg": "Обикновено само един купон код може да се използва на поръчка. Моля проверете условията и правилата на всеки купон за конкретни детайли."
+          }
+        }
+      ]
+    },
+    {
+      "id": "returns",
+      "name": {
+        "en": "RETURNS AND COMPLAINTS",
+        "bg": "ВРЪЩАНЕ И РЕКЛАМАЦИЯ"
+      },
+      "icon": "return",
+      "questions": [
+        {
+          "id": "returns-1",
+          "question": {
+            "en": "What is your return policy?",
+            "bg": "Каква е вашата политика за връщане?"
+          },
+          "answer": {
+            "en": "You can return products within 30 days of purchase, provided they are in original condition and packaging. Please contact us to initiate a return.",
+            "bg": "Можете да върнете продукти в рамките на 30 дни от покупката, при условие че са в оригинално състояние и опаковка. Моля свържете се с нас, за да започнете връщане."
+          }
+        },
+        {
+          "id": "returns-2",
+          "question": {
+            "en": "How do I return a product?",
+            "bg": "Как да върна продукт?"
+          },
+          "answer": {
+            "en": "Contact our customer service team to receive a return authorization. Pack the product securely and send it back using the provided return label.",
+            "bg": "Свържете се с нашия екип за обслужване на клиенти, за да получите разрешение за връщане. Опакувайте продукта безопасно и го изпратете обратно, като използвате предоставената етикета за връщане."
+          }
+        }
+      ]
+    },
+    {
+      "id": "payment",
+      "name": {
+        "en": "PAYMENT",
+        "bg": "ПЛАЩАНЕ"
+      },
+      "icon": "card",
+      "questions": [
+        {
+          "id": "payment-1",
+          "question": {
+            "en": "What payment methods do you accept?",
+            "bg": "Какви методи на плащане приемате?"
+          },
+          "answer": {
+            "en": "We accept credit cards (Visa, Mastercard), PayPal, and other secure payment methods. All payments are processed securely through encrypted connections.",
+            "bg": "Приемаме кредитни карти (Visa, Mastercard), PayPal и други сигурни методи на плащане. Всички плащания се обработват сигурно чрез криптирани връзки."
+          }
+        },
+        {
+          "id": "payment-2",
+          "question": {
+            "en": "Is my payment information secure?",
+            "bg": "Информацията ми за плащане ли е сигурна?"
+          },
+          "answer": {
+            "en": "Yes, all payment information is encrypted and processed through secure payment gateways. We do not store your full credit card details.",
+            "bg": "Да, цялата информация за плащане е криптирана и обработвана чрез сигурни платежни портали. Ние не съхраняваме пълните данни на вашата кредитна карта."
+          }
+        }
+      ]
+    },
+    {
+      "id": "delivery",
+      "name": {
+        "en": "DELIVERY",
+        "bg": "ДОСТАВКА"
+      },
+      "icon": "truck",
+      "questions": [
+        {
+          "id": "delivery-1",
+          "question": {
+            "en": "How long does delivery take?",
+            "bg": "Колко време отнема доставката?"
+          },
+          "answer": {
+            "en": "Delivery times vary by location and shipping method. Standard delivery typically takes 3-5 business days, while express delivery is available for 1-2 business days.",
+            "bg": "Времето за доставка варира в зависимост от местоположението и метода на доставка. Стандартната доставка обикновено отнема 3-5 работни дни, докато експресната доставка е налична за 1-2 работни дни."
+          }
+        },
+        {
+          "id": "delivery-2",
+          "question": {
+            "en": "Do you ship internationally?",
+            "bg": "Доставяте ли международно?"
+          },
+          "answer": {
+            "en": "Yes, we ship to multiple countries. Shipping costs and delivery times vary by destination. Please check our shipping information page for details.",
+            "bg": "Да, доставяме до множество държави. Разходите за доставка и времето за доставка варират в зависимост от дестинацията. Моля проверете нашата страница с информация за доставка за детайли."
+          }
+        }
+      ]
+    },
+    {
+      "id": "account",
+      "name": {
+        "en": "USER ACCOUNT",
+        "bg": "ПОТРЕБИТЕЛСКИ АКАУНТ"
+      },
+      "icon": "user",
+      "questions": [
+        {
+          "id": "account-1",
+          "question": {
+            "en": "How do I create an account?",
+            "bg": "Как да създам акаунт?"
+          },
+          "answer": {
+            "en": "Click on the 'Registration' link in the header and fill out the registration form with your email and password. You'll receive a confirmation email to activate your account.",
+            "bg": "Кликнете върху линка 'Регистрация' в заглавката и попълнете формуляра за регистрация с вашия имейл и парола. Ще получите имейл за потвърждение, за да активирате акаунта си."
+          }
+        },
+        {
+          "id": "account-2",
+          "question": {
+            "en": "I forgot my password. How can I reset it?",
+            "bg": "Забравих паролата си. Как мога да я нулирам?"
+          },
+          "answer": {
+            "en": "Click on 'Forgot Password' on the login page and enter your email address. You'll receive instructions to reset your password via email.",
+            "bg": "Кликнете върху 'Забравена парола' на страницата за влизане и въведете вашия имейл адрес. Ще получите инструкции за нулиране на паролата си по имейл."
+          }
+        }
+      ]
+    }
+  ]
+}

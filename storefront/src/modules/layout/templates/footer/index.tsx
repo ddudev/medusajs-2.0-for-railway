@@ -4,10 +4,19 @@ import { Text, clx } from "@medusajs/ui"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import MedusaCTA from "@modules/layout/components/medusa-cta"
+import { getTranslations, getTranslation } from "@lib/i18n/server"
 
-export default async function Footer() {
+type FooterProps = {
+  countryCode?: string
+}
+
+export default async function Footer({ countryCode = "us" }: FooterProps) {
   const { collections } = await getCollectionsList(0, 6)
   const { product_categories } = await getCategoriesList(0, 6)
+  
+  // Get translations for footer links based on country code
+  const normalizedCountryCode = countryCode.toLowerCase()
+  const translations = await getTranslations(normalizedCountryCode)
 
   return (
     <footer className="border-t border-border-base w-full bg-background-elevated">
@@ -25,7 +34,7 @@ export default async function Footer() {
             {product_categories && product_categories?.length > 0 && (
               <div className="flex flex-col gap-y-2">
                 <span className="txt-small-plus text-text-primary font-semibold">
-                  Categories
+                  {getTranslation(translations, "footer.categories") || "Categories"}
                 </span>
                 <ul
                   className="grid grid-cols-1 gap-2"
@@ -83,7 +92,7 @@ export default async function Footer() {
             {collections && collections.length > 0 && (
               <div className="flex flex-col gap-y-2">
                 <span className="txt-small-plus text-text-primary font-semibold">
-                  Collections
+                  {getTranslation(translations, "footer.collections") || "Collections"}
                 </span>
                 <ul
                   className={clx(
@@ -107,37 +116,33 @@ export default async function Footer() {
               </div>
             )}
             <div className="flex flex-col gap-y-2">
-              <span className="txt-small-plus text-text-primary">Medusa</span>
+              <span className="txt-small-plus text-text-primary font-semibold">
+                {getTranslation(translations, "footer.information") || "Information"}
+              </span>
               <ul className="grid grid-cols-1 gap-y-2 text-text-secondary txt-small">
                 <li>
-                  <a
-                    href="https://github.com/medusajs"
-                    target="_blank"
-                    rel="noreferrer"
+                  <LocalizedClientLink
+                    href="/faq"
                     className="hover:text-text-primary transition-colors"
                   >
-                    GitHub
-                  </a>
+                    {getTranslation(translations, "common.faq") || "FAQ"}
+                  </LocalizedClientLink>
                 </li>
                 <li>
-                  <a
-                    href="https://docs.medusajs.com"
-                    target="_blank"
-                    rel="noreferrer"
+                  <LocalizedClientLink
+                    href="/contact"
                     className="hover:text-text-primary transition-colors"
                   >
-                    Documentation
-                  </a>
+                    {getTranslation(translations, "contact.title") || "Contact"}
+                  </LocalizedClientLink>
                 </li>
                 <li>
-                  <a
-                    href="https://github.com/medusajs/nextjs-starter-medusa"
-                    target="_blank"
-                    rel="noreferrer"
+                  <LocalizedClientLink
+                    href="/about"
                     className="hover:text-text-primary transition-colors"
                   >
-                    Source code
-                  </a>
+                    {getTranslation(translations, "about.title") || "About Us"}
+                  </LocalizedClientLink>
                 </li>
               </ul>
             </div>
@@ -145,7 +150,7 @@ export default async function Footer() {
         </div>
           <div className="flex w-full mb-16 justify-between text-text-tertiary">
           <Text className="txt-compact-small">
-            © {new Date().getFullYear()} Medusa Store. All rights reserved.
+            {getTranslation(translations, "footer.copyright", { year: new Date().getFullYear().toString() }) || `© ${new Date().getFullYear()} MS Store. All rights reserved.`}
           </Text>
           <MedusaCTA />
         </div>

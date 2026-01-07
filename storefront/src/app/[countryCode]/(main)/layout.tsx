@@ -33,7 +33,7 @@ export default async function PageLayout(props: {
       <Nav countryCode={countryCode} />
       </Suspense>
       {props.children}
-      <Footer />
+      <Footer countryCode={countryCode} />
     </CartProvider>
   )
 }

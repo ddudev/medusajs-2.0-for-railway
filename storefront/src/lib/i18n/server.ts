@@ -19,10 +19,12 @@ export async function getTranslations(
 
 /**
  * Get translation value by key path (e.g., "common.cart")
+ * Supports interpolation with options object (e.g., {year: "2024"})
  */
 export function getTranslation(
   translations: TranslationKeys,
-  key: string
+  key: string,
+  options?: { [key: string]: string | number }
 ): string {
   const keys = key.split(".")
   let value: any = translations
@@ -35,6 +37,22 @@ export function getTranslation(
     }
   }
 
-  return typeof value === "string" ? value : key
+  if (typeof value !== "string") {
+    return key
+  }
+
+  // Handle interpolation: replace {key} with values from options
+  if (options) {
+    let interpolated = value
+    for (const [optionKey, optionValue] of Object.entries(options)) {
+      interpolated = interpolated.replace(
+        new RegExp(`\\{${optionKey}\\}`, "g"),
+        String(optionValue)
+      )
+    }
+    return interpolated
+  }
+
+  return value
 }
 
