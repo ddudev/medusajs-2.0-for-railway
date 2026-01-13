@@ -436,6 +436,103 @@ export default async function ensureMigrations() {
       }
     }
 
+    // Check and add missing columns to promotion and cart tables
+    console.log("🔍 Checking for missing columns in promotion and cart tables...")
+    
+    try {
+      // Check if promotion table exists and add limit/used columns if missing
+      const promotionTableExists = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'promotion'
+        );
+      `)
+
+      if (promotionTableExists.rows[0]?.exists) {
+        // Add limit column if it doesn't exist
+        const limitColumnExists = await pool.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'promotion' 
+            AND column_name = 'limit'
+          );
+        `)
+
+        if (!limitColumnExists.rows[0]?.exists) {
+          console.log("   📦 Adding 'limit' column to promotion table...")
+          await pool.query(`
+            ALTER TABLE "promotion" ADD COLUMN "limit" integer NULL;
+            COMMENT ON COLUMN "promotion"."limit" IS 'Maximum number of times this promotion can be used. NULL means unlimited.';
+          `)
+          console.log("   ✅ Added 'limit' column to promotion table")
+        } else {
+          console.log("   ✅ 'limit' column already exists in promotion table")
+        }
+
+        // Add used column if it doesn't exist
+        const usedColumnExists = await pool.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'promotion' 
+            AND column_name = 'used'
+          );
+        `)
+
+        if (!usedColumnExists.rows[0]?.exists) {
+          console.log("   📦 Adding 'used' column to promotion table...")
+          await pool.query(`
+            ALTER TABLE "promotion" ADD COLUMN "used" integer NOT NULL DEFAULT 0;
+            COMMENT ON COLUMN "promotion"."used" IS 'Number of times this promotion has been used.';
+          `)
+          console.log("   ✅ Added 'used' column to promotion table")
+        } else {
+          console.log("   ✅ 'used' column already exists in promotion table")
+        }
+      } else {
+        console.log("   ⚠️  Promotion table doesn't exist yet (will be created by MedusaJS migrations)")
+      }
+
+      // Check if cart table exists and add locale column if missing
+      const cartTableExists = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'cart'
+        );
+      `)
+
+      if (cartTableExists.rows[0]?.exists) {
+        const localeColumnExists = await pool.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'cart' 
+            AND column_name = 'locale'
+          );
+        `)
+
+        if (!localeColumnExists.rows[0]?.exists) {
+          console.log("   📦 Adding 'locale' column to cart table...")
+          await pool.query(`
+            ALTER TABLE "cart" ADD COLUMN "locale" text NULL;
+            COMMENT ON COLUMN "cart"."locale" IS 'Locale/language code for the cart (e.g., en, bg, fr).';
+          `)
+          console.log("   ✅ Added 'locale' column to cart table")
+        } else {
+          console.log("   ✅ 'locale' column already exists in cart table")
+        }
+      } else {
+        console.log("   ⚠️  Cart table doesn't exist yet (will be created by MedusaJS migrations)")
+      }
+    } catch (error: any) {
+      console.error("   ❌ Error checking/adding columns:", error.message)
+      // Don't throw - these columns are optional and the app should work without them
+      // (we've already fixed the frontend to not request them)
+    }
+
     // Note: MedusaJS link tables are created by 'medusa db:sync-links' or 'medusa db:migrate'
     // These should be run by 'init-backend', but if links are missing, run:
     // npx medusa db:sync-links
