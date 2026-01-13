@@ -12,7 +12,7 @@
     "build": "tsup && node ./scripts/generate-types.js",
     "build:production": "npm run setup:symlinks && vite build --mode production",
     "build:preview": "npm run setup:symlinks && vite build --mode production",
-    "start": "serve --config serve.json --listen tcp://0.0.0.0:$PORT",
+    "start": "serve -s --config serve.json --listen tcp://0.0.0.0:$PORT",
     "serve": "serve --config serve.json --listen tcp://0.0.0.0:$PORT",
     "preview": "vite preview",
     "test": "vitest --run",
