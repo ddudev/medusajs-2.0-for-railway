@@ -1,6 +1,7 @@
 [build]
 builder = "RAILPACK"
+buildCommand = "npm run build:production"
 
 [deploy]
-startCommand = "npm run start"
+startCommand = "serve dist -s -l tcp://0.0.0.0:$PORT --config serve.json"
 
