@@ -3,9 +3,21 @@ import { readFileSync } from "fs"
 import { join } from "path"
 
 /**
- * Startup script to ensure XML Importer, InnPro Importer, Econt Shipping, and Brand tables exist
- * Runs automatically at startup via init-backend
- * Checks if tables exist, creates them if missing
+ * Startup script to ensure required database tables and columns exist
+ * 
+ * This script runs automatically at startup via the 'start' command in package.json
+ * 
+ * It ensures:
+ * 1. Custom tables exist (econt_settings, xml_import_sessions, innpro_import_sessions, brand)
+ * 2. Missing columns are added to MedusaJS tables:
+ *    - promotion.limit (integer, nullable) - Usage limit for promotions
+ *    - promotion.used (integer, NOT NULL, default 0) - Usage count for promotions
+ *    - cart.locale (text, nullable) - Locale/language code for cart
+ * 
+ * These columns are required for MedusaJS 2.12.3+ compatibility but may be missing
+ * in databases upgraded from older MedusaJS versions.
+ * 
+ * The script is idempotent - safe to run multiple times.
  */
 export default async function ensureMigrations() {
   const databaseUrl = process.env.DATABASE_URL
@@ -437,7 +449,9 @@ export default async function ensureMigrations() {
     }
 
     // Check and add missing columns to promotion and cart tables
+    // These columns are expected by MedusaJS 2.12.3 admin API but may be missing in older databases
     console.log("🔍 Checking for missing columns in promotion and cart tables...")
+    console.log("   This fixes compatibility issues after MedusaJS 2.0 upgrade")
     
     try {
       // Check if promotion table exists and add limit/used columns if missing
@@ -462,11 +476,20 @@ export default async function ensureMigrations() {
 
         if (!limitColumnExists.rows[0]?.exists) {
           console.log("   📦 Adding 'limit' column to promotion table...")
-          await pool.query(`
-            ALTER TABLE "promotion" ADD COLUMN "limit" integer NULL;
-            COMMENT ON COLUMN "promotion"."limit" IS 'Maximum number of times this promotion can be used. NULL means unlimited.';
-          `)
-          console.log("   ✅ Added 'limit' column to promotion table")
+          try {
+            await pool.query(`
+              ALTER TABLE "promotion" ADD COLUMN "limit" integer NULL;
+              COMMENT ON COLUMN "promotion"."limit" IS 'Maximum number of times this promotion can be used. NULL means unlimited.';
+            `)
+            console.log("   ✅ Successfully added 'limit' column to promotion table")
+          } catch (addError: any) {
+            if (addError.code === '42701' || addError.message?.includes('already exists')) {
+              console.log("   ✅ 'limit' column already exists (race condition)")
+            } else {
+              console.error(`   ❌ Failed to add 'limit' column: ${addError.message}`)
+              throw addError
+            }
+          }
         } else {
           console.log("   ✅ 'limit' column already exists in promotion table")
         }
@@ -483,11 +506,20 @@ export default async function ensureMigrations() {
 
         if (!usedColumnExists.rows[0]?.exists) {
           console.log("   📦 Adding 'used' column to promotion table...")
-          await pool.query(`
-            ALTER TABLE "promotion" ADD COLUMN "used" integer NOT NULL DEFAULT 0;
-            COMMENT ON COLUMN "promotion"."used" IS 'Number of times this promotion has been used.';
-          `)
-          console.log("   ✅ Added 'used' column to promotion table")
+          try {
+            await pool.query(`
+              ALTER TABLE "promotion" ADD COLUMN "used" integer NOT NULL DEFAULT 0;
+              COMMENT ON COLUMN "promotion"."used" IS 'Number of times this promotion has been used.';
+            `)
+            console.log("   ✅ Successfully added 'used' column to promotion table")
+          } catch (addError: any) {
+            if (addError.code === '42701' || addError.message?.includes('already exists')) {
+              console.log("   ✅ 'used' column already exists (race condition)")
+            } else {
+              console.error(`   ❌ Failed to add 'used' column: ${addError.message}`)
+              throw addError
+            }
+          }
         } else {
           console.log("   ✅ 'used' column already exists in promotion table")
         }
@@ -516,21 +548,36 @@ export default async function ensureMigrations() {
 
         if (!localeColumnExists.rows[0]?.exists) {
           console.log("   📦 Adding 'locale' column to cart table...")
-          await pool.query(`
-            ALTER TABLE "cart" ADD COLUMN "locale" text NULL;
-            COMMENT ON COLUMN "cart"."locale" IS 'Locale/language code for the cart (e.g., en, bg, fr).';
-          `)
-          console.log("   ✅ Added 'locale' column to cart table")
+          try {
+            await pool.query(`
+              ALTER TABLE "cart" ADD COLUMN "locale" text NULL;
+              COMMENT ON COLUMN "cart"."locale" IS 'Locale/language code for the cart (e.g., en, bg, fr).';
+            `)
+            console.log("   ✅ Successfully added 'locale' column to cart table")
+          } catch (addError: any) {
+            if (addError.code === '42701' || addError.message?.includes('already exists')) {
+              console.log("   ✅ 'locale' column already exists (race condition)")
+            } else {
+              console.error(`   ❌ Failed to add 'locale' column: ${addError.message}`)
+              throw addError
+            }
+          }
         } else {
           console.log("   ✅ 'locale' column already exists in cart table")
         }
       } else {
         console.log("   ⚠️  Cart table doesn't exist yet (will be created by MedusaJS migrations)")
       }
+      
+      console.log("   ✅ Finished checking/adding missing columns")
     } catch (error: any) {
-      console.error("   ❌ Error checking/adding columns:", error.message)
-      // Don't throw - these columns are optional and the app should work without them
-      // (we've already fixed the frontend to not request them)
+      console.error("   ❌ CRITICAL: Error checking/adding columns:", error.message)
+      console.error("   ❌ Stack trace:", error.stack)
+      // Don't throw - let the app start, but log the error clearly
+      // The app should work without these columns (we've fixed the frontend)
+      // But backend queries might still fail until columns are added
+      console.error("   ⚠️  If you see 'column does not exist' errors, the migration may have failed")
+      console.error("   ⚠️  Check the logs above for specific error details")
     }
 
     // Note: MedusaJS link tables are created by 'medusa db:sync-links' or 'medusa db:migrate'
