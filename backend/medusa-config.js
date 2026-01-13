@@ -28,6 +28,7 @@ import {
   ECONT_LIVE
 } from 'lib/constants';
 import { XML_PRODUCT_IMPORTER_MODULE } from './src/modules/xml-product-importer';
+import { INNPRO_XML_IMPORTER_MODULE } from './src/modules/innpro-xml-importer';
 import { ECONT_SHIPPING_MODULE } from './src/modules/econt-shipping';
 import { BRAND_MODULE } from './src/modules/brand';
 
@@ -165,6 +166,10 @@ const medusaConfig = {
     {
       key: XML_PRODUCT_IMPORTER_MODULE,
       resolve: "./src/modules/xml-product-importer",
+    },
+    {
+      key: INNPRO_XML_IMPORTER_MODULE,
+      resolve: "./src/modules/innpro-xml-importer",
     },
     {
       key: ECONT_SHIPPING_MODULE,
