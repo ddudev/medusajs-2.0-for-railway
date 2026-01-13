@@ -21,16 +21,8 @@ export async function retrieveCart() {
 
   const authHeaders = await getAuthHeaders()
   // No caching - cart is user-specific and must be fresh
-  // Explicitly specify fields to avoid requesting non-existent 'locale' column
   return await sdk.store.cart
-    .retrieve(
-      cartId,
-      {
-        fields:
-          "id,email,currency_code,region_id,metadata,completed_at,sales_channel_id,customer_id,*items,*items.variant,*items.product,*shipping_address,*billing_address,*shipping_methods,*payment_sessions,*payment_collections,*region",
-      },
-      { next: { tags: ["cart"] }, ...authHeaders }
-    )
+    .retrieve(cartId, {}, { next: { tags: ["cart"] }, ...authHeaders })
     .then(({ cart }) => cart)
     .catch(() => {
       return null
