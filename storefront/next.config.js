@@ -164,6 +164,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "bucket-production-a1ba.up.railway.app",
       },
+      {
+        protocol: "https",
+        hostname: "b2b.innpro.eu",
+      },
       ...(process.env.NEXT_PUBLIC_MINIO_ENDPOINT ? [{ // Note: needed when using MinIO bucket storage for media
         protocol: "https",
         hostname: process.env.NEXT_PUBLIC_MINIO_ENDPOINT,

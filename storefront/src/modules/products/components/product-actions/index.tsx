@@ -1,9 +1,12 @@
 "use client"
 
-import { Button } from "@medusajs/ui"
+import { Button, Heading } from "@medusajs/ui"
 import { isEqual } from "@lib/utils/is-equal"
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
+import TextField from "@mui/material/TextField"
+import IconButton from "@mui/material/IconButton"
+import { Add, Remove } from "@mui/icons-material"
 
 import { useIntersection } from "@lib/hooks/use-in-view"
 import Divider from "@modules/common/components/divider"
@@ -39,6 +42,7 @@ export default function ProductActions({
   disabled,
 }: ProductActionsProps) {
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
+  const [quantity, setQuantity] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
   const countryCode = useParams().countryCode as string
   const router = useRouter()
@@ -113,6 +117,27 @@ export default function ProductActions({
 
   const inView = useIntersection(actionsRef, "0px")
 
+  // Calculate max quantity based on inventory
+  const maxQuantity = useMemo(() => {
+    if (!selectedVariant) return 10
+    if (!selectedVariant.manage_inventory) return 10
+    if (selectedVariant.allow_backorder) return 10
+    return Math.min(selectedVariant.inventory_quantity || 10, 10)
+  }, [selectedVariant])
+
+  // Handle quantity changes
+  const handleQuantityChange = (newQuantity: number) => {
+    if (newQuantity < 1) {
+      setQuantity(1)
+      return
+    }
+    if (newQuantity > maxQuantity) {
+      setQuantity(maxQuantity)
+      return
+    }
+    setQuantity(newQuantity)
+  }
+
   // add the selected variant to the cart
   const handleAddToCart = async () => {
     if (!selectedVariant?.id) return null
@@ -122,7 +147,7 @@ export default function ProductActions({
     try {
       await addToCart({
         variantId: selectedVariant.id,
-        quantity: 1,
+        quantity: quantity,
         countryCode,
       })
 
@@ -140,9 +165,9 @@ export default function ProductActions({
         currency: currency,
         variant_id: selectedVariant.id,
         variant_name: selectedVariant.title,
-        quantity: 1,
+        quantity: quantity,
         // Cart value will be updated after router.refresh(), track with product price for now
-        cart_value: price || 0,
+        cart_value: (price || 0) * quantity,
       })
 
       // Refresh the router to update cart data
@@ -158,7 +183,17 @@ export default function ProductActions({
 
   return (
     <>
-      <div className="flex flex-col gap-y-2" ref={actionsRef}>
+      <div className="flex flex-col gap-y-6" ref={actionsRef}>
+        {/* Product Title */}
+        <Heading
+          level="h1"
+          className="text-3xl md:text-4xl lg:text-5xl leading-tight text-text-primary font-bold tracking-tight"
+          data-testid="product-title"
+        >
+          {product.title}
+        </Heading>
+
+        {/* Variant Selection */}
         <div>
           {(product.variants?.length ?? 0) > 1 && (
             <div className="flex flex-col gap-y-6">
@@ -183,10 +218,52 @@ export default function ProductActions({
           )}
         </div>
 
-        <div className="py-4 border-t border-b border-border-base my-4">
+        {/* Price */}
+        <div className="py-4 border-t border-b border-border-base">
           <ProductPrice product={product} variant={selectedVariant} />
         </div>
 
+        {/* Quantity Selector */}
+        <div className="flex flex-col gap-3">
+          <label className="text-sm font-semibold text-text-primary uppercase tracking-wide">
+            Quantity
+          </label>
+          <div className="flex items-center gap-3">
+            <IconButton
+              onClick={() => handleQuantityChange(quantity - 1)}
+              disabled={quantity <= 1 || !!disabled || isAdding}
+              className="border border-border-base hover:bg-background-elevated"
+              size="small"
+              aria-label="Decrease quantity"
+            >
+              <Remove />
+            </IconButton>
+            <TextField
+              type="number"
+              value={quantity}
+              onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
+              inputProps={{
+                min: 1,
+                max: maxQuantity,
+                style: { textAlign: 'center', padding: '8px' }
+              }}
+              disabled={!!disabled || isAdding}
+              className="w-20"
+              size="small"
+            />
+            <IconButton
+              onClick={() => handleQuantityChange(quantity + 1)}
+              disabled={quantity >= maxQuantity || !!disabled || isAdding}
+              className="border border-border-base hover:bg-background-elevated"
+              size="small"
+              aria-label="Increase quantity"
+            >
+              <Add />
+            </IconButton>
+          </div>
+        </div>
+
+        {/* Add to Cart Button */}
         <div className="flex flex-col gap-3">
           <Button
             onClick={handleAddToCart}

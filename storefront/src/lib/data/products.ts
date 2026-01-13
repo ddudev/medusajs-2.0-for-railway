@@ -40,7 +40,7 @@ export async function getProductByHandle(
       {
         handle,
         region_id: regionId,
-        fields: "*variants.calculated_price,+variants.inventory_quantity",
+        fields: "*variants.calculated_price,+variants.inventory_quantity,+metadata",
       },
       {
         next: {

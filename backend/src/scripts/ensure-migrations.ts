@@ -3,7 +3,7 @@ import { readFileSync } from "fs"
 import { join } from "path"
 
 /**
- * Startup script to ensure XML Importer, Econt Shipping, and Brand tables exist
+ * Startup script to ensure XML Importer, InnPro Importer, Econt Shipping, and Brand tables exist
  * Runs automatically at startup via init-backend
  * Checks if tables exist, creates them if missing
  */
@@ -374,12 +374,74 @@ export default async function ensureMigrations() {
     await pool.end()
   }
   
-  // Note: MedusaJS link tables are created by 'medusa db:sync-links' or 'medusa db:migrate'
-  // These should be run by 'init-backend', but if links are missing, run:
-  // npx medusa db:sync-links
-  // The link table for product-brand should be named: link_product_brand
-  console.log("ℹ️  MedusaJS link tables should be created by 'init-backend'")
-  console.log("   If you see link errors, ensure 'medusa db:sync-links' has been run")
+    // Check and create InnPro Importer tables (fallback only)
+    // Note: Primary migration is handled by Medusa's migration system via Migration20250108000000-CreateInnProImporterTables.ts
+    // This is a safety net in case migrations haven't run yet
+    const innproTables = ['innpro_import_session', 'innpro_import_config']
+    
+    for (const table of innproTables) {
+      const tableExists = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = $1
+        );
+      `, [table])
+
+      if (!tableExists.rows[0]?.exists) {
+        console.log(`📦 Creating ${table} table...`)
+        
+        if (table === 'innpro_import_session') {
+          await pool.query(`
+            CREATE TABLE IF NOT EXISTS innpro_import_session (
+              id VARCHAR(255) PRIMARY KEY,
+              xml_url VARCHAR(500) NOT NULL,
+              parsed_data JSONB,
+              selected_categories JSONB,
+              selected_brands JSONB,
+              selected_product_ids JSONB,
+              status VARCHAR(50) NOT NULL,
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW(),
+              deleted_at TIMESTAMP NULL
+            );
+          `)
+          
+          await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_innpro_import_session_status 
+            ON innpro_import_session(status);
+          `)
+        } else if (table === 'innpro_import_config') {
+          await pool.query(`
+            CREATE TABLE IF NOT EXISTS innpro_import_config (
+              id VARCHAR(255) PRIMARY KEY,
+              price_xml_url VARCHAR(500) NOT NULL,
+              enabled BOOLEAN DEFAULT true,
+              update_inventory BOOLEAN DEFAULT true,
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW(),
+              deleted_at TIMESTAMP NULL
+            );
+          `)
+          
+          await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_innpro_import_config_enabled 
+            ON innpro_import_config(enabled);
+          `)
+        }
+        
+        console.log(`✅ ${table} table created`)
+      } else {
+        console.log(`✅ ${table} table already exists`)
+      }
+    }
+
+    // Note: MedusaJS link tables are created by 'medusa db:sync-links' or 'medusa db:migrate'
+    // These should be run by 'init-backend', but if links are missing, run:
+    // npx medusa db:sync-links
+    // The link table for product-brand should be named: link_product_brand
+    console.log("ℹ️  MedusaJS link tables should be created by 'init-backend'")
+    console.log("   If you see link errors, ensure 'medusa db:sync-links' has been run")
 }
 
 

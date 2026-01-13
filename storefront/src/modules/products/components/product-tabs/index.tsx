@@ -1,10 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import Back from "@modules/common/icons/back"
 import FastDelivery from "@modules/common/icons/fast-delivery"
 import Refresh from "@modules/common/icons/refresh"
+import parse from "html-react-parser"
+import { Tabs, Tab, Box, Typography } from "@mui/material"
 
-import Accordion from "./accordion"
 import { HttpTypes } from "@medusajs/types"
 
 type ProductTabsProps = {
@@ -12,31 +14,94 @@ type ProductTabsProps = {
 }
 
 const ProductTabs = ({ product }: ProductTabsProps) => {
-  const tabs = [
-    {
-      label: "Product Information",
-      component: <ProductInfoTab product={product} />,
-    },
-    {
-      label: "Shipping & Returns",
-      component: <ShippingInfoTab />,
-    },
-  ]
+  const [activeTab, setActiveTab] = useState(0) // Default to "Описание" (index 0)
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue)
+  }
 
   return (
     <div className="w-full">
-      <Accordion type="multiple">
-        {tabs.map((tab, i) => (
-          <Accordion.Item
-            key={i}
-            title={tab.label}
-            headingSize="medium"
-            value={tab.label}
-          >
-            {tab.component}
-          </Accordion.Item>
-        ))}
-      </Accordion>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs 
+          value={activeTab} 
+          onChange={handleTabChange}
+          aria-label="product information tabs"
+        >
+          <Tab label="Описание" />
+          <Tab label="Характеристики" />
+          <Tab label="Какво е включено" />
+          <Tab label="Product Information" />
+          <Tab label="Shipping & Returns" />
+        </Tabs>
+      </Box>
+      <Box>
+        {activeTab === 0 && <DescriptionTab product={product} />}
+        {activeTab === 1 && <CharacteristicsTab product={product} />}
+        {activeTab === 2 && <IncludedItemsTab product={product} />}
+        {activeTab === 3 && <ProductInfoTab product={product} />}
+        {activeTab === 4 && <ShippingInfoTab />}
+      </Box>
+    </div>
+  )
+}
+
+const DescriptionTab = ({ product }: ProductTabsProps) => {
+  if (!product.description) {
+    return (
+      <div className="text-base text-text-secondary py-8">
+        <Typography variant="body1" color="text.secondary">
+          Няма налично описание.
+        </Typography>
+      </div>
+    )
+  }
+
+  return (
+    <div className="text-base text-text-secondary py-8 product-description">
+      {parse(product.description)}
+    </div>
+  )
+}
+
+const CharacteristicsTab = ({ product }: ProductTabsProps) => {
+  const metadata = (product as any).metadata || {}
+  const specifications = metadata.specifications_table
+
+  if (!specifications) {
+    return (
+      <div className="text-base text-text-secondary py-8">
+        <Typography variant="body1" color="text.secondary">
+          Няма налични технически характеристики.
+        </Typography>
+      </div>
+    )
+  }
+
+  return (
+    <div className="text-base text-text-secondary py-8">
+      {parse(specifications)}
+    </div>
+  )
+}
+
+const IncludedItemsTab = ({ product }: ProductTabsProps) => {
+  const metadata = (product as any).metadata || {}
+  const includedItems = metadata.included_items
+
+  if (!includedItems) {
+    return (
+      <div className="text-base text-text-secondary py-8">
+        <Typography variant="body1" color="text.secondary">
+          Няма информация за включените в комплекта елементи.
+        </Typography>
+      </div>
+    )
+  }
+
+  return (
+    <div className="text-base text-text-secondary py-8">
+      {parse(includedItems)}
     </div>
   )
 }

@@ -118,12 +118,10 @@ export async function POST(
     let result
     if (existingSettings.length > 0) {
       // Update existing settings - MedusaService update methods take { id } and update data
-      // @ts-ignore - Auto-generated method from MedusaService
       result = await econtService.updateEcontSettings({ id: existingSettings[0].id }, settingsData)
       logger.info("Econt settings updated")
     } else {
       // Create new settings
-      // @ts-ignore - Auto-generated method from MedusaService
       result = await econtService.createEcontSettings([settingsData])
       logger.info("Econt settings created")
     }
