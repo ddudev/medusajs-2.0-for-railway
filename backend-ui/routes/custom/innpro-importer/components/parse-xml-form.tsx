@@ -20,10 +20,13 @@ export const ParseXmlForm = ({ onSuccess, onError }: ParseXmlFormProps) => {
 
     setLoading(true)
     try {
-      const response = await authenticatedFetch(getApiUrl("/admin/innpro-importer/parse"), {
-        method: "POST",
-        body: JSON.stringify({ xmlUrl }),
-      })
+      const response = await authenticatedFetch(
+        getApiUrl("/admin/innpro-importer/parse"),
+        {
+          method: "POST",
+          body: JSON.stringify({ xmlUrl }),
+        }
+      )
 
       // authenticatedFetch throws on non-ok responses, so if we get here, response is ok
       // Get response text first to handle empty or non-JSON responses
@@ -76,7 +79,7 @@ export const ParseXmlForm = ({ onSuccess, onError }: ParseXmlFormProps) => {
         fontSize: '14px',
         marginBottom: '24px',
       }}>
-        Enter the URL of the InnPro XML file. The system will download and parse the XML file automatically, even if the URL triggers a file download in your browser. This will extract all products, categories, and brands.
+        Enter the URL of the InnPro XML file to download and parse. This will extract all products, categories, and brands.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -94,7 +97,7 @@ export const ParseXmlForm = ({ onSuccess, onError }: ParseXmlFormProps) => {
             type="url"
             value={xmlUrl}
             onChange={(e) => setXmlUrl(e.target.value)}
-            placeholder="https://b2b.innpro.eu/edi/export-offer.php?client=...&format=xml"
+            placeholder="https://example.com/products.xml"
             disabled={loading}
             style={{
               width: '100%',

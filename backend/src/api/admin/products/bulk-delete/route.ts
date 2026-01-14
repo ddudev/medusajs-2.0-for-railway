@@ -2,6 +2,8 @@ import { MedusaRequest, MedusaResponse } from "@medusajs/framework"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { IProductModuleService } from "@medusajs/framework/types"
 import { Client } from "minio"
+import { PRODUCT_REVIEW_MODULE } from "../../../../modules/product-review"
+import ProductReviewModuleService from "../../../../modules/product-review/service"
 
 /**
  * POST /admin/products/bulk-delete

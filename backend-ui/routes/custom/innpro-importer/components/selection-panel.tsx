@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { getApiUrl, authenticatedFetch } from "../utils"
 
 type SelectionPanelProps = {
@@ -13,12 +13,34 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([])
   const [filteredCount, setFilteredCount] = useState<number | null>(null)
-  const [fullSessionData, setFullSessionData] = useState<any>(null)
 
   const categories = sessionData.categories || []
   const allBrands = sessionData.brands || []
   const brandToCategories = sessionData.brandToCategories || {} // Map: brandId -> [categoryIds]
-  const [brandCountsByCategory, setBrandCountsByCategory] = useState<Record<string, number>>(sessionData.brandCountsByCategory || {})
+  const allProducts = sessionData.products || [] // Full product list for counting
+
+  // Calculate brand counts for selected categories
+  const brandCountsByCategory = React.useMemo(() => {
+    if (selectedCategories.length === 0 || !allProducts || allProducts.length === 0) {
+      return {} // No counts if no categories selected or no products
+    }
+
+    const counts: Record<string, number> = {} // Map: brandId -> count
+
+    // Count products for each brand within selected categories
+    for (const product of allProducts) {
+      const catId = product.category?.['@_id'] || product.category?.id
+      const brandId = product.producer?.['@_id'] || product.producer?.id
+
+      // Only count if product is in one of the selected categories
+      if (catId && brandId && selectedCategories.includes(String(catId))) {
+        const brandIdStr = String(brandId)
+        counts[brandIdStr] = (counts[brandIdStr] || 0) + 1
+      }
+    }
+
+    return counts
+  }, [selectedCategories, allProducts])
 
   // Filter brands based on selected categories using the pre-computed mapping
   const filteredBrands = React.useMemo(() => {
@@ -49,69 +71,6 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
       })
   }, [selectedCategories, allBrands, brandToCategories, brandCountsByCategory])
 
-  // When categories change, remove brands that are no longer in the filtered list
-  React.useEffect(() => {
-    if (selectedCategories.length === 0) {
-      // If no categories selected, don't filter brands
-      return
-    }
-
-    const filteredBrandIds = new Set(filteredBrands.map((b: any) => String(b.id)))
-    setSelectedBrands((prev) => {
-      const filtered = prev.filter((id) => filteredBrandIds.has(String(id)))
-      // Only update if something actually changed to avoid infinite loop
-      if (filtered.length !== prev.length) {
-        return filtered
-      }
-      return prev
-    })
-  }, [selectedCategories, filteredBrands])
-
-  // Fetch brand counts when categories change
-  useEffect(() => {
-    if (selectedCategories.length === 0) {
-      setBrandCountsByCategory({})
-      return
-    }
-
-    // Fetch brand counts for selected categories from backend
-    const fetchBrandCounts = async () => {
-      try {
-        const response = await authenticatedFetch(
-          getApiUrl(`/admin/innpro-importer/sessions/${sessionId}/select`),
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              categories: selectedCategories,
-              brands: undefined,
-              productIds: undefined,
-            }),
-          }
-        )
-
-        if (response.ok) {
-          const responseText = await response.text()
-          if (responseText) {
-            try {
-              const data = JSON.parse(responseText)
-              if (data.brandCountsByCategory) {
-                setBrandCountsByCategory(data.brandCountsByCategory)
-              }
-            } catch (parseError) {
-              console.error('Failed to parse brand counts response:', parseError)
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching brand counts:', err)
-      }
-    }
-
-    // Debounce the API call to avoid too many requests
-    const timeoutId = setTimeout(fetchBrandCounts, 300)
-    return () => clearTimeout(timeoutId)
-  }, [selectedCategories, sessionId])
-
   const handleCategoryToggle = (categoryId: string) => {
     setSelectedCategories((prev) =>
       prev.includes(categoryId)
@@ -130,7 +89,7 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
 
   const handleSelectAll = () => {
     setSelectedCategories(categories.map((c: any) => c.id))
-    setSelectedBrands(filteredBrands.map((b: any) => b.id))
+    setSelectedBrands(brands.map((b: any) => b.id))
   }
 
   const handleDeselectAll = () => {
@@ -157,17 +116,11 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
       )
 
       if (response.ok) {
-        // Get response text first to handle empty or non-JSON responses
         const responseText = await response.text()
-        
         if (responseText) {
           try {
             const data = JSON.parse(responseText)
             setFilteredCount(data.filteredProducts || data.selectedCount)
-            // Update brand counts for selected categories
-            if (data.brandCountsByCategory) {
-              setBrandCountsByCategory(data.brandCountsByCategory)
-            }
           } catch (parseError) {
             console.error('Failed to parse response:', parseError)
           }
@@ -282,7 +235,7 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
                   style={{ marginRight: '8px' }}
                 />
                 <span style={{ fontSize: '14px', color: 'var(--fg-base)', flex: 1 }}>
-                  {typeof category.name === 'string' ? category.name : (category.name?.name || category.name?.['@text'] || category.name?.['#text'] || String(category.name) || 'Unknown')}
+                  {category.name}
                 </span>
                 <span style={{ fontSize: '12px', color: 'var(--fg-subtle)' }}>
                   ({category.count})
@@ -300,7 +253,7 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
             marginBottom: '16px',
             color: 'var(--fg-base)',
           }}>
-            Brands ({selectedBrands.length} selected{selectedCategories.length > 0 ? ` - Filtered by ${selectedCategories.length} categor${selectedCategories.length === 1 ? 'y' : 'ies'}` : ''})
+            Brands ({selectedBrands.length} selected)
           </h3>
           <div style={{
             maxHeight: '400px',
@@ -309,19 +262,7 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
             borderRadius: '6px',
             padding: '8px',
           }}>
-            {filteredBrands.length === 0 ? (
-              <div style={{
-                padding: '16px',
-                textAlign: 'center',
-                color: 'var(--fg-subtle)',
-                fontSize: '14px',
-              }}>
-                {selectedCategories.length > 0 
-                  ? 'No brands found in selected categories' 
-                  : 'No brands available'}
-              </div>
-            ) : (
-              filteredBrands.map((brand: any) => (
+            {brands.map((brand: any) => (
               <label
                 key={brand.id}
                 style={{
@@ -346,14 +287,13 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
                   style={{ marginRight: '8px' }}
                 />
                 <span style={{ fontSize: '14px', color: 'var(--fg-base)', flex: 1 }}>
-                  {typeof brand.name === 'string' ? brand.name : (brand.name?.name || brand.name?.['@text'] || brand.name?.['#text'] || String(brand.name) || 'Unknown')}
+                  {brand.name}
                 </span>
                 <span style={{ fontSize: '12px', color: 'var(--fg-subtle)' }}>
                   ({brand.count})
                 </span>
               </label>
-              ))
-            )}
+            ))}
           </div>
         </div>
       </div>

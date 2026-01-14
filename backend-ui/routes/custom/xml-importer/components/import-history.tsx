@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react"
-import { getApiUrl, authenticatedFetch } from "../utils"
+import { useState, useEffect } from "react"
 
 export const ImportHistory = () => {
   const [imports, setImports] = useState<any[]>([])
@@ -13,7 +12,7 @@ export const ImportHistory = () => {
     setLoading(true)
     try {
       // Only fetch the last 10 imports
-      const response = await authenticatedFetch(getApiUrl('/admin/xml-importer/imports?limit=10&offset=0'))
+      const response = await fetch('/admin/xml-importer/imports?limit=10&offset=0')
       const data = await response.json()
       setImports(data.imports || [])
     } catch (error) {

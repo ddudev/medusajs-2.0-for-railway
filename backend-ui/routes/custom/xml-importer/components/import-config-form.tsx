@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react"
-import { getApiUrl, authenticatedFetch } from "../utils"
+import { useState, useEffect } from "react"
 
 interface ImportConfigFormProps {
   config?: any
@@ -39,7 +38,7 @@ export const ImportConfigForm = ({ config, mappings, onSave, onCancel }: ImportC
   const loadShippingProfiles = async () => {
     setLoadingProfiles(true)
     try {
-      const response = await authenticatedFetch(getApiUrl('/admin/xml-importer/shipping-profiles'))
+      const response = await fetch('/admin/xml-importer/shipping-profiles')
       if (response.ok) {
         const data = await response.json()
         setShippingProfiles(data.shippingProfiles || [])

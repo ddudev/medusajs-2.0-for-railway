@@ -37,8 +37,7 @@ export const ImportPreview = ({ sessionId, sessionData, onImport, onBack }: Impo
   }, [sessionId])
 
   // Calculate selected count based on what was actually filtered
-  // This should be the count of products that match BOTH selected categories AND selected brands
-  // Priority: selectedCount from sessionData > filteredProducts from sessionData > recalculate if needed
+  // Priority: selectedCount from sessionData > filteredProducts from sessionData > fallback to totalProducts
   const selectedCount = sessionData?.selectedCount || 
                        sessionData?.filteredProducts || 
                        (sessionDetails?.selected_categories?.length || sessionDetails?.selected_brands?.length 

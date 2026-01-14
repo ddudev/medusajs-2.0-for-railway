@@ -5,6 +5,7 @@ import { getRegion } from "./regions"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import { sortProducts } from "@lib/util/sort-products"
 import { getProductPrice } from "@lib/util/get-product-price"
+import { StoreProductReview } from "@types/global"
 
 // Product prices are region-specific and should NOT be cached - always dynamic
 // DO NOT add "use cache" - prices must be fresh per request/region
@@ -282,5 +283,147 @@ export async function getMaxProductPrice({
   } catch (error) {
     console.error("Error calculating max product price:", error)
     return 500 // Default fallback on error
+  }
+}
+
+/**
+ * Get product reviews with pagination (Server Component)
+ * Reviews can be cached (unlike prices) - use cache tags for revalidation
+ */
+export const getProductReviews = cache(async ({
+  productId,
+  limit = 10,
+  offset = 0,
+}: {
+  productId: string
+  limit?: number
+  offset?: number 
+}) => {
+  const BACKEND_URL =
+    process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    "http://localhost:9000"
+
+  const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  const requestHeaders: HeadersInit = {}
+  if (publishableKey) {
+    requestHeaders["x-publishable-api-key"] = publishableKey
+  }
+
+  const searchParams = new URLSearchParams()
+  searchParams.set("limit", limit.toString())
+  searchParams.set("offset", offset.toString())
+  searchParams.set("order", "-created_at")
+
+  return sdk.client.fetch<{
+    reviews: StoreProductReview[]
+    average_rating: number
+    limit: number
+    offset: number
+    count: number
+  }>(`/store/products/${productId}/reviews?${searchParams.toString()}`, {
+    headers: requestHeaders,
+    next: {
+      tags: ["reviews", `product-reviews-${productId}`],
+      revalidate: 3600, // Revalidate every hour
+    },
+    cache: "force-cache",
+  })
+})
+
+/**
+ * Client-side function to fetch product reviews
+ * Use this in Client Components (useEffect, event handlers, etc.)
+ */
+export async function fetchProductReviewsClient({
+  productId,
+  limit = 10,
+  offset = 0,
+}: {
+  productId: string
+  limit?: number
+  offset?: number 
+}): Promise<{
+  reviews: StoreProductReview[]
+  average_rating: number
+  limit: number
+  offset: number
+  count: number
+}> {
+  const BACKEND_URL =
+    process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    "http://localhost:9000"
+
+  const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  const requestHeaders: HeadersInit = {
+    "Content-Type": "application/json",
+  }
+  if (publishableKey) {
+    requestHeaders["x-publishable-api-key"] = publishableKey
+  }
+
+  const searchParams = new URLSearchParams()
+  searchParams.set("limit", limit.toString())
+  searchParams.set("offset", offset.toString())
+  searchParams.set("order", "-created_at")
+
+  const response = await fetch(
+    `${BACKEND_URL}/store/products/${productId}/reviews?${searchParams.toString()}`,
+    {
+      headers: requestHeaders,
+      cache: "no-store", // Client-side fetch should not be cached
+    }
+  )
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch reviews: ${response.statusText}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Submit a new product review (Client-side function)
+ * Requires authentication - customer must be logged in
+ * Use this in Client Components - calls our Next.js API route which handles authentication server-side
+ * 
+ * This is the most reliable method because:
+ * 1. The API route runs server-side and can access httpOnly cookies
+ * 2. It uses the same authentication pattern as other authenticated routes
+ * 3. No need to worry about CORS or cookie handling
+ */
+export async function addProductReview(input: {
+  title?: string
+  content: string
+  first_name: string
+  last_name: string
+  rating: number,
+  product_id: string
+}): Promise<any> {
+  try {
+    // Call our Next.js API route which wraps the backend API call with authentication
+    const response = await fetch("/api/reviews", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+      credentials: "include", // Include cookies for session
+      cache: "no-store",
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: response.statusText }))
+      throw new Error(error.error || error.message || `Failed to submit review: ${response.statusText}`)
+    }
+
+    return response.json()
+  } catch (error: any) {
+    // Re-throw with a more user-friendly message if it's an authentication error
+    if (error.message?.includes("Unauthorized") || error.message?.includes("401")) {
+      throw new Error("Моля, влезте в профила си, за да добавите ревю.")
+    }
+    throw error
   }
 }

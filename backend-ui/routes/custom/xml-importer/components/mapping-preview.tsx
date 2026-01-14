@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react"
-import { getApiUrl, authenticatedFetch } from "../utils"
+import { useState, useEffect } from "react"
 
 interface MappingPreviewProps {
   xmlUrl: string
@@ -20,8 +19,11 @@ export const MappingPreview = ({ xmlUrl, mapping, onClose }: MappingPreviewProps
     setLoading(true)
     setError(null)
     try {
-      const response = await authenticatedFetch(getApiUrl('/admin/xml-importer/field-mapping/preview'), {
+      const response = await fetch('/admin/xml-importer/field-mapping/preview', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           xmlUrl,
           mapping,

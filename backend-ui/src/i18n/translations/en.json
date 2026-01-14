@@ -940,6 +940,9 @@
       }
     }
   },
+  "reviews": {
+    "domain": "Reviews"
+  },
   "brands": {
     "domain": "Brands",
     "subtitle": "Manage product brands and assign them to products",

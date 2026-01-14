@@ -1,8 +1,7 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk"
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { ImportConfigForm } from "./components/import-config-form"
 import { FieldMappingEditor } from "./components/field-mapping-editor"
-import { getApiUrl, authenticatedFetch } from "./utils"
 
 const XmlImporterPage = () => {
   const [activeTab, setActiveTab] = useState<'configs' | 'mappings' | 'imports'>('configs')
@@ -23,15 +22,15 @@ const XmlImporterPage = () => {
     setLoading(true)
     try {
       if (activeTab === 'configs') {
-        const response = await authenticatedFetch(getApiUrl('/admin/xml-importer/configs'))
+        const response = await fetch('/admin/xml-importer/configs')
         const data = await response.json()
         setConfigs(data.configs || [])
       } else if (activeTab === 'mappings') {
-        const response = await authenticatedFetch(getApiUrl('/admin/xml-importer/mappings'))
+        const response = await fetch('/admin/xml-importer/mappings')
         const data = await response.json()
         setMappings(data.mappings || [])
       } else if (activeTab === 'imports') {
-        const response = await authenticatedFetch(getApiUrl('/admin/xml-importer/imports'))
+        const response = await fetch('/admin/xml-importer/imports')
         const data = await response.json()
         setImports(data.imports || [])
       }
@@ -55,12 +54,13 @@ const XmlImporterPage = () => {
   const handleSaveConfig = async (configData: any) => {
     try {
       const url = editingConfig 
-        ? getApiUrl(`/admin/xml-importer/configs/${editingConfig.id}`)
-        : getApiUrl('/admin/xml-importer/configs')
+        ? `/admin/xml-importer/configs/${editingConfig.id}`
+        : '/admin/xml-importer/configs'
       const method = editingConfig ? 'PUT' : 'POST'
       
-      const response = await authenticatedFetch(url, {
+      const response = await fetch(url, {
         method,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(configData),
       })
 
@@ -85,7 +85,7 @@ const XmlImporterPage = () => {
     if (!confirm('Are you sure you want to delete this configuration?')) return
 
     try {
-      const response = await authenticatedFetch(getApiUrl(`/admin/xml-importer/configs/${id}`), {
+      const response = await fetch(`/admin/xml-importer/configs/${id}`, {
         method: 'DELETE',
       })
 
@@ -106,7 +106,7 @@ const XmlImporterPage = () => {
     }
 
     try {
-      const response = await authenticatedFetch(getApiUrl(`/admin/xml-importer/configs/${configId}/import`), {
+      const response = await fetch(`/admin/xml-importer/configs/${configId}/import`, {
         method: 'POST',
       })
 
@@ -138,12 +138,13 @@ const XmlImporterPage = () => {
   const handleSaveMapping = async (mappingData: any) => {
     try {
       const url = editingMapping
-        ? getApiUrl(`/admin/xml-importer/mappings/${editingMapping.id}`)
-        : getApiUrl('/admin/xml-importer/mappings')
+        ? `/admin/xml-importer/mappings/${editingMapping.id}`
+        : '/admin/xml-importer/mappings'
       const method = editingMapping ? 'PUT' : 'POST'
 
-      const response = await authenticatedFetch(url, {
+      const response = await fetch(url, {
         method,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mappingData),
       })
 
@@ -169,7 +170,7 @@ const XmlImporterPage = () => {
     if (!confirm('Are you sure you want to delete this mapping?')) return
 
     try {
-      const response = await authenticatedFetch(getApiUrl(`/admin/xml-importer/mappings/${id}`), {
+      const response = await fetch(`/admin/xml-importer/mappings/${id}`, {
         method: 'DELETE',
       })
 

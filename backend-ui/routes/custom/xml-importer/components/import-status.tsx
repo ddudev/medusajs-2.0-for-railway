@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react"
-import { getApiUrl, authenticatedFetch } from "../utils"
+import { useState, useEffect } from "react"
 
 interface ImportStatusProps {
   executionId: string
@@ -21,7 +20,7 @@ export const ImportStatus = ({ executionId }: ImportStatusProps) => {
 
   const loadStatus = async () => {
     try {
-      const response = await authenticatedFetch(getApiUrl(`/admin/xml-importer/imports/${executionId}/status`))
+      const response = await fetch(`/admin/xml-importer/imports/${executionId}/status`)
       if (response.ok) {
         const data = await response.json()
         setStatus(data)

@@ -1,0 +1,413 @@
+---
+description: Best practices for CRUD operations using MedusaJS auto-generated service methods, especially for JSONB fields
+globs:
+  - backend/src/modules/**/*.ts
+  - backend/src/api/**/*.ts
+alwaysApply: false
+---
+
+# MedusaJS CRUD Operations with Auto-Generated Methods
+
+This rule documents best practices for using MedusaJS auto-generated CRUD methods from `MedusaService`, with special attention to JSONB field handling.
+
+## Core Principles
+
+1. **Use Auto-Generated Methods** - MedusaService automatically generates CRUD methods for your models
+2. **Follow MedusaJS Patterns** - Use the documented patterns from [Service Factory Reference](https://docs.medusajs.com/resources/service-factory-reference)
+3. **Pass Arrays Directly for JSONB** - Medusa handles JSONB serialization automatically
+4. **Never Use Raw SQL** - Always use Medusa's service methods
+
+## Auto-Generated Methods
+
+When you extend `MedusaService` with models, MedusaJS automatically generates methods:
+
+```typescript
+class MyService extends MedusaService({
+  MyModel,
+  AnotherModel,
+}) {
+  // Auto-generated methods:
+  // - createMyModels(data[])
+  // - updateMyModels(selector, data)
+  // - deleteMyModels(selector)
+  // - listMyModels(options)
+  // - retrieveMyModel(id)
+  // - createAnotherModels(data[])
+  // - updateAnotherModels(selector, data)
+  // ... etc
+}
+```
+
+### Method Naming Convention
+
+- Model: `InnProImportSession` → Methods: `createInnProImportSessions`, `updateInnProImportSessions`, `retrieveInnProImportSession`
+- Model: `FieldMapping` → Methods: `createFieldMappings`, `updateFieldMappings`, `retrieveFieldMapping`
+- Plural for create/update/list, singular for retrieve
+
+## CREATE Operations
+
+### ✅ Correct Pattern
+
+```typescript
+// ✅ Good: Pass array to create method
+async createSession(data: { xml_url: string; parsed_data?: any }) {
+  const sessionData = {
+    id: ulid(),
+    xml_url: data.xml_url,
+    parsed_data: data.parsed_data,
+    status: 'parsing',
+  }
+  
+  // Auto-generated method expects an array
+  const result = await this.createInnProImportSessions([sessionData])
+  const session = Array.isArray(result) && result.length > 0 ? result[0] : result
+  
+  return session as InnProImportSessionType
+}
+```
+
+**Key Points:**
+- Always pass an **array** to create methods: `[data]`
+- Handle both array and single object return types
+- Use type assertions if needed: `as YourType`
+
+### ❌ Wrong Patterns
+
+```typescript
+// ❌ Bad: Passing single object instead of array
+const result = await this.createInnProImportSessions(sessionData)
+
+// ❌ Bad: Using repository directly (bypasses auto-generated methods)
+const [session] = await this.sessionRepository_.create([sessionData])
+```
+
+## RETRIEVE Operations
+
+### ✅ Correct Pattern
+
+```typescript
+// ✅ Good: Use auto-generated retrieve method
+async getSession(id: string): Promise<InnProImportSessionType | null> {
+  try {
+    // Auto-generated retrieve method for single record
+    const session = await this.retrieveInnProImportSession(id)
+    return session as unknown as InnProImportSessionType
+  } catch (error) {
+    // Handle NOT_FOUND errors
+    if (error instanceof MedusaError && error.type === MedusaError.Types.NOT_FOUND) {
+      return null
+    }
+    throw error
+  }
+}
+```
+
+**Key Points:**
+- Use `retrieve[ModelName]` for single record retrieval
+- Method throws `MedusaError.Types.NOT_FOUND` if record doesn't exist
+- Handle errors appropriately
+
+### ❌ Wrong Patterns
+
+```typescript
+// ❌ Bad: Using repository.find() instead of retrieve method
+const sessions = await this.sessionRepository_.find({ where: { id } })
+const session = sessions[0]
+
+// ❌ Bad: Not handling NOT_FOUND errors
+const session = await this.retrieveInnProImportSession(id) // Throws if not found
+```
+
+## UPDATE Operations
+
+### ✅ Correct Pattern (Single Record by ID)
+
+```typescript
+// ✅ Good: Pass id and data in the same object
+async updateSession(
+  id: string,
+  data: Partial<InnProImportSessionType>
+): Promise<InnProImportSessionType> {
+  // Build update payload with id and data together
+  const updatePayload: any = {
+    id, // id in the same object as data
+  }
+  
+  // Add fields to update
+  if ('selected_categories' in data) {
+    updatePayload.selected_categories = data.selected_categories ?? null
+  }
+  if ('selected_brands' in data) {
+    updatePayload.selected_brands = data.selected_brands ?? null
+  }
+  if (data.status !== undefined) {
+    updatePayload.status = data.status
+  }
+  
+  // Pass single object with id + data together
+  const result = await this.updateInnProImportSessions(updatePayload)
+  const updated = Array.isArray(result) && result.length > 0 ? result[0] : result
+  
+  return updated as InnProImportSessionType
+}
+```
+
+**Key Points:**
+- **Pass `id` and data in the same object**: `{ id, ...data }`
+- **Reference**: [MedusaJS Update Documentation](https://docs.medusajs.com/resources/service-factory-reference/methods/update)
+- This is the **official pattern** for updating a single record by ID
+
+### ✅ JSONB Fields - Pass Arrays Directly
+
+```typescript
+// ✅ Good: Pass arrays directly for JSONB fields
+const updatePayload = {
+  id: "session_123",
+  selected_categories: ["1214555907"], // Array directly
+  selected_brands: ["1690965769"],      // Array directly
+  status: "selecting",
+}
+
+await this.updateInnProImportSessions(updatePayload)
+```
+
+**Critical:** MedusaJS handles JSONB serialization automatically. **Never convert arrays to strings!**
+
+### ❌ Wrong Patterns
+
+```typescript
+// ❌ Bad: Using two parameters (old pattern)
+await this.updateInnProImportSessions({ id }, updateData)
+
+// ❌ Bad: Converting arrays to strings for JSONB
+updatePayload.selected_categories = ["1214555907"].join(',') // "1214555907"
+
+// ❌ Bad: Using raw SQL to update JSONB fields
+await pool.query(
+  'UPDATE innpro_import_session SET selected_categories = $1 WHERE id = $2',
+  [JSON.stringify(["1214555907"]), id]
+)
+
+// ❌ Bad: Using repository.update() directly
+await this.sessionRepository_.update({ id }, updateData)
+```
+
+## JSONB Field Handling
+
+### ✅ Correct: Pass Arrays/Objects Directly
+
+MedusaJS automatically serializes JavaScript arrays and objects to JSONB:
+
+```typescript
+// Model definition
+const MyModel = model.define("my_model", {
+  id: model.id().primaryKey(),
+  metadata: model.json().nullable(),        // JSONB field
+  tags: model.json().nullable(),            // JSONB array field
+  selected_ids: model.json().nullable(),    // JSONB array field
+})
+
+// ✅ Good: Pass arrays/objects directly
+await this.updateMyModels({
+  id: "123",
+  metadata: { category: "news", tags: ["update", "json"] }, // Object
+  tags: ["tag1", "tag2"],                                    // Array
+  selected_ids: ["id1", "id2"],                              // Array
+})
+```
+
+**Key Points:**
+- MedusaJS handles JSONB serialization automatically
+- Pass JavaScript arrays/objects directly - **never convert to strings**
+- Use `null` for undefined values: `data.field ?? null`
+
+### ❌ Wrong: String Conversion
+
+```typescript
+// ❌ Bad: Converting arrays to comma-separated strings
+const updatePayload = {
+  id: "123",
+  selected_categories: ["1214555907"].join(','), // "1214555907" - WRONG!
+}
+
+// ❌ Bad: Converting to JSON string manually
+selected_categories: JSON.stringify(["1214555907"]) // String - WRONG!
+```
+
+## LIST Operations
+
+### ✅ Correct Pattern
+
+```typescript
+// ✅ Good: Use auto-generated list method
+async listSessions(): Promise<InnProImportSessionType[]> {
+  const sessions = await this.listInnProImportSessions({
+    where: { status: 'parsing' },
+    order: { created_at: 'DESC' },
+  })
+  
+  return sessions as InnProImportSessionType[]
+}
+```
+
+### Alternative: Use Repository Directly
+
+```typescript
+// ✅ Also valid: Use repository for complex queries
+async listConfigs(): Promise<{ configs: any[]; count: number }> {
+  const [configs, count] = await this.configRepository_.findAndCount({
+    where: { enabled: true },
+    order: { created_at: 'DESC' },
+  })
+  
+  return { configs: Array.isArray(configs) ? configs : [], count }
+}
+```
+
+## DELETE Operations
+
+### ✅ Correct Pattern
+
+```typescript
+// ✅ Good: Use auto-generated delete method
+async deleteSession(id: string): Promise<void> {
+  await this.deleteInnProImportSessions({ id })
+}
+```
+
+## Type Safety
+
+### Handling Auto-Generated Method Types
+
+Auto-generated methods may not have perfect TypeScript types. Use type assertions when needed:
+
+```typescript
+// ✅ Good: Type assertion for auto-generated methods
+// @ts-ignore - Auto-generated method from MedusaService
+const result = await this.updateInnProImportSessions(updatePayload)
+const updated = Array.isArray(result) && result.length > 0 ? result[0] : result
+
+return updated as unknown as InnProImportSessionType
+```
+
+## Error Handling
+
+### ✅ Correct Error Handling
+
+```typescript
+async getSession(id: string): Promise<InnProImportSessionType | null> {
+  try {
+    const session = await this.retrieveInnProImportSession(id)
+    return session as unknown as InnProImportSessionType
+  } catch (error) {
+    // Handle NOT_FOUND specifically
+    if (error instanceof MedusaError && error.type === MedusaError.Types.NOT_FOUND) {
+      return null
+    }
+    // Re-throw other errors
+    throw error
+  }
+}
+```
+
+## Common Patterns
+
+### Pattern: Update with Verification
+
+```typescript
+async updateSession(
+  id: string,
+  data: Partial<InnProImportSessionType>
+): Promise<InnProImportSessionType> {
+  // Build update payload
+  const updatePayload: any = { id }
+  if ('selected_categories' in data) {
+    updatePayload.selected_categories = data.selected_categories ?? null
+  }
+  
+  // Update
+  const result = await this.updateInnProImportSessions(updatePayload)
+  const updated = Array.isArray(result) && result.length > 0 ? result[0] : result
+  
+  // Verify update worked
+  const verifySession = await this.getSession(id)
+  return verifySession as InnProImportSessionType
+}
+```
+
+### Pattern: Create with Error Handling
+
+```typescript
+async createSession(data: { xml_url: string }): Promise<InnProImportSessionType> {
+  try {
+    const sessionData = {
+      id: ulid(),
+      xml_url: data.xml_url,
+      status: 'parsing',
+    }
+    
+    const result = await this.createInnProImportSessions([sessionData])
+    const session = Array.isArray(result) && result.length > 0 ? result[0] : result
+    
+    if (!(session as any)?.id) {
+      throw new Error('Session created but no ID returned')
+    }
+    
+    return session as unknown as InnProImportSessionType
+  } catch (error) {
+    this.logger_.error(`Error creating session: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    throw error
+  }
+}
+```
+
+## Checklist for CRUD Operations
+
+When implementing CRUD operations:
+
+- [ ] Use auto-generated methods from `MedusaService` (not repository directly)
+- [ ] For **CREATE**: Pass array `[data]` to create methods
+- [ ] For **RETRIEVE**: Use `retrieve[ModelName](id)` for single records
+- [ ] For **UPDATE**: Pass `{ id, ...data }` in a single object (not two parameters)
+- [ ] For **JSONB fields**: Pass arrays/objects directly (never convert to strings)
+- [ ] Handle `MedusaError.Types.NOT_FOUND` for retrieve operations
+- [ ] Use type assertions (`as unknown as YourType`) when needed
+- [ ] Add `@ts-ignore` comments for auto-generated methods if TypeScript complains
+- [ ] Never use raw SQL for CRUD operations
+- [ ] Never use repository methods directly (use auto-generated service methods)
+
+## References
+
+- [MedusaJS Service Factory Reference](https://docs.medusajs.com/resources/service-factory-reference) - Official documentation
+- [Update Method Documentation](https://docs.medusajs.com/resources/service-factory-reference/methods/update) - Update operation patterns
+- [JSON Properties Documentation](https://docs.medusajs.com/learn/fundamentals/data-models/json-properties) - JSONB field handling
+
+## Troubleshooting
+
+### Issue: JSONB arrays not persisting
+
+**Symptoms:** Arrays are saved as `null` or not persisted at all.
+
+**Solution:**
+1. Ensure you're using the single object pattern: `{ id, ...data }`
+2. Pass arrays directly (not strings): `selected_categories: ["id1", "id2"]`
+3. Use `null` for undefined: `data.field ?? null`
+
+### Issue: "Method not found" errors
+
+**Symptoms:** TypeScript errors about methods not existing.
+
+**Solution:**
+1. Ensure model is passed to `MedusaService({ YourModel })`
+2. Use `@ts-ignore` comment for auto-generated methods
+3. Check method naming: `create[ModelName]s`, `update[ModelName]s`, `retrieve[ModelName]`
+
+### Issue: Update not working
+
+**Symptoms:** Update succeeds but data doesn't change.
+
+**Solution:**
+1. Verify you're using single object pattern: `{ id, ...data }`
+2. Check that fields are included in the update payload
+3. Verify the record exists before updating
+4. Add verification step: retrieve record after update to confirm

@@ -8,6 +8,7 @@ import parse from "html-react-parser"
 import { Tabs, Tab, Box, Typography } from "@mui/material"
 
 import { HttpTypes } from "@medusajs/types"
+import ProductReviews from "../product-reviews"
 
 type ProductTabsProps = {
   product: HttpTypes.StoreProduct
@@ -33,6 +34,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
           <Tab label="Какво е включено" />
           <Tab label="Product Information" />
           <Tab label="Shipping & Returns" />
+          <Tab label="Ревюта" />
         </Tabs>
       </Box>
       <Box>
@@ -41,6 +43,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
         {activeTab === 2 && <IncludedItemsTab product={product} />}
         {activeTab === 3 && <ProductInfoTab product={product} />}
         {activeTab === 4 && <ShippingInfoTab />}
+        {activeTab === 5 && <ProductReviews productId={product.id!} />}
       </Box>
     </div>
   )

@@ -52,9 +52,8 @@ const InnProImporterPage = () => {
       const data = responseText ? JSON.parse(responseText) : {}
       setSessionData((prev: any) => ({
         ...prev,
-        selectedCount: data.selectedCount || data.filteredProducts || 0,
-        filteredProducts: data.filteredProducts || data.selectedCount || 0,
-        brandCountsByCategory: data.brandCountsByCategory || {},
+        selectedCount: data.selectedCount,
+        filteredProducts: data.filteredProducts,
       }))
       setStep('preview')
     } catch (err) {
@@ -124,8 +123,8 @@ const InnProImporterPage = () => {
           }
         }
       } catch (err) {
-          console.error('Error polling status:', err)
-        }
+        console.error('Error polling status:', err)
+      }
     }, 2000) // Poll every 2 seconds
 
     // Stop polling after 5 minutes

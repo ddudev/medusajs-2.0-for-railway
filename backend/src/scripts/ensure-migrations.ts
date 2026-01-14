@@ -8,7 +8,7 @@ import { join } from "path"
  * This script runs automatically at startup via the 'start' command in package.json
  * 
  * It ensures:
- * 1. Custom tables exist (econt_settings, xml_import_sessions, innpro_import_sessions, brand)
+ * 1. Custom tables exist (econt_settings, xml_import_sessions, innpro_import_sessions, brand, review)
  * 2. Missing columns are added to MedusaJS tables:
  *    - promotion.limit (integer, nullable) - Usage limit for promotions
  *    - promotion.used (integer, NOT NULL, default 0) - Usage count for promotions
@@ -16,6 +16,10 @@ import { join } from "path"
  * 
  * These columns are required for MedusaJS 2.12.3+ compatibility but may be missing
  * in databases upgraded from older MedusaJS versions.
+ * 
+ * Note: MedusaJS module migrations (like product-review) are primarily handled by
+ * 'init-backend' which runs 'medusa db:migrate'. This script provides a safety net
+ * to ensure tables exist even if migrations haven't run yet.
  * 
  * The script is idempotent - safe to run multiple times.
  */
@@ -250,6 +254,55 @@ export default async function ensureMigrations() {
       console.log("✅ brand table created")
     } else {
       console.log("✅ brand table already exists")
+    }
+
+    // Check and create review table if it doesn't exist (Product Review module)
+    // Note: Primary migration is handled by Medusa's migration system via Migration20260114065932.ts
+    // This is a safety net in case migrations haven't run yet
+    const reviewExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'review'
+      );
+    `)
+
+    if (!reviewExists.rows[0]?.exists) {
+      console.log("📦 Creating review table (Product Review module)...")
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "review" (
+          "id" text NOT NULL,
+          "title" text NULL,
+          "content" text NOT NULL,
+          "rating" real NOT NULL,
+          "first_name" text NOT NULL,
+          "last_name" text NOT NULL,
+          "status" text CHECK ("status" IN ('pending', 'approved', 'rejected')) NOT NULL DEFAULT 'pending',
+          "product_id" text NOT NULL,
+          "customer_id" text NULL,
+          "created_at" timestamptz NOT NULL DEFAULT now(),
+          "updated_at" timestamptz NOT NULL DEFAULT now(),
+          "deleted_at" timestamptz NULL,
+          CONSTRAINT "review_pkey" PRIMARY KEY ("id"),
+          CONSTRAINT "rating_range" CHECK (rating >= 1 AND rating <= 5)
+        );
+      `)
+
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "IDX_REVIEW_PRODUCT_ID" 
+        ON "review" ("product_id") 
+        WHERE deleted_at IS NULL;
+      `)
+
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "IDX_review_deleted_at" 
+        ON "review" ("deleted_at") 
+        WHERE deleted_at IS NULL;
+      `)
+
+      console.log("✅ review table created")
+    } else {
+      console.log("✅ review table already exists")
     }
 
     // Check if product-brand link table exists

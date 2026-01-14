@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react"
-import { getApiUrl, authenticatedFetch } from "../utils"
+import { useState, useEffect } from "react"
 
 interface FieldMappingEditorProps {
   mapping?: any
@@ -71,7 +70,7 @@ export const FieldMappingEditor = ({
     // If we have a mapping, initialize formData with it (for editing)
     if (mapping) {
       if (mapping.xmlUrl) {
-        setXmlUrl(mapping.xmlUrl)
+      setXmlUrl(mapping.xmlUrl)
       }
       // Update formData when mapping changes - preserve all properties including categoryDelimiter
       setFormData({
@@ -96,7 +95,7 @@ export const FieldMappingEditor = ({
   const loadMedusaFields = async () => {
     setLoadingMedusaFields(true)
     try {
-      const response = await authenticatedFetch(getApiUrl('/admin/xml-importer/product-fields'))
+      const response = await fetch('/admin/xml-importer/product-fields')
       if (response.ok) {
         const data = await response.json()
         setMedusaFields(data.fields || [])
@@ -119,8 +118,11 @@ export const FieldMappingEditor = ({
     setLoadingXml(true)
     setXmlError(null)
     try {
-      const response = await authenticatedFetch(getApiUrl('/admin/xml-importer/analyze-xml'), {
+      const response = await fetch('/admin/xml-importer/analyze-xml', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           xmlUrl,
         }),

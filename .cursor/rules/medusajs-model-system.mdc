@@ -91,7 +91,6 @@ class XmlProductImporterService extends MedusaService({
     fieldMappingRepository,
     importConfigRepository,
   }: InjectedDependencies) {
-    // @ts-ignore - MedusaService constructor
     super(...arguments)
     this.logger_ = logger
     this.fieldMappingRepository_ = fieldMappingRepository
