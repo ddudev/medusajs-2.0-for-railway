@@ -6,7 +6,6 @@ import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { PRODUCT_REVIEW_MODULE } from "../../../../../modules/product-review"
 import ProductReviewModuleService from "../../../../../modules/product-review/service"
 import { createFindParams } from "@medusajs/medusa/api/utils/validators"
-import type { ZodSchema } from "zod"
 
 export const GetStoreReviewsSchema: ReturnType<typeof createFindParams> = createFindParams()
 

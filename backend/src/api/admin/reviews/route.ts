@@ -3,7 +3,6 @@ import {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import { createFindParams } from "@medusajs/medusa/api/utils/validators"
-import type { ZodSchema } from "zod"
 
 export const GetAdminReviewsSchema: ReturnType<typeof createFindParams> = createFindParams()
 
