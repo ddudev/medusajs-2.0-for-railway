@@ -91,6 +91,14 @@ Video instructions: https://youtu.be/PPxenu7IjGM
 `cd storefront/`
 `npm run dev` or `pnpm dev` will run the storefront on uncompiled code, with hot-reloading as files are saved with changes.
 
+## Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs/) directory:
+
+- **[PostHog Analytics Integration](./docs/POSTHOG_ANALYTICS_INTEGRATION.md)** - Complete guide to PostHog analytics setup, event tracking, and configuration
+- **[PostHog Quick Reference](./docs/POSTHOG_QUICK_REFERENCE.md)** - Quick reference for environment variables and common tasks
+- [Documentation Index](./docs/README.md) - All available documentation
+
 ## Useful resources
 - How to setup credit card payment with Stripe payment module: https://youtu.be/dcSOpIzc1Og
 - https://funkyton.com/medusajs-2-0-is-finally-here/#succuessfully-deployed-whats-next
