@@ -209,26 +209,14 @@ export default function ProductTileContent({
 
           {/* Price Section - EUR prominent, BGN secondary */}
           {cheapestPrice ? (
-            <Box className="flex flex-col gap-1 mb-4 md:mb-5">
-              <div className="flex items-baseline gap-2">
-                <Typography
-                  variant="h6"
-                  className="text-text-primary font-bold text-lg md:text-xl"
-                  component="span"
-                >
-                  {cheapestPrice.calculated_price_parts?.eur || ''}
-                </Typography>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <Typography
-                  variant="body2"
-                  className="text-text-secondary font-semibold text-sm md:text-base"
-                  component="span"
-                >
-                  {cheapestPrice.calculated_price_parts?.bgn || ''}
-                </Typography>
-              </div>
-            </Box>
+            <div className="flex justify-between items-baseline mb-4 md:mb-5">
+              <span className="text-text-primary font-bold text-lg md:text-xl">
+                {cheapestPrice.calculated_price_parts?.eur || ''}
+              </span>
+              <span className="text-text-secondary font-semibold text-sm md:text-base">
+                {cheapestPrice.calculated_price_parts?.bgn || ''}
+              </span>
+            </div>
           ) : (
             <Typography variant="body2" color="text.secondary" className="mb-4 md:mb-5">
               {t("product.priceNotAvailable")}
