@@ -16,7 +16,7 @@ import {
   CircularProgress,
   IconButton,
 } from '@mui/material'
-import { ShoppingCart, FavoriteBorder } from '@mui/icons-material'
+import { AddShoppingCart, FavoriteBorder } from '@mui/icons-material'
 import { HttpTypes } from '@medusajs/types'
 import { getProductPrice } from '@lib/util/get-product-price'
 import { addToCartAction } from '@modules/products/actions/add-to-cart'
@@ -218,12 +218,6 @@ export default function ProductTileContent({
                 >
                   {cheapestPrice.calculated_price_parts?.eur || ''}
                 </Typography>
-                <Typography
-                  variant="caption"
-                  className="text-text-secondary font-medium"
-                >
-                  / бр.
-                </Typography>
               </div>
               <div className="flex items-baseline gap-2">
                 <Typography
@@ -232,12 +226,6 @@ export default function ProductTileContent({
                   component="span"
                 >
                   {cheapestPrice.calculated_price_parts?.bgn || ''}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  className="text-text-tertiary font-medium"
-                >
-                  / бр.
                 </Typography>
               </div>
             </Box>
@@ -254,7 +242,7 @@ export default function ProductTileContent({
         <Button
           variant="contained"
           fullWidth
-          startIcon={isAdding ? <CircularProgress size={16} color="inherit" /> : <ShoppingCart className="text-white" />}
+          startIcon={isAdding ? <CircularProgress size={16} color="inherit" /> : <AddShoppingCart />}
           disabled={!isInStock || isAdding || !defaultVariant}
           onClick={handleAddToCartClick}
           className="bg-primary hover:bg-primary-hover text-white transition-all duration-200 h-11 md:h-12 rounded-xl shadow-sm hover:shadow-md border-none"
@@ -266,9 +254,10 @@ export default function ProductTileContent({
               fontSize: '0.9375rem',
             },
             '&.MuiButton-contained': {
-              backgroundColor: '#FF6B35', // primary
-              color: '#FFFFFF',
+              backgroundColor: '#FFFFFF', // primary
+              color: '#373737',
               '&:hover': {
+                color: '#FFFFFF',
                 backgroundColor: '#E55A2B', // primary-hover
               },
             },
