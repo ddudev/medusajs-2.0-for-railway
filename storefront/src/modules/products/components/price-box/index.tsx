@@ -101,14 +101,8 @@ export default function PriceBox({
           <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-text-primary">
             {priceParts.eur}
           </span>
-          <span className="text-base md:text-lg text-text-primary">
-            / бр.
-          </span>
           <span className="text-lg md:text-xl text-text-secondary">
             {priceParts.bgn}
-          </span>
-          <span className="text-base md:text-lg text-text-secondary">
-            / бр.
           </span>
         </div>
       </div>
@@ -123,6 +117,7 @@ export default function PriceBox({
             className="text-white hover:bg-white/20"
             size="small"
             aria-label="Decrease quantity"
+            sx={{ color: 'white' }}
           >
             <Remove />
           </IconButton>
@@ -152,6 +147,11 @@ export default function PriceBox({
                   color: "white",
                   fontSize: "1rem",
                   fontWeight: 600,
+                  MozAppearance: "textfield",
+                  "&::-webkit-outer-spin-button, &::-webkit-inner-spin-button": {
+                    WebkitAppearance: "none",
+                    margin: 0,
+                  },
                 },
               },
             }}
@@ -162,6 +162,7 @@ export default function PriceBox({
             className="text-white hover:bg-white/20"
             size="small"
             aria-label="Increase quantity"
+            sx={{ color: 'white' }}
           >
             <Add />
           </IconButton>

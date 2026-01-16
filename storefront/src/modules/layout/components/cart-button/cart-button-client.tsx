@@ -69,7 +69,7 @@ const CartButtonClient = ({ cart }: CartButtonClientProps) => {
       </div>
 
       {/* Price Info - Horizontal Layout - Hidden on mobile */}
-      <div className="hidden md:flex items-center gap-3">
+      <div className="hidden lg:flex items-center gap-3">
         <span className="text-base font-medium text-text-primary whitespace-nowrap">
           {priceParts.eur !== '0' ? priceParts.eur : ""}
         </span>
