@@ -5,68 +5,78 @@ const path = require("path")
 // In a production setup, you might want to compile these to JS or use a different approach
 const themeColors = {
   primary: {
-    base: "#1976D2", // Main - medium-dark blue
-    hover: "#1565C0",
-    active: "#0D47A1",
+    base: "#FF6B35", // Main - Orange (brand color)
+    hover: "#E55A2B",
+    active: "#CC5529",
     disabled: "#9E9E9E",
-    light: "#2196F3", // Primary - bright medium blue
-    dark: "#1565C0",
+    light: "#FF8C5A",
+    dark: "#E55A2B",
+    "1": "#FF6B35", // Primary/1
+    "2": "#E55A2B", // Primary/2
+    "4": "rgba(255, 107, 53, 0.1)", // Primary/4 - Light primary
+    "5": "rgba(255, 107, 53, 0.05)", // Primary/5 - Very light primary
   },
   secondary: {
-    base: "#26A69A", // Main - teal/cyan
-    hover: "#00897B",
-    active: "#00695C",
-    disabled: "#9E9E9E",
-    light: "#4DB6AC",
-    dark: "#00897B",
+    base: "#FFFFFF", // White for backgrounds
+    hover: "#F9FAFB",
+    active: "#F3F4F6",
+    disabled: "#E5E7EB",
+    light: "#FFFFFF",
+    dark: "#F9FAFB",
   },
   accent: {
-    base: "#9C27B0", // Contrast - medium purple
-    hover: "#7B1FA2",
-    light: "#BA68C8",
-    dark: "#6A1B9A",
+    base: "#FF6B35", // Contrast - Vibrant reddish orange
+    hover: "#E55A2B",
+    light: "#FF8C5A",
+    dark: "#CC5529",
+    "1": "#FF6B35", // Contrast/1
   },
   interactive: {
-    base: "#2196F3", // Primary/Interactive - bright medium blue
-    hover: "#1976D2", // Main - medium-dark blue
-    active: "#1565C0",
+    base: "#1F2937", // Interactive - Very dark gray/black
+    hover: "#111827", // Darker on hover
+    active: "#0F172A", // Even darker when active
     disabled: "#9E9E9E",
-    light: "#90CAF9", // Primary - light pastel blue
-    dark: "#1976D2",
+    light: "#374151",
+    dark: "#111827",
+    main: "#1F2937", // Interactive/main
   },
   success: {
-    base: "#4CAF50", // Sec - medium green
-    hover: "#43A047",
-    light: "#66BB6A",
-    dark: "#2E7D32",
+    base: "#2D8659", // Sec - Medium-dark green
+    hover: "#256F4A",
+    light: "#4FA675",
+    dark: "#1F5C3D",
   },
   error: {
-    base: "#F44336", // Sec - medium red
-    hover: "#E53935",
-    light: "#EF5350",
-    dark: "#C62828",
+    base: "#D97706", // Sec - Terracotta/burnt orange
+    hover: "#B86205",
+    light: "#E68A2E",
+    dark: "#9A4F04",
   },
   warning: {
-    base: "#FF9800", // Sec - bright orange
-    hover: "#FB8C00",
-    light: "#FFB74D",
-    dark: "#F57C00",
+    base: "#F59E0B", // Sec - Orange-gold
+    hover: "#D97706",
+    light: "#FBBF24",
+    dark: "#B45309",
   },
   text: {
-    primary: "#424242", // Text - very dark gray
-    secondary: "#616161", // Text - dark gray
-    tertiary: "#9E9E9E", // Text - medium-light gray
+    primary: "#1F2937", // Text/1 - Very dark gray
+    secondary: "#4B5563", // Text/2 - Medium-dark gray
+    tertiary: "#9CA3AF", // Text/3 - Light taupe/beige-gray
+    "4": "#FFFFFF", // Text/4 - White
     inverse: "#FFFFFF",
   },
   background: {
-    base: "#FFFFFF",
-    elevated: "#F9FAFB",
+    base: "#F9FAFB", // BG/2 - Light gray page background
+    elevated: "#FFFFFF", // BG/Boxes - White for product boxes
     overlay: "rgba(0, 0, 0, 0.5)",
   },
   border: {
-    base: "#E5E7EB",
+    base: "#E5E7EB", // Neutral/2
     hover: "#D1D5DB",
-    focus: "#1976D2", // Primary main
+    focus: "#36C1C7", // Primary turquoise
+  },
+  neutral: {
+    "2": "#E5E7EB", // Neutral/2 - Border color
   },
 }
 
@@ -156,6 +166,20 @@ module.exports = {
     "./node_modules/@medusajs/ui/dist/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
+    screens: {
+      "2xsmall": "320px",
+      xsmall: "512px",
+      sm: "640px",
+      md: "768px",
+      tablet: "768px",
+      lg: "1024px",
+      small: "1024px",
+      desktop: "1024px",
+      medium: "1280px",
+      large: "1440px",
+      xlarge: "1680px",
+      "2xlarge": "1920px",
+    },
     extend: {
       transitionProperty: {
         width: "width margin",
@@ -174,6 +198,17 @@ module.exports = {
           disabled: themeColors.primary.disabled,
           light: themeColors.primary.light,
           dark: themeColors.primary.dark,
+          "1": themeColors.primary["1"],
+          "2": themeColors.primary["2"],
+          "4": themeColors.primary["4"],
+          "5": themeColors.primary["5"],
+        },
+        accent: {
+          DEFAULT: themeColors.accent.base,
+          hover: themeColors.accent.hover,
+          light: themeColors.accent.light,
+          dark: themeColors.accent.dark,
+          "1": themeColors.accent["1"],
         },
         secondary: {
           DEFAULT: themeColors.secondary.base,
@@ -182,12 +217,6 @@ module.exports = {
           disabled: themeColors.secondary.disabled,
           light: themeColors.secondary.light,
           dark: themeColors.secondary.dark,
-        },
-        accent: {
-          DEFAULT: themeColors.accent.base,
-          hover: themeColors.accent.hover,
-          light: themeColors.accent.light,
-          dark: themeColors.accent.dark,
         },
         interactive: {
           DEFAULT: themeColors.interactive.base,
@@ -230,6 +259,9 @@ module.exports = {
           DEFAULT: themeColors.border.base,
           hover: themeColors.border.hover,
           focus: themeColors.border.focus,
+        },
+        neutral: {
+          "2": themeColors.neutral["2"],
         },
         // Keep existing grey scale for backward compatibility
         grey: {
@@ -308,15 +340,6 @@ module.exports = {
       },
       maxWidth: {
         "8xl": "100rem",
-      },
-      screens: {
-        "2xsmall": "320px",
-        xsmall: "512px",
-        small: "1024px",
-        medium: "1280px",
-        large: "1440px",
-        xlarge: "1680px",
-        "2xlarge": "1920px",
       },
       keyframes: {
         ring: {

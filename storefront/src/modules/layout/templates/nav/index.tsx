@@ -1,22 +1,45 @@
-import { Suspense } from "react"
+import { Suspense, cache } from "react"
 
-import TopPromoBar from "@modules/layout/components/top-promo-bar"
+import TopHeader from "@modules/layout/components/top-promo-bar"
 import MainHeader from "@modules/layout/components/main-header"
-import CategoryNav from "@modules/layout/components/category-nav"
+import CartButton from "@modules/layout/components/cart-button"
+import { enrichLineItems, retrieveCart } from "@lib/data/cart"
+import { getCategoriesList } from "@lib/data/categories"
 
-// Nav component - CartButton is already wrapped in Suspense in MainHeader
-// TopPromoBar and CategoryNav don't access cookies, so they can prerender
+// Cache the cart fetch to prevent duplicate calls within the same request
+const fetchCart = cache(async () => {
+  try {
+    const cart = await retrieveCart()
+
+    if (!cart) {
+      return null
+    }
+
+    if (cart?.items?.length) {
+      const enrichedItems = await enrichLineItems(cart.items, cart.region_id!)
+      cart.items = enrichedItems
+    }
+
+    return cart
+  } catch (error) {
+    console.error("Error fetching cart:", error)
+    return null
+  }
+})
+
+// Nav component - Fetch cart here (Server Component) and pass to TopPromoBar
 export default async function Nav({ countryCode }: { countryCode: string }) {
+  // Fetch cart in Server Component to avoid "Server Functions cannot be called during initial render" error
+  const cart = await fetchCart()
+  const { product_categories } = await getCategoriesList(0, 100)
+
   return (
     <div className="sticky top-0 inset-x-0 z-50 group">
-      {/* Top Promotional Bar - can prerender */}
-      <TopPromoBar />
+      {/* Top Promotional Bar - Black bar with logo, search, login, cart */}
+      <TopHeader cart={cart} categories={product_categories} />
 
-      {/* Main Header - CartButton is wrapped in Suspense inside MainHeader */}
-      <MainHeader countryCode={countryCode} />
-
-      {/* Category Navigation - can prerender */}
-      <CategoryNav countryCode={countryCode} />
+      {/* Main Header - Black bar with orange All Products button and category links */}
+      <MainHeader countryCode={countryCode} categories={product_categories} />
     </div>
   )
 }

@@ -59,14 +59,23 @@ const SortDropdown = ({
 
   return (
     <div className="flex items-center gap-2" data-testid={dataTestId}>
-      <span className="hidden md:inline text-sm text-gray-600">{t("filters.sortBy")}:</span>
-      <FormControl 
-        size="small" 
-        sx={{ 
-          minWidth: 180,
+      <span className="text-sm font-medium text-text-tertiary">{t("filters.sortBy")}:</span>
+      <FormControl
+        size="small"
+        sx={{
+          minWidth: 150,
           '& .MuiOutlinedInput-root': {
-            borderRadius: '4px',
+            borderRadius: '8px',
+            color: 'white',
+            fontWeight: 600,
+            fontSize: '0.875rem',
+            '& fieldset': { border: 'none' },
+            '&:hover fieldset': { border: 'none' },
+            '&.Mui-focused fieldset': { border: 'none' },
           },
+          '& .MuiSelect-icon': {
+            color: 'white',
+          }
         }}
       >
         <Select
@@ -75,9 +84,22 @@ const SortDropdown = ({
           displayEmpty
           IconComponent={KeyboardArrowDown}
           sx={{
-            fontSize: '0.875rem',
             '& .MuiSelect-select': {
-              padding: '8px 32px 8px 12px',
+              padding: '4px 32px 4px 0px',
+            },
+          }}
+          MenuProps={{
+            PaperProps: {
+              sx: {
+                bgcolor: '#1a1a1a',
+                color: 'white',
+                '& .MuiMenuItem-root:hover': {
+                  bgcolor: 'rgba(255,255,255,0.1)',
+                },
+                '& .Mui-selected': {
+                  bgcolor: 'rgba(255,255,255,0.2) !important',
+                },
+              },
             },
           }}
         >

@@ -1,37 +1,71 @@
 "use client"
 
+import Image from "next/image"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import SearchBar from "@modules/layout/components/main-header/search-bar"
+import AccountLink from "@modules/layout/components/main-header/account-link"
+import CartButtonClient from "@modules/layout/components/cart-button/cart-button-client"
+import SlideInCartWrapper from "@modules/layout/components/cart-button/slide-in-cart-wrapper"
+import { HttpTypes } from "@medusajs/types"
 
-const TopPromoBar = () => {
-  const { t } = useTranslation()
+import MobileMenu from "@modules/layout/components/mobile-menu"
 
+type TopHeaderProps = {
+  cart: HttpTypes.StoreCart | null
+  categories?: HttpTypes.StoreProductCategory[]
+}
+
+const TopHeader = ({ cart, categories = [] }: TopHeaderProps) => {
   return (
-    <div className="w-full bg-primary text-text-inverse py-2">
-      <div className="content-container">
-        <div className="flex items-center justify-center gap-8 md:gap-12">
-          {[1, 2, 3].map((index) => (
+    <div className="w-full bg-white h-[64px] md:h-[106px] border-b border-gray-100 md:border-none shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-[100] sticky top-0">
+      <div className="content-container h-full">
+        <div className="flex items-center justify-between gap-4 h-full relative">
+
+          {/* Mobile Only: Left Hamburger Menu */}
+          <div className="flex md:hidden items-center">
+            <MobileMenu regions={[]} categories={categories} />
+          </div>
+
+          {/* Logo - Centered on mobile, Left on desktop */}
+          <div className="flex-1 md:flex-none flex justify-center md:justify-start">
             <LocalizedClientLink
-              key={index}
-              href="/store"
-              prefetch={false}
-              className="flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity"
+              href="/"
+              className="flex items-center"
+              data-testid="nav-store-link"
             >
-              <svg
-                className="w-4 h-4"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              <span>{t("common.promotion") || "Promotion"}</span>
+              <Image
+                src="/images/nez-logo-color-light.svg"
+                alt="NEZBG Logo"
+                width={120}
+                height={32}
+                priority
+                className="object-contain block"
+                style={{ height: '32px', width: '120px', minHeight: '32px', minWidth: '120px' }}
+              />
             </LocalizedClientLink>
-          ))}
+          </div>
+
+          {/* Desktop Only: Center Search Bar */}
+          <div className="hidden md:flex flex-1 max-w-2xl mx-4 relative">
+            <SearchBar />
+          </div>
+
+          {/* Right Group: Search (mobile), Account, Cart */}
+          <div className="flex items-center gap-3 md:gap-4 flex-shrink-0">
+            {/* Mobile Search Icon */}
+            <div className="md:hidden">
+              <SearchBar />
+            </div>
+
+            <AccountLink />
+            <CartButtonClient cart={cart} />
+            <SlideInCartWrapper cart={cart} />
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-export default TopPromoBar
+export default TopHeader
 

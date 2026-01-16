@@ -48,71 +48,90 @@
 
 /* Theme CSS Variables - Can be overridden for client customization */
 :root {
-  /* Primary Color System - Blue (Main) */
-  --color-primary: #1976D2;
-  --color-primary-hover: #1565C0;
-  --color-primary-active: #0D47A1;
+  /* Primary Color System - Orange (Main Brand Color) */
+  --color-primary: #FF6B35;
+  --color-primary-hover: #E55A2B;
+  --color-primary-active: #CC5529;
   --color-primary-disabled: #9E9E9E;
-  --color-primary-light: #2196F3;
-  --color-primary-dark: #1565C0;
+  --color-primary-light: #FF8C5A;
+  --color-primary-dark: #E55A2B;
+  --color-primary-1: #FF6B35;
+  /* Primary/1 */
+  --color-primary-2: #E55A2B;
+  /* Primary/2 */
+  --color-primary-4: rgba(255, 107, 53, 0.1);
+  /* Primary/4 - Light primary */
+  --color-primary-5: rgba(255, 107, 53, 0.05);
+  /* Primary/5 - Very light primary */
 
-  /* Secondary Color System - Teal/Cyan (Main) */
-  --color-secondary: #26A69A;
-  --color-secondary-hover: #00897B;
-  --color-secondary-active: #00695C;
-  --color-secondary-disabled: #9E9E9E;
-  --color-secondary-light: #4DB6AC;
-  --color-secondary-dark: #00897B;
+  /* Secondary Color System - White (Main) */
+  --color-secondary: #FFFFFF;
+  --color-secondary-hover: #F9FAFB;
+  --color-secondary-active: #F3F4F6;
+  --color-secondary-disabled: #E5E7EB;
+  --color-secondary-light: #FFFFFF;
+  --color-secondary-dark: #F9FAFB;
 
-  /* Accent Colors - Purple (Contrast) */
-  --color-accent: #9C27B0;
-  --color-accent-hover: #7B1FA2;
-  --color-accent-light: #BA68C8;
-  --color-accent-dark: #6A1B9A;
+  /* Accent Colors - Orange (Contrast) */
+  --color-accent: #FF6B35;
+  --color-accent-hover: #E55A2B;
+  --color-accent-light: #FF8C5A;
+  --color-accent-dark: #CC5529;
+  --color-contrast-1: #FF6B35;
+  /* Contrast/1 */
 
-  /* Interactive Colors - Blue (Primary/Interactive) */
-  --color-interactive: #2196F3;
-  --color-interactive-hover: #1976D2;
-  --color-interactive-active: #1565C0;
+  /* Interactive Colors - Black/Dark Gray (Interactive) */
+  --color-interactive: #1F2937;
+  --color-interactive-hover: #111827;
+  --color-interactive-active: #0F172A;
   --color-interactive-disabled: #9E9E9E;
+  --color-interactive-main: #1F2937;
+  /* Interactive/main */
 
   /* Success Colors - Green (Sec) */
-  --color-success: #4CAF50;
-  --color-success-hover: #43A047;
-  --color-success-light: #66BB6A;
-  --color-success-dark: #2E7D32;
+  --color-success: #2D8659;
+  --color-success-hover: #256F4A;
+  --color-success-light: #4FA675;
+  --color-success-dark: #1F5C3D;
 
-  /* Error/Danger Colors - Red (Sec) */
-  --color-error: #F44336;
-  --color-error-hover: #E53935;
-  --color-error-light: #EF5350;
-  --color-error-dark: #C62828;
-  --color-danger: #F44336;
-  --color-danger-hover: #E53935;
-  --color-danger-light: #EF5350;
-  --color-danger-dark: #C62828;
+  /* Error/Danger Colors - Terracotta (Sec) */
+  --color-error: #D97706;
+  --color-error-hover: #B86205;
+  --color-error-light: #E68A2E;
+  --color-error-dark: #9A4F04;
+  --color-danger: #D97706;
+  --color-danger-hover: #B86205;
+  --color-danger-light: #E68A2E;
+  --color-danger-dark: #9A4F04;
 
-  /* Warning/Alert Colors - Orange (Sec) */
-  --color-warning: #FF9800;
-  --color-warning-hover: #FB8C00;
-  --color-warning-light: #FFB74D;
-  --color-warning-dark: #F57C00;
-  --color-alert: #FF9800;
-  --color-alert-hover: #FB8C00;
-  --color-alert-light: #FFB74D;
-  --color-alert-dark: #F57C00;
+  /* Warning/Alert Colors - Orange-Gold (Sec) */
+  --color-warning: #F59E0B;
+  --color-warning-hover: #D97706;
+  --color-warning-light: #FBBF24;
+  --color-warning-dark: #B45309;
+  --color-alert: #F59E0B;
+  --color-alert-hover: #D97706;
+  --color-alert-light: #FBBF24;
+  --color-alert-dark: #B45309;
 
   /* Text Colors */
-  --color-text-primary: #424242;
-  --color-text-secondary: #616161;
-  --color-text-tertiary: #9E9E9E;
-  --color-text-muted: #9E9E9E;
+  --color-text-primary: #1F2937;
+  /* Text/1 - Very dark gray */
+  --color-text-secondary: #4B5563;
+  /* Text/2 - Medium-dark gray */
+  --color-text-tertiary: #9CA3AF;
+  /* Text/3 - Light taupe/beige-gray */
+  --color-text-4: #FFFFFF;
+  /* Text/4 - White */
+  --color-text-muted: #9CA3AF;
   --color-text-white: #FFFFFF;
   --color-text-inverse: #FFFFFF;
 
   /* Background Colors */
-  --color-background-base: #FFFFFF;
-  --color-background-elevated: #F9FAFB;
+  --color-background-base: #F9FAFB;
+  /* BG/2 - Light gray page background */
+  --color-background-elevated: #FFFFFF;
+  /* BG/Boxes - White for product boxes */
   --color-background-overlay: rgba(0, 0, 0, 0.5);
   --color-bg-primary: #FFFFFF;
   --color-bg-secondary: #F9FAFB;
@@ -120,16 +139,14 @@
   --color-bg-dark-secondary: #1F2937;
   --color-bg-gray: #F3F4F6;
 
-  /* Contrast Colors */
-  --color-contrast-white: #FFFFFF;
-  --color-contrast-black: #000000;
-  --color-contrast-gray: #616161;
-  --color-contrast-purple: #9C27B0;
+  /* Neutral Colors */
+  --color-neutral-2: #E5E7EB;
+  /* Neutral/2 - Border color */
 
   /* Border Colors */
   --color-border-base: #E5E7EB;
   --color-border-hover: #D1D5DB;
-  --color-border-focus: #1976D2;
+  --color-border-focus: #FF6B35;
   --color-border: #E5E7EB;
   --color-border-light: #F3F4F6;
   --color-border-dark: #D1D5DB;
@@ -137,10 +154,16 @@
   /* Shadow Colors */
   --color-shadow: rgba(0, 0, 0, 0.1);
   --color-shadow-hover: rgba(0, 0, 0, 0.15);
-  --color-shadow-focus: rgba(25, 118, 210, 0.25);
+  --color-shadow-focus: rgba(54, 193, 199, 0.25);
+}
+
+body {
+  background-color: var(--color-background-base);
+  color: var(--color-text-primary);
 }
 
 @layer utilities {
+
   /* Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar,
   .scrollbar-hide::-webkit-scrollbar {
@@ -154,16 +177,18 @@
 
   .no-scrollbar,
   .scrollbar-hide {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
   }
 
-  input:focus ~ label,
-  input:not(:placeholder-shown) ~ label {
+  input:focus~label,
+  input:not(:placeholder-shown)~label {
     @apply -translate-y-2 text-xsmall-regular;
   }
 
-  input:focus ~ label {
+  input:focus~label {
     @apply left-0;
   }
 

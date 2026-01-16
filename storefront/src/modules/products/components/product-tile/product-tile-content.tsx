@@ -14,8 +14,9 @@ import {
   Button,
   Box,
   CircularProgress,
+  IconButton,
 } from '@mui/material'
-import { ShoppingCart } from '@mui/icons-material'
+import { ShoppingCart, FavoriteBorder } from '@mui/icons-material'
 import { HttpTypes } from '@medusajs/types'
 import { getProductPrice } from '@lib/util/get-product-price'
 import { addToCartAction } from '@modules/products/actions/add-to-cart'
@@ -107,7 +108,7 @@ export default function ProductTileContent({
         quantity: 1,
         countryCode: actualCountryCode,
       })
-      
+
       if (result.success) {
         router.refresh()
         setTimeout(() => {
@@ -126,20 +127,18 @@ export default function ProductTileContent({
   }
 
   return (
-      <Card 
-        className="h-full flex flex-col hover:shadow-lg transition-all duration-300 group cursor-pointer"
-        sx={{
-          '&:hover': {
-            transform: 'translateY(-4px)',
-          },
-        }}
-      >
-      <Link href={productUrl} className="block flex-grow">
-        {/* Image Section with Lazy Loading */}
+    <Card
+      className="h-full flex flex-col bg-background-elevated rounded-lg shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer"
+      sx={{
+        borderRadius: '8px',
+      }}
+    >
+      <Link href={productUrl} className="block flex-grow items-center">
+        {/* Image Section with Lazy Loading and Wishlist Button */}
         <CardMedia
           component="div"
-          className="relative h-40 md:h-48 bg-gray-100 overflow-hidden flex items-center justify-center"
-          style={{ aspectRatio: '4/3' }} // Prevent CLS
+          className="relative h-52 md:h-64 lg:h-72 bg-gray-100 overflow-hidden flex items-center justify-center w-full"
+          style={{ aspectRatio: '3/4' }} // Taller aspect ratio for product tiles
         >
           {thumbnail ? (
             <Image
@@ -154,7 +153,7 @@ export default function ProductTileContent({
                 return parts.join(' - ')
               })()}
               fill
-              className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+              className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out self-center"
               sizes="(max-width: 640px) 200px, (max-width: 1024px) 240px, 280px"
               priority={priority}
               loading={priority ? 'eager' : 'lazy'}
@@ -167,125 +166,123 @@ export default function ProductTileContent({
               </Typography>
             </Box>
           )}
+          {/* Wishlist Heart Icon - Top Right */}
+          <IconButton
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              // TODO: Implement wishlist functionality
+            }}
+            className="bg-white/80 hover:bg-white rounded-full p-1.5 z-10"
+            sx={{
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              },
+            }}
+            aria-label="Add to wishlist"
+          >
+            <FavoriteBorder className="w-5 h-5 text-gray-600" />
+          </IconButton>
         </CardMedia>
 
         {/* Content Section */}
-        <CardContent className="flex-grow flex flex-col">
+        <CardContent className="flex-grow flex flex-col p-4 md:p-5">
           {/* Title */}
           <Typography
             variant="h6"
             component="h3"
-            className="group-hover:text-primary transition-colors duration-200 line-clamp-2 mb-2"
+            className="text-text-primary mb-4 md:mb-5 line-clamp-2"
             sx={{
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
+              fontSize: '1rem',
+              fontWeight: 400,
+              '@media (min-width: 768px)': {
+                fontSize: '1.125rem',
+              },
             }}
           >
             {product.title}
           </Typography>
 
-          {/* Description */}
-          {product.description && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              className="mb-2 line-clamp-2"
-              sx={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {product.description}
-            </Typography>
-          )}
-
-          {/* Price Section */}
+          {/* Price Section - EUR prominent, BGN secondary */}
           {cheapestPrice ? (
-            <Box className="mb-2">
-              {cheapestPrice.price_type === 'sale' &&
-              cheapestPrice.original_price_number > cheapestPrice.calculated_price_number ? (
-                <Box>
-                  <Typography
-                    variant="body2"
-                    className="line-through text-gray-400"
-                    component="span"
-                  >
-                    <PriceDisplayParts
-                      parts={cheapestPrice.original_price_parts}
-                      bgnClassName="text-xs"
-                    />
-                  </Typography>
-                  <Box className="flex items-center gap-2">
-                    <Typography variant="h6" color="error" className="font-bold" component="span">
-                      <PriceDisplayParts
-                        parts={cheapestPrice.calculated_price_parts}
-                        bgnClassName="text-sm"
-                      />
-                    </Typography>
-                    {cheapestPrice.percentage_diff && (
-                      <Chip
-                        label={`-${cheapestPrice.percentage_diff}%`}
-                        size="small"
-                        color="error"
-                      />
-                    )}
-                  </Box>
-                </Box>
-              ) : (
-                <Typography variant="h6" color="primary" className="font-bold" component="span">
-                  <PriceDisplayParts
-                    parts={cheapestPrice.calculated_price_parts}
-                    bgnClassName="text-sm"
-                  />
+            <Box className="flex flex-col gap-1 mb-4 md:mb-5">
+              <div className="flex items-baseline gap-2">
+                <Typography
+                  variant="h6"
+                  className="text-text-primary font-bold text-lg md:text-xl"
+                  component="span"
+                >
+                  {cheapestPrice.calculated_price_parts?.eur || ''}
                 </Typography>
-              )}
+                <Typography
+                  variant="caption"
+                  className="text-text-secondary font-medium"
+                >
+                  / бр.
+                </Typography>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <Typography
+                  variant="body2"
+                  className="text-text-secondary font-semibold text-sm md:text-base"
+                  component="span"
+                >
+                  {cheapestPrice.calculated_price_parts?.bgn || ''}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  className="text-text-tertiary font-medium"
+                >
+                  / бр.
+                </Typography>
+              </div>
             </Box>
           ) : (
-            <Typography variant="body2" color="text.secondary" className="mb-2">
+            <Typography variant="body2" color="text.secondary" className="mb-4 md:mb-5">
               {t("product.priceNotAvailable")}
             </Typography>
           )}
-
-          {/* Status Chips */}
-              <Box className="flex gap-2 mt-auto flex-wrap">
-                {isInStock ? (
-                  <Chip label={t("product.inStock")} size="small" color="success" />
-                ) : (
-                  <Chip label={t("product.outOfStock")} size="small" color="error" />
-                )}
-                {product.collection && (
-                  <Chip
-                    label={product.collection.title || t("filters.collection")}
-                    size="small"
-                    variant="outlined"
-                  />
-                )}
-              </Box>
         </CardContent>
       </Link>
 
       {/* Actions - Outside Link to prevent navigation */}
-      <CardActions className="p-4 pt-0">
-            <Button
-              variant="contained"
-              fullWidth
-              startIcon={isAdding ? <CircularProgress size={16} color="inherit" /> : <ShoppingCart />}
-              disabled={!isInStock || isAdding || !defaultVariant}
+      <CardActions className="p-4 md:p-5 pt-0 mt-auto">
+        <Button
+          variant="contained"
+          fullWidth
+          startIcon={isAdding ? <CircularProgress size={16} color="inherit" /> : <ShoppingCart className="text-white" />}
+          disabled={!isInStock || isAdding || !defaultVariant}
           onClick={handleAddToCartClick}
-              className="transition-all duration-200"
-              sx={{
-                '&:hover': {
-                  transform: 'scale(1.02)',
-                },
-              }}
-            >
-              {isAdding ? t("product.adding") : isInStock ? t("product.addToCart") : t("product.outOfStock")}
-            </Button>
-        </CardActions>
+          className="bg-primary hover:bg-primary-hover text-white transition-all duration-200 h-11 md:h-12 rounded-xl shadow-sm hover:shadow-md border-none"
+          sx={{
+            fontSize: '0.875rem',
+            fontWeight: 700,
+            textTransform: 'none',
+            '@media (min-width: 768px)': {
+              fontSize: '0.9375rem',
+            },
+            '&.MuiButton-contained': {
+              backgroundColor: '#FF6B35', // primary
+              color: '#FFFFFF',
+              '&:hover': {
+                backgroundColor: '#E55A2B', // primary-hover
+              },
+            },
+            '&.Mui-disabled': {
+              backgroundColor: '#F3F4F6',
+              color: '#9CA3AF',
+            },
+          }}
+        >
+          <span>
+            {isAdding ? t("product.adding") : isInStock ? t("product.addToCart") : t("product.outOfStock")}
+          </span>
+        </Button>
+      </CardActions>
 
       {/* Quick View Modal for Variant Selection */}
       {hasMultipleVariants && (
@@ -296,7 +293,7 @@ export default function ProductTileContent({
           countryCode={actualCountryCode}
         />
       )}
-      </Card>
+    </Card>
   )
 }
 

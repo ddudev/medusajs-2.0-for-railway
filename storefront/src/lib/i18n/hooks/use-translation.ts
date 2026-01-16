@@ -1,4 +1,5 @@
 "use client"
+// Triggering HMR to reload translations after JSON updates
 
 import { useParams } from "next/navigation"
 import { useMemo } from "react"

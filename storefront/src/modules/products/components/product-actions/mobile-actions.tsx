@@ -52,7 +52,7 @@ const MobileActions: React.FC<MobileActionsProps> = ({
   return (
     <>
       <div
-        className={clx("lg:hidden inset-x-0 bottom-0 fixed", {
+        className={clx("lg:hidden inset-x-0 bottom-0 fixed z-50", {
           "pointer-events-none": !show,
         })}
       >
@@ -60,31 +60,31 @@ const MobileActions: React.FC<MobileActionsProps> = ({
           as={Fragment}
           show={show}
           enter="ease-in-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
+          enterFrom="translate-y-full"
+          enterTo="translate-y-0"
           leave="ease-in duration-300"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
+          leaveFrom="translate-y-0"
+          leaveTo="translate-y-full"
         >
           <div
-            className="bg-white flex flex-col gap-y-3 justify-center items-center text-large-regular p-4 h-full w-full border-t border-gray-200"
+            className="bg-[#111111] flex flex-col gap-y-3 justify-center items-center text-white p-4 h-full w-full border-t border-white/10 shadow-[0_-10px_20px_rgba(0,0,0,0.3)]"
             data-testid="mobile-actions"
           >
-            <div className="flex items-center gap-x-2">
-              <span data-testid="mobile-title">{product.title}</span>
-              <span>—</span>
+            <div className="flex items-center gap-x-2 text-sm md:text-base font-semibold">
+              <span data-testid="mobile-title" className="line-clamp-1">{product.title}</span>
+              <span className="text-white/40">—</span>
               {selectedPrice ? (
-                <div className="flex items-end gap-x-2 text-ui-fg-base">
+                <div className="flex items-end gap-x-2">
                   {selectedPrice.price_type === "sale" && (
                     <p>
-                      <span className="line-through text-small-regular">
+                      <span className="line-through text-white/40 text-xs">
                         {selectedPrice.original_price}
                       </span>
                     </p>
                   )}
                   <span
-                    className={clx({
-                      "text-ui-fg-interactive":
+                    className={clx("font-bold", {
+                      "text-primary":
                         selectedPrice.price_type === "sale",
                     })}
                   >
@@ -92,37 +92,36 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                   </span>
                 </div>
               ) : (
-                <div></div>
+                <div className="h-5"></div>
               )}
             </div>
-            <div className="grid grid-cols-2 w-full gap-x-4">
+            <div className="flex w-full gap-x-3">
               <Button
                 onClick={open}
-                variant="secondary"
-                className="w-full"
+                className="w-1/3 min-w-[120px] bg-white/10 hover:bg-white/20 text-white border-white/20 rounded-xl"
                 data-testid="mobile-actions-button"
               >
-                <div className="flex items-center justify-between w-full">
-                  <span>
+                <div className="flex items-center justify-between w-full gap-2">
+                  <span className="text-xs truncate font-medium">
                     {variant
-                      ? Object.values(options).join(" / ")
-                      : "Select Options"}
+                      ? Object.values(options).join("/")
+                      : "Избери опция"}
                   </span>
-                  <ChevronDown />
+                  <ChevronDown className="w-4 h-4 flex-shrink-0" />
                 </div>
               </Button>
               <Button
                 onClick={handleAddToCart}
                 disabled={!inStock || !variant}
-                className="w-full"
+                className="flex-1 bg-primary hover:bg-primary-hover text-white border-none rounded-xl font-bold h-11"
                 isLoading={isAdding}
                 data-testid="mobile-cart-button"
               >
                 {!variant
-                  ? "Select variant"
+                  ? "Избери вариант"
                   : !inStock
-                  ? "Out of stock"
-                  : "Add to cart"}
+                    ? "Изчерпан"
+                    : "Добави"}
               </Button>
             </div>
           </div>

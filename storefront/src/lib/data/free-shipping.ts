@@ -56,6 +56,7 @@ export async function getFreeShippingEligibility(): Promise<FreeShippingEligibil
     }
 
     const data = await response.json()
+    console.log("data", data)
     return data as FreeShippingEligibility
   } catch (error) {
     // Graceful degradation - if we can't fetch eligibility, just return null

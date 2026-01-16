@@ -114,7 +114,7 @@ const SearchBarContentWrapper = ({
           aria-label={t("common.searchPlaceholder") || "Search"}
         >
           <svg
-            className="w-6 h-6"
+            className="w-8 h-8"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -130,11 +130,10 @@ const SearchBarContentWrapper = ({
       )}
 
       {/* Search input form - hidden on mobile when not expanded, always visible on desktop */}
-      <form 
-        onSubmit={handleSubmit} 
-        className={`relative ${!isExpanded ? "hidden md:block" : "block"} ${
-          isExpanded ? "w-full md:w-auto" : ""
-        }`}
+      <form
+        onSubmit={handleSubmit}
+        className={`relative ${!isExpanded ? "hidden md:block" : "block"} ${isExpanded ? "w-full md:w-auto" : ""
+          }`}
       >
         <div className="relative flex items-center gap-2 md:gap-2">
           <input
@@ -142,18 +141,17 @@ const SearchBarContentWrapper = ({
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
-            placeholder={t("common.searchPlaceholder") || "Search in the store"}
+            placeholder={t("common.searchPlaceholder") || "Търсете в магазина"}
             spellCheck={false}
             type="search"
             value={searchValue}
             onChange={handleChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            className={`flex-1 h-12 md:h-12 px-4 rounded-lg border-2 border-border-base focus:border-primary focus:outline-none text-text-primary placeholder:text-text-tertiary bg-background-base text-base ${
-              isExpanded 
-                ? "pr-16 md:pr-12 shadow-lg md:shadow-none" 
-                : "pr-12 md:pr-12"
-            }`}
+            className={`flex-1 h-16 md:h-16 px-6 rounded-lg border-2 border-border-base focus:border-primary focus:outline-none text-text-primary placeholder:text-text-tertiary bg-background-base text-lg ${isExpanded
+              ? "pr-16 md:pr-12 shadow-lg md:shadow-none"
+              : "pr-12 md:pr-12"
+              }`}
           />
           {/* Buttons inside input (clear and search) - hidden on mobile */}
           <div className="hidden md:flex absolute right-2 items-center gap-2">
@@ -181,11 +179,11 @@ const SearchBarContentWrapper = ({
             )}
             <button
               type="submit"
-              className="p-1.5 text-text-secondary hover:text-primary transition-colors"
+              className="p-2 text-text-secondary hover:text-primary transition-colors"
               aria-label={t("search.submit")}
             >
               <svg
-                className="w-5 h-5"
+                className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -351,11 +349,10 @@ const SearchBar = () => {
       {/* Search Container */}
       <div
         ref={searchContainerRef}
-        className={`md:relative z-40 md:z-[51] ${
-          isExpanded 
-            ? "fixed md:relative left-0 md:left-auto right-0 md:right-auto w-screen md:w-auto px-6 md:px-0 z-[51] md:z-[51]" 
-            : "relative w-full"
-        }`}
+        className={`md:relative z-40 md:z-[51] ${isExpanded
+          ? "fixed md:relative left-0 md:left-auto right-0 md:right-auto w-screen md:w-auto px-6 md:px-0 z-[51] md:z-[51]"
+          : "relative w-full"
+          }`}
         style={isExpanded && typeof window !== "undefined" && window.innerWidth < 768 ? {
           top: `${topPosition}px`,
         } : {}}

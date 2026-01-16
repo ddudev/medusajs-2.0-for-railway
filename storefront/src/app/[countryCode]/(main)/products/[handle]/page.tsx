@@ -5,6 +5,10 @@ import { Suspense } from "react"
 import ProductTemplate from "@modules/products/templates"
 import { getRegion, listRegions } from "@lib/data/regions"
 import { getProductByHandle, getProductsList } from "@lib/data/products"
+import { cache } from "react"
+
+// Cache getRegion to prevent duplicate calls within the same request
+const cachedGetRegion = cache(getRegion)
 import { getBrandById } from "@lib/data/brands"
 import { generateProductSchema } from "@lib/seo/product-schema"
 import { generateProductBreadcrumb } from "@lib/seo/breadcrumb-schema"
@@ -71,7 +75,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const { handle, countryCode } = resolvedParams
   const normalizedCountryCode = typeof countryCode === 'string' ? countryCode.toLowerCase() : 'us'
-  const region = await getRegion(normalizedCountryCode)
+  const region = await cachedGetRegion(normalizedCountryCode)
 
   if (!region) {
     notFound()
@@ -224,7 +228,7 @@ export default async function ProductPage({ params }: Props) {
 
   const { handle, countryCode } = resolvedParams
   const normalizedCountryCode = typeof countryCode === 'string' ? countryCode.toLowerCase() : 'us'
-  const region = await getRegion(normalizedCountryCode)
+  const region = await cachedGetRegion(normalizedCountryCode)
 
   if (!region) {
     notFound()

@@ -43,47 +43,47 @@ const theme = createTheme({
   },
   palette: {
     primary: {
-      main: '#1976D2', // Main - medium-dark blue
-      light: '#2196F3', // Primary - bright medium blue
-      dark: '#1565C0', // Darker shade for hover/active
+      main: '#FF6B35', // Main - Orange (brand color)
+      light: '#FF8C5A', // Light orange
+      dark: '#E55A2B', // Darker orange for hover/active
       contrastText: '#FFFFFF',
     },
     secondary: {
-      main: '#26A69A', // Main - teal/cyan
-      light: '#4DB6AC',
-      dark: '#00897B',
-      contrastText: '#FFFFFF',
+      main: '#FFFFFF', // White
+      light: '#FFFFFF',
+      dark: '#FFFFFF',
+      contrastText: '#1F2937',
     },
     error: {
-      main: '#F44336', // Sec - medium red
-      light: '#EF5350',
-      dark: '#C62828',
+      main: '#D97706', // Sec - Terracotta/burnt orange
+      light: '#E68A2E',
+      dark: '#9A4F04',
     },
     success: {
-      main: '#4CAF50', // Sec - medium green
-      light: '#66BB6A',
-      dark: '#2E7D32',
+      main: '#2D8659', // Sec - Medium-dark green
+      light: '#4FA675',
+      dark: '#1F5C3D',
     },
     warning: {
-      main: '#FF9800', // Sec - bright orange
-      light: '#FFB74D',
-      dark: '#F57C00',
+      main: '#F59E0B', // Sec - Orange-gold
+      light: '#FBBF24',
+      dark: '#B45309',
     },
     info: {
-      main: '#2196F3', // Primary/Interactive - bright medium blue
-      light: '#90CAF9', // Primary - light pastel blue
-      dark: '#1976D2', // Main - medium-dark blue
+      main: '#FF6B35', // Primary - Orange
+      light: '#FF8C5A', // Light orange
+      dark: '#E55A2B', // Darker orange
     },
     text: {
-      primary: '#424242', // Text - very dark gray
-      secondary: '#616161', // Text - dark gray
-      disabled: '#9E9E9E', // Text - medium-light gray
+      primary: '#1F2937', // Text/1 - Very dark gray
+      secondary: '#4B5563', // Text/2 - Medium-dark gray
+      disabled: '#9CA3AF', // Text/3 - Light taupe/beige-gray
     },
     background: {
-      default: '#FFFFFF',
-      paper: '#F9FAFB',
+      default: '#F9FAFB', // BG/2 - Light gray page background
+      paper: '#FFFFFF', // BG/Boxes - White for product boxes
     },
-    divider: '#E5E7EB',
+    divider: '#E5E7EB', // Neutral/2
   },
   shape: {
     borderRadius: 4, // Match your design system

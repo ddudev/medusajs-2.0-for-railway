@@ -16,31 +16,10 @@ const CategoryNav = async ({ countryCode }: { countryCode: string }) => {
       : []
 
   return (
-    <div className="hidden md:block w-full bg-background-elevated border-b border-border-base">
+    <div className="hidden md:block w-full bg-black">
       <div className="content-container">
         <nav className="flex items-center gap-6 py-3">
-          {/* All Products Menu */}
-          <LocalizedClientLink
-            href="/store"
-            className="flex items-center gap-2 text-text-primary hover:text-primary transition-colors whitespace-nowrap font-medium"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-            <span>{translations.common.allProducts}</span>
-          </LocalizedClientLink>
-
-          {/* Category Links */}
+          {/* Category Links - White text on black background, on same line as All Products */}
           {displayCategories.length > 0 && (
             <div className="flex items-center gap-6">
               {displayCategories.map((category) => (

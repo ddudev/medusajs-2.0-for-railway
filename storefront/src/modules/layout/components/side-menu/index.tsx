@@ -34,10 +34,10 @@ const SideMenu = ({ regions, categories = [] }: SideMenuProps) => {
               <div className="relative flex h-full">
                 <Popover.Button
                   data-testid="nav-menu-button"
-                  className="relative h-full flex items-center gap-2 transition-all ease-out duration-200 focus:outline-none hover:text-text-primary text-text-secondary"
+                  className="relative p-2 transition-all ease-out duration-200 focus:outline-none bg-primary text-white rounded-full md:bg-transparent md:text-text-secondary md:hover:text-text-primary md:rounded-none"
                 >
                   <svg
-                    className="w-6 h-6"
+                    className="w-8 h-8 md:w-5 md:h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -49,7 +49,7 @@ const SideMenu = ({ regions, categories = [] }: SideMenuProps) => {
                       d="M4 6h16M4 12h16M4 18h16"
                     />
                   </svg>
-                  <span className="hidden sm:inline">Menu</span>
+                  <span className="hidden lg:inline">Menu</span>
                 </Popover.Button>
               </div>
 
@@ -88,7 +88,7 @@ const SideMenu = ({ regions, categories = [] }: SideMenuProps) => {
                           </li>
                         )
                       })}
-                      
+
                       {/* Categories Section */}
                       {categories.length > 0 && (
                         <>
@@ -101,7 +101,7 @@ const SideMenu = ({ regions, categories = [] }: SideMenuProps) => {
                             const hasChildren =
                               category.category_children &&
                               category.category_children.length > 0
-                            
+
                             if (!hasChildren) {
                               return (
                                 <li key={category.id} className="w-full">

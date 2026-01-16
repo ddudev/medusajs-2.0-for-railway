@@ -1,23 +1,13 @@
 import { HttpTypes } from "@medusajs/types"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import ProductInfoBox from "@modules/products/components/product-info-box"
 
 type ProductInfoProps = {
   product: HttpTypes.StoreProduct
+  region: HttpTypes.StoreRegion
 }
 
-const ProductInfo = ({ product }: ProductInfoProps) => {
-  return (
-    <div id="product-info" className="flex flex-col gap-y-2">
-      {product.collection && (
-        <LocalizedClientLink
-          href={`/collections/${product.collection.handle}`}
-          className="text-sm text-text-tertiary hover:text-text-primary transition-colors uppercase tracking-wider font-medium"
-        >
-          {product.collection.title}
-        </LocalizedClientLink>
-      )}
-    </div>
-  )
+const ProductInfo = ({ product, region }: ProductInfoProps) => {
+  return <ProductInfoBox product={product} region={region} />
 }
 
 export default ProductInfo

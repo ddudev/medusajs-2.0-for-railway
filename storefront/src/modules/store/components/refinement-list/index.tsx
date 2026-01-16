@@ -69,11 +69,7 @@ const RefinementList = ({
   }
 
   return (
-    <div className="flex flex-col gap-8 py-4">
-      <FilterCollection
-        collections={collections}
-        setQueryParamsArray={setQueryParamsArray}
-      />
+    <div className="flex flex-col gap-4 py-4">
       <FilterCategory
         categories={categories}
         setQueryParamsArray={setQueryParamsArray}

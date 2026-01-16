@@ -7,6 +7,9 @@ import { sortProducts } from "@lib/util/sort-products"
 import { getProductPrice } from "@lib/util/get-product-price"
 import { StoreProductReview } from "@types/global"
 
+// Cache getRegion calls to prevent duplicate region fetches
+const cachedGetRegion = cache(getRegion)
+
 // Product prices are region-specific and should NOT be cached - always dynamic
 // DO NOT add "use cache" - prices must be fresh per request/region
 export async function getProductsById({
@@ -71,7 +74,7 @@ export async function getProductsList({
   const limit = queryParams?.limit || 12
   const validPageParam = Math.max(pageParam, 1);
   const offset = (validPageParam - 1) * limit
-  const region = await getRegion(countryCode)
+  const region = await cachedGetRegion(countryCode)
 
   if (!region) {
     return {
@@ -237,7 +240,7 @@ export async function getMaxProductPrice({
   categoryIds?: string[]
   brandIds?: string[]
 }): Promise<number> {
-  const region = await getRegion(countryCode)
+  const region = await cachedGetRegion(countryCode)
   if (!region) {
     return 500 // Default fallback
   }

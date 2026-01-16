@@ -58,11 +58,11 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
         className="content-container py-8 md:py-12"
         data-testid="product-container"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
           {/* Left Column: Image Gallery */}
           <div className="w-full">
-            <ImageGallery 
-              images={product?.images || []} 
+            <ImageGallery
+              images={product?.images || []}
               productName={product.title}
               categoryName={product.categories?.[0]?.name}
               brandName={(product as any).metadata?._brand_name}
@@ -70,8 +70,8 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
           </div>
 
           {/* Right Column: Product Info & Actions */}
-          <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
-            <ProductInfo product={product} />
+          <div className="flex flex-col gap-6 md:sticky md:top-24 md:self-start">
+            <ProductInfo product={product} region={region} />
 
             <Suspense
               fallback={
@@ -101,9 +101,9 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
         data-testid="last-viewed-products-container"
       >
         <Suspense fallback={<SkeletonLastViewedProducts />}>
-          <LastViewedProducts 
-            currentProductId={product.id!} 
-            countryCode={countryCode} 
+          <LastViewedProducts
+            currentProductId={product.id!}
+            countryCode={countryCode}
           />
         </Suspense>
       </div>

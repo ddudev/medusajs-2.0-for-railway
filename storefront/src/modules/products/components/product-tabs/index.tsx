@@ -22,28 +22,85 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
   }
 
   return (
-    <div className="w-full">
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs 
-          value={activeTab} 
+    <div className="w-full bg-background-elevated border border-border-base rounded-3xl shadow-lg p-4 md:p-6">
+      <Box
+        sx={{
+          borderBottom: 1,
+          borderColor: "divider",
+          mb: 0,
+          "& .MuiTabs-root": {
+            minHeight: "auto",
+          },
+          "& .MuiTab-root": {
+            textTransform: "none",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            minHeight: "48px",
+            color: "rgb(31, 41, 55)", // Text/1 - Very dark gray
+            "&.Mui-selected": {
+              color: "rgb(31, 41, 55)", // Text/1 - Very dark gray
+            },
+          },
+          "& .MuiTabs-indicator": {
+            display: "none",
+          },
+        }}
+      >
+        <Tabs
+          value={activeTab}
           onChange={handleTabChange}
           aria-label="product information tabs"
+          variant="scrollable"
+          scrollButtons="auto"
         >
-          <Tab label="Описание" />
-          <Tab label="Характеристики" />
-          <Tab label="Какво е включено" />
-          <Tab label="Product Information" />
-          <Tab label="Shipping & Returns" />
-          <Tab label="Ревюта" />
+          <Tab
+            label="Описание"
+            sx={{
+              backgroundColor: activeTab === 0 ? "rgba(54, 193, 199, 0.1)" : "transparent",
+              borderBottom: activeTab === 0 ? "2px solid" : "1px solid",
+              borderColor: activeTab === 0 ? "rgb(54, 193, 199)" : "rgb(229, 231, 235)",
+            }}
+          />
+          <Tab
+            label="Спецификации"
+            sx={{
+              backgroundColor: activeTab === 1 ? "rgba(25, 118, 210, 0.1)" : "transparent",
+              borderBottom: activeTab === 1 ? "2px solid" : "1px solid",
+              borderColor: activeTab === 1 ? "rgb(25, 118, 210)" : "rgb(229, 231, 235)",
+            }}
+          />
+          <Tab
+            label="За изтегляне"
+            sx={{
+              backgroundColor: activeTab === 2 ? "rgba(25, 118, 210, 0.1)" : "transparent",
+              borderBottom: activeTab === 2 ? "2px solid" : "1px solid",
+              borderColor: activeTab === 2 ? "rgb(25, 118, 210)" : "rgb(229, 231, 235)",
+            }}
+          />
+          <Tab
+            label="Безопасност"
+            sx={{
+              backgroundColor: activeTab === 3 ? "rgba(25, 118, 210, 0.1)" : "transparent",
+              borderBottom: activeTab === 3 ? "2px solid" : "1px solid",
+              borderColor: activeTab === 3 ? "rgb(25, 118, 210)" : "rgb(229, 231, 235)",
+            }}
+          />
+          <Tab
+            label="Ревюта"
+            sx={{
+              backgroundColor: activeTab === 4 ? "rgba(25, 118, 210, 0.1)" : "transparent",
+              borderBottom: activeTab === 4 ? "2px solid" : "1px solid",
+              borderColor: activeTab === 4 ? "rgb(25, 118, 210)" : "rgb(229, 231, 235)",
+            }}
+          />
         </Tabs>
       </Box>
-      <Box>
+      <Box className="pt-6">
         {activeTab === 0 && <DescriptionTab product={product} />}
         {activeTab === 1 && <CharacteristicsTab product={product} />}
         {activeTab === 2 && <IncludedItemsTab product={product} />}
-        {activeTab === 3 && <ProductInfoTab product={product} />}
-        {activeTab === 4 && <ShippingInfoTab />}
-        {activeTab === 5 && <ProductReviews productId={product.id!} />}
+        {activeTab === 3 && <ShippingInfoTab />}
+        {activeTab === 4 && <ProductReviews productId={product.id!} />}
       </Box>
     </div>
   )
@@ -52,7 +109,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
 const DescriptionTab = ({ product }: ProductTabsProps) => {
   if (!product.description) {
     return (
-      <div className="text-base text-text-secondary py-8">
+      <div className="text-base md:text-lg text-text-secondary">
         <Typography variant="body1" color="text.secondary">
           Няма налично описание.
         </Typography>
@@ -60,9 +117,17 @@ const DescriptionTab = ({ product }: ProductTabsProps) => {
     )
   }
 
+  // Extract first paragraph as heading if available
+  const descriptionText = product.description
+  const firstParagraph = descriptionText.split(/<\/?p>/).filter(Boolean)[0] || descriptionText
+
   return (
-    <div className="text-base text-text-secondary py-8 product-description">
-      {parse(product.description)}
+    <div className="flex flex-col gap-4 text-base md:text-lg text-text-primary product-description">
+      <h3 className="text-lg md:text-xl font-semibold text-primary">
+        {firstParagraph.replace(/<[^>]*>/g, "").substring(0, 100)}
+        {firstParagraph.length > 100 ? "..." : ""}
+      </h3>
+      <div className="text-text-primary">{parse(product.description)}</div>
     </div>
   )
 }
@@ -73,7 +138,7 @@ const CharacteristicsTab = ({ product }: ProductTabsProps) => {
 
   if (!specifications) {
     return (
-      <div className="text-base text-text-secondary py-8">
+      <div className="text-base md:text-lg text-text-secondary">
         <Typography variant="body1" color="text.secondary">
           Няма налични технически характеристики.
         </Typography>
@@ -82,7 +147,7 @@ const CharacteristicsTab = ({ product }: ProductTabsProps) => {
   }
 
   return (
-    <div className="text-base text-text-secondary py-8">
+    <div className="text-base md:text-lg text-text-primary">
       {parse(specifications)}
     </div>
   )
@@ -94,7 +159,7 @@ const IncludedItemsTab = ({ product }: ProductTabsProps) => {
 
   if (!includedItems) {
     return (
-      <div className="text-base text-text-secondary py-8">
+      <div className="text-base md:text-lg text-text-secondary">
         <Typography variant="body1" color="text.secondary">
           Няма информация за включените в комплекта елементи.
         </Typography>
@@ -103,87 +168,54 @@ const IncludedItemsTab = ({ product }: ProductTabsProps) => {
   }
 
   return (
-    <div className="text-base text-text-secondary py-8">
+    <div className="text-base md:text-lg text-text-primary">
       {parse(includedItems)}
-    </div>
-  )
-}
-
-const ProductInfoTab = ({ product }: ProductTabsProps) => {
-  return (
-    <div className="text-base text-text-secondary py-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-        <div className="flex flex-col gap-y-4">
-          <div>
-            <span className="font-semibold text-text-primary block mb-1">Material</span>
-            <p className="text-text-secondary">{product.material ? product.material : "-"}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-text-primary block mb-1">Country of origin</span>
-            <p className="text-text-secondary">{product.origin_country ? product.origin_country : "-"}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-text-primary block mb-1">Type</span>
-            <p className="text-text-secondary">{product.type ? product.type.value : "-"}</p>
-          </div>
-        </div>
-        <div className="flex flex-col gap-y-4">
-          <div>
-            <span className="font-semibold text-text-primary block mb-1">Weight</span>
-            <p className="text-text-secondary">{product.weight ? `${product.weight} g` : "-"}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-text-primary block mb-1">Dimensions</span>
-            <p className="text-text-secondary">
-              {product.length && product.width && product.height
-                ? `${product.length}L x ${product.width}W x ${product.height}H`
-                : "-"}
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
 
 const ShippingInfoTab = () => {
   return (
-    <div className="text-base text-text-secondary py-8">
-      <div className="grid grid-cols-1 gap-y-8">
+    <div className="text-base md:text-lg text-text-primary">
+      <div className="grid grid-cols-1 gap-y-6">
         <div className="flex items-start gap-x-4">
-          <div className="text-primary">
-            <FastDelivery />
+          <div className="text-primary flex-shrink-0">
+            <FastDelivery size="24" />
           </div>
           <div>
-            <span className="font-semibold text-text-primary block mb-2">Fast delivery</span>
-            <p className="max-w-sm text-text-secondary">
-              Your package will arrive in 3-5 business days at your pick up
-              location or in the comfort of your home.
+            <span className="font-semibold text-text-primary block mb-2 text-lg">
+              Експресна доставка
+            </span>
+            <p className="text-text-secondary">
+              Вашата пратка ще пристигне в рамките на 3-5 работни дни на избраното от вас място за
+              получаване или в комфорта на вашия дом.
             </p>
           </div>
         </div>
         <div className="flex items-start gap-x-4">
-          <div className="text-primary">
-            <Refresh />
+          <div className="text-primary flex-shrink-0">
+            <Refresh size="24" />
           </div>
           <div>
-            <span className="font-semibold text-text-primary block mb-2">Simple exchanges</span>
-            <p className="max-w-sm text-text-secondary">
-              Is the fit not quite right? No worries - we&apos;ll exchange your
-              product for a new one.
+            <span className="font-semibold text-text-primary block mb-2 text-lg">
+              Лесни замени
+            </span>
+            <p className="text-text-secondary">
+              Размерът не е съвсем подходящ? Не се притеснявайте - ще заменим вашия продукт с нов.
             </p>
           </div>
         </div>
         <div className="flex items-start gap-x-4">
-          <div className="text-primary">
-            <Back />
+          <div className="text-primary flex-shrink-0">
+            <Back size="24" />
           </div>
           <div>
-            <span className="font-semibold text-text-primary block mb-2">Easy returns</span>
-            <p className="max-w-sm text-text-secondary">
-              Just return your product and we&apos;ll refund your money. No
-              questions asked – we&apos;ll do our best to make sure your return
-              is hassle-free.
+            <span className="font-semibold text-text-primary block mb-2 text-lg">
+              Лесни връщания
+            </span>
+            <p className="text-text-secondary">
+              Просто върнете продукта и ще възстановим парите ви. Без въпроси - ще направим всичко
+              възможно, за да гарантираме, че връщането ви е безпроблемно.
             </p>
           </div>
         </div>

@@ -51,12 +51,22 @@ async function PaginatedProductsWrapper({
 
   return (
     <>
-      <div className="mb-4 flex flex-col gap-3">
+      {/* Results Count with Pagination and Sort - matches design */}
+      <div className="mb-6 flex items-center justify-between">
         <ProductCount
           currentPage={page}
           pageSize={result.pageSize}
           totalCount={result.totalCount}
+          totalPages={result.totalPages || 1}
         />
+        {/* Sort Dropdown - Desktop only (mobile shown in header) */}
+        <div className="hidden md:flex">
+          <SortDropdown />
+        </div>
+      </div>
+
+      {/* Active Filters */}
+      <div className="mb-4">
         <ActiveFilters
           collections={collections}
           categories={categories}
@@ -67,6 +77,8 @@ async function PaginatedProductsWrapper({
           selectedPriceRange={priceRange}
         />
       </div>
+
+      {/* Product Grid */}
       {result.products}
     </>
   )
@@ -111,75 +123,78 @@ const StoreTemplate = async ({
 
   return (
     <div className="content-container py-8 md:py-12">
-    <StoreTemplateClient
-      collections={collections}
-      categories={categories}
-      brands={brands}
-      maxPrice={maxPrice}
-      filterKey={filterKey}
-      sort={sort}
-      pageNumber={pageNumber}
-      countryCode={countryCode}
-      collectionIds={collectionIds}
-      categoryIds={categoryIds}
-      brandIds={brandIds}
-      priceRange={priceRange}
-      translations={translations}
-    >
-        {/* Mobile: Filters in drawer, Products full width */}
-        {/* Desktop: Filters sidebar + Products grid */}
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Filters Sidebar - Hidden on mobile, shown on desktop */}
-          <aside className="hidden md:block md:w-64 lg:w-80 flex-shrink-0">
-      <RefinementList
+      <StoreTemplateClient
         collections={collections}
         categories={categories}
         brands={brands}
         maxPrice={maxPrice}
-      />
+        filterKey={filterKey}
+        sort={sort}
+        pageNumber={pageNumber}
+        countryCode={countryCode}
+        collectionIds={collectionIds}
+        categoryIds={categoryIds}
+        brandIds={brandIds}
+        priceRange={priceRange}
+        translations={translations}
+      >
+        {/* Mobile: Filters in drawer, Products full width */}
+        {/* Desktop: Filters sidebar + Products grid */}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Filters Sidebar - Hidden on mobile/tablet, shown on desktop */}
+          <aside className="hidden lg:block lg:w-80 flex-shrink-0">
+            <RefinementList
+              collections={collections}
+              categories={categories}
+              brands={brands}
+              maxPrice={maxPrice}
+            />
           </aside>
-          
+
           {/* Products Section */}
           <div className="flex-1 min-w-0">
-        <div className="mb-6">
-          <h1 className="text-2xl-semi mb-4 md:mb-0" data-testid="store-page-title">
-            {getTranslation(translations, "common.allProducts")}
-          </h1>
-          <div className="flex items-center gap-4 md:hidden">
-            <FilterButton />
-            <SortDropdown />
-          </div>
-          <div className="hidden md:flex items-center justify-end">
-            <SortDropdown />
+            {/* Page Title */}
+            <div className="mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold text-text-primary mb-6" data-testid="store-page-title">
+                {getTranslation(translations, "common.allProducts")}
+              </h1>
+
+              {/* Mobile/Tablet: Filter and Sort buttons in a dark bar */}
+              <div className="flex items-center gap-4 lg:hidden mb-8 bg-[#111111] p-2 rounded-xl">
+                <FilterButton />
+                <div className="h-8 w-px bg-white/10" />
+                <SortDropdown />
+              </div>
+            </div>
+
+            <Suspense
+              key={filterKey}
+              fallback={
+                <>
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="h-6 w-48 bg-gray-200 animate-pulse rounded" />
+                    <div className="h-10 w-32 bg-gray-200 animate-pulse rounded" />
+                  </div>
+                  <SkeletonProductGrid />
+                </>
+              }
+            >
+              <PaginatedProductsWrapper
+                sortBy={sort}
+                page={pageNumber}
+                countryCode={countryCode}
+                collectionIds={collectionIds}
+                categoryIds={categoryIds}
+                brandIds={brandIds}
+                priceRange={priceRange}
+                collections={collections}
+                categories={categories}
+                brands={brands}
+              />
+            </Suspense>
           </div>
         </div>
-        <Suspense 
-          key={filterKey}
-          fallback={
-            <>
-              <div className="mb-4">
-                <div className="h-6 w-48 bg-gray-200 animate-pulse rounded" />
-              </div>
-              <SkeletonProductGrid />
-            </>
-          }
-        >
-          <PaginatedProductsWrapper
-            sortBy={sort}
-            page={pageNumber}
-            countryCode={countryCode}
-            collectionIds={collectionIds}
-            categoryIds={categoryIds}
-            brandIds={brandIds}
-            priceRange={priceRange}
-            collections={collections}
-            categories={categories}
-            brands={brands}
-          />
-        </Suspense>
-          </div>
-      </div>
-    </StoreTemplateClient>
+      </StoreTemplateClient>
     </div>
   )
 }

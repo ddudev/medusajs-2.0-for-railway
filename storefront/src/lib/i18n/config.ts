@@ -7,15 +7,22 @@ import { getLocaleFromCountryCode } from "./utils/get-locale"
 export type Locale = "en" | "bg"
 
 export interface TranslationKeys {
-  common: Record<string, string>
-  cart: Record<string, string>
-  product: Record<string, string>
-  filters: Record<string, string>
+  common: Record<string, any>
+  cart: Record<string, any>
+  product: Record<string, any>
+  filters: Record<string, any>
   homepage: Record<string, any>
-  checkout: Record<string, string>
-  gallery: Record<string, string>
-  search: Record<string, string>
-  cartButton: Record<string, string>
+  checkout: Record<string, any>
+  gallery: Record<string, any>
+  search: Record<string, any>
+  cartButton: Record<string, any>
+  metadata?: Record<string, any>
+  pwa?: Record<string, any>
+  faq?: Record<string, any>
+  contact?: Record<string, any>
+  about?: Record<string, any>
+  footer?: Record<string, any>
+  login?: Record<string, any>
 }
 
 /**
@@ -42,4 +49,3 @@ export function getLocale(countryCode: string): Locale {
   const locale = getLocaleFromCountryCode(countryCode)
   return locale as Locale
 }
-

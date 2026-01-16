@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useCartDrawer } from '@modules/cart/context/cart-context'
 import { HttpTypes } from '@medusajs/types'
@@ -19,27 +18,24 @@ interface SlideInCartWrapperProps {
 }
 
 export default function SlideInCartWrapper({ cart: initialCart }: SlideInCartWrapperProps) {
-  const router = useRouter()
   const { isOpen } = useCartDrawer()
   const [cart, setCart] = useState(initialCart)
+  const hasInitialized = useRef(false)
 
-  // Refresh cart data when drawer opens
+  // Only update cart when initialCart prop changes (from parent re-render)
+  // Don't trigger router.refresh() as it causes infinite loops
   useEffect(() => {
-    if (isOpen) {
-      // Refresh router to get latest cart data
-      router.refresh()
-      // Update cart state after a short delay to allow refresh
-      const timer = setTimeout(() => {
-        setCart(initialCart)
-      }, 200)
-      return () => clearTimeout(timer)
+    if (!hasInitialized.current) {
+      hasInitialized.current = true
+      setCart(initialCart)
+      return
     }
-  }, [isOpen, router])
-
-  // Update cart when initialCart changes (from router.refresh)
-  useEffect(() => {
-    setCart(initialCart)
-  }, [initialCart])
+    
+    // Only update if cart actually changed (by comparing IDs or totals)
+    if (initialCart?.id !== cart?.id || initialCart?.total !== cart?.total) {
+      setCart(initialCart)
+    }
+  }, [initialCart?.id, initialCart?.total, cart?.id, cart?.total])
 
   return <SlideInCart cart={cart} />
 }

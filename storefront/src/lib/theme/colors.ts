@@ -39,16 +39,16 @@ export interface ThemeColors {
 
 /**
  * Default theme colors based on Figma design
- * Dark blue for headers/footers, white backgrounds, yellow accents
+ * Orange primary brand color, black top bar, white backgrounds
  */
 export const defaultThemeColors: ThemeColors = {
   primary: {
-    base: "#1F2937", // Dark blue/gray for headers, footers, CTAs
-    hover: "#111827", // Darker on hover
-    active: "#0F172A", // Even darker when active
+    base: "#FF6B35", // Main - Orange (brand color)
+    hover: "#E55A2B", // Darker orange on hover
+    active: "#CC5529", // Even darker when active
     disabled: "#9CA3AF", // Gray when disabled
-    light: "#374151", // Lighter variant
-    dark: "#111827", // Darker variant
+    light: "#FF8C5A", // Lighter orange variant
+    dark: "#E55A2B", // Darker orange variant
   },
   secondary: {
     base: "#FFFFFF", // White for backgrounds
@@ -59,34 +59,34 @@ export const defaultThemeColors: ThemeColors = {
     dark: "#F9FAFB",
   },
   accent: {
-    base: "#FCD34D", // Yellow for category icons and highlights
-    hover: "#FBBF24", // Darker yellow on hover
-    light: "#FEF3C7", // Light yellow
-    dark: "#F59E0B", // Dark yellow
+    base: "#FF6B35", // Accent - Orange (same as primary)
+    hover: "#E55A2B", // Darker orange on hover
+    light: "#FF8C5A", // Light orange
+    dark: "#CC5529", // Dark orange
   },
   success: {
-    base: "#10B981", // Green for success states
-    hover: "#059669",
-    light: "#D1FAE5",
-    dark: "#047857",
+    base: "#2D8659", // Sec - Medium-dark green
+    hover: "#256F4A",
+    light: "#4FA675",
+    dark: "#1F5C3D",
   },
   error: {
-    base: "#EF4444", // Red for error states
-    hover: "#DC2626",
-    light: "#FEE2E2",
-    dark: "#B91C1C",
+    base: "#D97706", // Sec - Terracotta/burnt orange
+    hover: "#B86205",
+    light: "#E68A2E",
+    dark: "#9A4F04",
   },
   warning: {
-    base: "#F59E0B", // Orange for warnings
+    base: "#F59E0B", // Sec - Orange-gold
     hover: "#D97706",
-    light: "#FEF3C7",
+    light: "#FBBF24",
     dark: "#B45309",
   },
   text: {
-    primary: "#111827", // Dark gray/black for primary text
-    secondary: "#6B7280", // Medium gray for secondary text
-    tertiary: "#9CA3AF", // Light gray for tertiary text
-    inverse: "#FFFFFF", // White for text on dark backgrounds
+    primary: "#1F2937", // Text - Very dark gray
+    secondary: "#4B5563", // Text - Medium-dark gray
+    tertiary: "#9CA3AF", // Text - Light taupe/beige-gray
+    inverse: "#FFFFFF", // Text - White
   },
   background: {
     base: "#FFFFFF", // White base background
@@ -96,7 +96,7 @@ export const defaultThemeColors: ThemeColors = {
   border: {
     base: "#E5E7EB", // Light gray for borders
     hover: "#D1D5DB", // Slightly darker on hover
-    focus: "#1F2937", // Dark blue/gray for focus states
+    focus: "#36C1C7", // Turquoise for focus states
   },
 }
 

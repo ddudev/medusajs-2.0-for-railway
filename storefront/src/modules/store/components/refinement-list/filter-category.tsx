@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation"
 import FilterCheckboxGroup from "@modules/common/components/filter-checkbox-group"
+import CollapsibleFilter from "@modules/common/components/collapsible-filter"
 import { HttpTypes } from "@medusajs/types"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
@@ -41,14 +42,21 @@ const FilterCategory = ({
     })),
   ]
 
+  // Default expanded if there are selected categories
+  const defaultExpanded = selectedCategoryIds.length > 0
+
   return (
-    <FilterCheckboxGroup
+    <CollapsibleFilter
       title={t("filters.category")}
-      items={items}
-      selectedValues={selectedCategoryIds}
-      handleChange={handleChange}
+      defaultExpanded={defaultExpanded}
       data-testid={dataTestId}
-    />
+    >
+      <FilterCheckboxGroup
+        items={items}
+        selectedValues={selectedCategoryIds}
+        handleChange={handleChange}
+      />
+    </CollapsibleFilter>
   )
 }
 

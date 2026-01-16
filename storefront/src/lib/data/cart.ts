@@ -13,20 +13,28 @@ import { getRegion } from "./regions"
 // Cart is user-specific and should NOT be cached - always dynamic
 // DO NOT add "use cache" - cart must be fresh per request
 export async function retrieveCart() {
-  const cartId = await getCartId()
+  try {
+    const cartId = await getCartId()
 
-  if (!cartId) {
+    if (!cartId) {
+      return null
+    }
+
+    const authHeaders = await getAuthHeaders()
+    // No caching - cart is user-specific and must be fresh
+    const result = await sdk.store.cart
+      .retrieve(cartId, {}, { next: { tags: ["cart"] }, ...authHeaders })
+      .then(({ cart }) => cart)
+      .catch((error) => {
+        console.error("Error retrieving cart:", error)
+        return null
+      })
+    
+    return result
+  } catch (error) {
+    console.error("Error in retrieveCart:", error)
     return null
   }
-
-  const authHeaders = await getAuthHeaders()
-  // No caching - cart is user-specific and must be fresh
-  return await sdk.store.cart
-    .retrieve(cartId, {}, { next: { tags: ["cart"] }, ...authHeaders })
-    .then(({ cart }) => cart)
-    .catch(() => {
-      return null
-    })
 }
 
 export async function getOrSetCart(countryCode: string) {

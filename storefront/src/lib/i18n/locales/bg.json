@@ -2,7 +2,7 @@
   "common": {
     "cart": "Кошница",
     "checkout": "Плащане",
-    "addToCart": "Добави в кошницата",
+    "addToCart": "Добави в количка",
     "wishlist": "Любими",
     "search": "Търсене",
     "account": "Профил",
@@ -48,6 +48,7 @@
     "product": "Продукт",
     "price": "Цена",
     "freeShipping": {
+      "message": "Доставка Безплатна",
       "title": "Безплатна доставка",
       "progress": "Добавете още {amount} за безплатна доставка",
       "minimum": "Безплатна доставка при поръчки над {amount}",
@@ -56,7 +57,7 @@
     }
   },
   "product": {
-    "addToCart": "Добави в кошницата",
+    "addToCart": "Добави в количка",
     "adding": "Добавяне...",
     "quickBuy": "Бърза покупка",
     "buyNow": "Купи сега",
@@ -357,6 +358,50 @@
     "information": "Информация",
     "categories": "Категории",
     "collections": "Колекции",
-    "copyright": "© {year} MS Store. Всички права запазени."
+    "copyright": "© {year} NEZ.BG. Всички права запазени.",
+    "company": "Компания",
+    "aboutUs": "За нас",
+    "brands": "Марки",
+    "stores": "Магазини",
+    "careersWithUs": "Кариери с нас",
+    "help": "Помощ",
+    "faq": "Често задавани въпроси",
+    "generalConditions": "Общи условия",
+    "deliveryAndPayment": "Доставка и заплащане",
+    "termsOfDeliveryAndAssistance": "Начини на доставка и помощ",
+    "gdprInstructions": "GDPR инструкции",
+    "privacyPolicy": "Политика за поверителност",
+    "helpAndSupport": "Помощ и поддръжка",
+    "contactUs": "Свържете се с нас",
+    "workingHours": "Работно време: 8:00 - 16:00 ч",
+    "mondayFriday": "Понеделник - Петък: 8:00 - 14:00 ч",
+    "newsletter": {
+      "discount": "-10%",
+      "title": "Регистрирайте се и получете 10% отстъпка при първата ви поръчка",
+      "placeholder": "Въведете имейла си",
+      "subscribe": "Абониране",
+      "consent": "Разрешавам използването на имейл адреса за маркетингови цели"
+    },
+    "poweredBy": "Powered by Merch Solutions"
+  },
+  "login": {
+    "title": "Добре дошли отново",
+    "subtitle": "Влезте в профила си за по-добро изживяване при пазаруване.",
+    "signIn": "Вход",
+    "email": "Имейл",
+    "password": "Парола",
+    "notAMember": "Нямате профил?",
+    "joinUs": "Присъединете се към нас",
+    "alreadyAMember": "Вече сте член?",
+    "createAccount": "Станете член",
+    "createAccountSubtitle": "Създайте своя профил и получете достъп до подобрено изживяване при пазаруване.",
+    "join": "Присъединяване",
+    "privacyPolicy": "Политика за поверителност",
+    "termsOfUse": "Условия за ползване",
+    "agreeTo": "Създавайки акаунт, вие се съгласявате с",
+    "and": "и",
+    "firstName": "Име",
+    "lastName": "Фамилия",
+    "phone": "Телефон"
   }
 }

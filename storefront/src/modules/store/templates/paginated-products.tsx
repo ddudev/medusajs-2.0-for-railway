@@ -69,7 +69,7 @@ function filterProductsByPrice(
     }
 
     const price = cheapestPrice.calculated_price_number
-    
+
     if (parts[1] === "+") {
       // Format: "min-+" means minPrice and above
       return price >= minPrice
@@ -211,7 +211,7 @@ export default async function PaginatedProducts({
   let paginatedProducts = filteredProducts
   let totalCount = count
   let totalPages = Math.ceil(count / PRODUCT_LIMIT)
-  
+
   if (needsPriceFiltering) {
     // Client-side pagination for price-filtered results
     const totalFiltered = filteredProducts.length
@@ -226,7 +226,7 @@ export default async function PaginatedProducts({
   const productsList = (
     <>
       <ul
-        className="grid grid-cols-2 w-full small:grid-cols-3 medium:grid-cols-4 gap-x-6 gap-y-8"
+        className="grid grid-cols-2 w-full md:grid-cols-3 lg:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-6 md:gap-y-10"
         data-testid="products-list"
       >
         {paginatedProducts.map((pricedProduct, index) => {
@@ -235,8 +235,8 @@ export default async function PaginatedProducts({
           }
           return (
             <li key={pricedProduct.id}>
-              <ProductTile 
-                product={pricedProduct} 
+              <ProductTile
+                product={pricedProduct}
                 region={region}
                 countryCode={countryCode}
                 priority={index < 4} // Prioritize first 4 images for LCP
@@ -259,6 +259,7 @@ export default async function PaginatedProducts({
   return {
     products: productsList,
     totalCount,
+    totalPages,
     pageSize: PRODUCT_LIMIT,
   }
 }

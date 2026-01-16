@@ -1,6 +1,7 @@
 "use client"
 
 import { usePostHog } from 'posthog-js/react'
+import { useCallback } from 'react'
 import type { ProductEventProperties, CartEventProperties, CheckoutEventProperties, UserProperties } from './types'
 
 /**
@@ -13,14 +14,14 @@ export function useAnalytics() {
   /**
    * Track a custom event
    */
-  const trackEvent = (eventName: string, properties?: Record<string, any>) => {
+  const trackEvent = useCallback((eventName: string, properties?: Record<string, any>) => {
     if (posthog) {
       posthog.capture(eventName, {
         ...properties,
         timestamp: new Date().toISOString(),
       })
     }
-  }
+  }, [posthog])
 
   /**
    * Identify a user
@@ -89,9 +90,9 @@ export function useAnalytics() {
   /**
    * Track product viewed
    */
-  const trackProductViewed = (properties: ProductEventProperties) => {
+  const trackProductViewed = useCallback((properties: ProductEventProperties) => {
     trackEvent('product_viewed', properties)
-  }
+  }, [trackEvent])
 
   /**
    * Track product added to cart

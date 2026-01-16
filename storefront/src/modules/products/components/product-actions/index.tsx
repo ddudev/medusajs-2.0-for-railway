@@ -1,19 +1,14 @@
 "use client"
 
-import { Button, Heading } from "@medusajs/ui"
 import { isEqual } from "@lib/utils/is-equal"
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
-import TextField from "@mui/material/TextField"
-import IconButton from "@mui/material/IconButton"
-import { Add, Remove } from "@mui/icons-material"
 
 import { useIntersection } from "@lib/hooks/use-in-view"
-import Divider from "@modules/common/components/divider"
-import OptionSelect from "@modules/products/components/product-actions/option-select"
 
 import MobileActions from "./mobile-actions"
-import ProductPrice from "../product-price"
+import PriceBox from "../price-box"
+import TrustBadges from "../trust-badges"
 import QuickBuy from "../quick-buy"
 import { addToCart } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
@@ -183,111 +178,34 @@ export default function ProductActions({
 
   return (
     <>
-      <div className="flex flex-col gap-y-6" ref={actionsRef}>
-        {/* Product Title */}
-        <Heading
-          level="h1"
-          className="text-3xl md:text-4xl lg:text-5xl leading-tight text-text-primary font-bold tracking-tight"
-          data-testid="product-title"
-        >
-          {product.title}
-        </Heading>
+      <div className="flex flex-col gap-6" ref={actionsRef}>
+        {/* Price Box with Variant Selection */}
+        <PriceBox
+          product={product}
+          variant={selectedVariant}
+          quantity={quantity}
+          onQuantityChange={handleQuantityChange}
+          onAddToCart={handleAddToCart}
+          isAdding={isAdding}
+          inStock={inStock}
+          maxQuantity={maxQuantity}
+          options={options}
+          setOptionValue={setOptionValue}
+          disabled={!!disabled}
+        />
 
-        {/* Variant Selection */}
-        <div>
-          {(product.variants?.length ?? 0) > 1 && (
-            <div className="flex flex-col gap-y-6">
-              {(product.options || []).map((option) => {
-                return (
-                  <div key={option.id} className="flex flex-col gap-3">
-                    <label className="text-sm font-semibold text-text-primary uppercase tracking-wide">
-                      {option.title}
-                    </label>
-                    <OptionSelect
-                      option={option}
-                      current={options[option.title ?? ""]}
-                      updateOption={setOptionValue}
-                      title={option.title ?? ""}
-                      data-testid="product-options"
-                      disabled={!!disabled || isAdding}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
+        {/* Trust Badges */}
+        <TrustBadges />
 
-        {/* Price */}
-        <div className="py-4 border-t border-b border-border-base">
-          <ProductPrice product={product} variant={selectedVariant} />
-        </div>
+        {/* Quick Buy Button (if enabled) */}
+        {config.quickBuy.showOnPDP && selectedVariant && inStock && (
+          <QuickBuy
+            product={product}
+            variant={selectedVariant}
+            className="w-full h-12 border-2 border-primary text-primary bg-transparent hover:bg-primary hover:text-text-inverse transition-colors font-semibold rounded-lg"
+          />
+        )}
 
-        {/* Quantity Selector */}
-        <div className="flex flex-col gap-3">
-          <label className="text-sm font-semibold text-text-primary uppercase tracking-wide">
-            Quantity
-          </label>
-          <div className="flex items-center gap-3">
-            <IconButton
-              onClick={() => handleQuantityChange(quantity - 1)}
-              disabled={quantity <= 1 || !!disabled || isAdding}
-              className="border border-border-base hover:bg-background-elevated"
-              size="small"
-              aria-label="Decrease quantity"
-            >
-              <Remove />
-            </IconButton>
-            <TextField
-              type="number"
-              value={quantity}
-              onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
-              inputProps={{
-                min: 1,
-                max: maxQuantity,
-                style: { textAlign: 'center', padding: '8px' }
-              }}
-              disabled={!!disabled || isAdding}
-              className="w-20"
-              size="small"
-            />
-            <IconButton
-              onClick={() => handleQuantityChange(quantity + 1)}
-              disabled={quantity >= maxQuantity || !!disabled || isAdding}
-              className="border border-border-base hover:bg-background-elevated"
-              size="small"
-              aria-label="Increase quantity"
-            >
-              <Add />
-            </IconButton>
-          </div>
-        </div>
-
-        {/* Add to Cart Button */}
-        <div className="flex flex-col gap-3">
-          <Button
-            onClick={handleAddToCart}
-            disabled={!inStock || !selectedVariant || !!disabled || isAdding}
-            className="w-full h-14 bg-primary text-text-inverse hover:bg-primary-hover transition-colors font-semibold text-lg rounded-lg shadow-md hover:shadow-lg"
-            isLoading={isAdding}
-            data-testid="add-product-button"
-          >
-            {!selectedVariant
-              ? "Select variant"
-              : !inStock
-              ? "Out of stock"
-              : "Add to cart"}
-          </Button>
-          
-          {/* Quick Buy Button */}
-          {config.quickBuy.showOnPDP && selectedVariant && inStock && (
-            <QuickBuy
-              product={product}
-              variant={selectedVariant}
-              className="w-full h-12 border-2 border-primary text-primary bg-transparent hover:bg-primary hover:text-text-inverse transition-colors font-semibold rounded-lg"
-            />
-          )}
-        </div>
         <MobileActions
           product={product}
           variant={selectedVariant}

@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { Slider, TextField, Box, Typography } from '@mui/material'
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import CollapsibleFilter from "@modules/common/components/collapsible-filter"
 
 // Debounce utility hook
 function useDebounce<T extends (...args: any[]) => void>(
@@ -222,29 +223,27 @@ const FilterPrice = ({
 
   const hasActiveFilter = minPrice > MIN_PRICE || maxPrice < MAX_PRICE
 
+  // Default expanded if there's an active price filter
+  const defaultExpanded = hasActiveFilter
+
   return (
-    <div className="flex gap-x-3 flex-col" data-testid={dataTestId}>
-      <Box className="flex items-center justify-between mb-2">
-        <Typography 
-          variant="body2" 
-          sx={{ 
-            color: 'text.secondary',
-            fontWeight: 500,
-            fontSize: '0.875rem',
-          }}
-        >
-          {t("filters.price")}
-        </Typography>
+    <CollapsibleFilter
+      title={t("filters.price")}
+      defaultExpanded={defaultExpanded}
+      data-testid={dataTestId}
+    >
+      <Box className="flex gap-x-3 flex-col">
         {hasActiveFilter && (
-          <button
-            onClick={handleClear}
-            className="text-xs text-primary hover:underline"
-            type="button"
-          >
-            {t("filters.clearFilters")}
-          </button>
+          <Box className="flex items-center justify-end mb-2">
+            <button
+              onClick={handleClear}
+              className="text-xs text-primary hover:underline"
+              type="button"
+            >
+              {t("filters.clearFilters")}
+            </button>
+          </Box>
         )}
-      </Box>
 
       {/* Price Range Slider */}
       <Box className="px-2 mb-4">
@@ -316,7 +315,8 @@ const FilterPrice = ({
           }}
         />
       </Box>
-    </div>
+    </Box>
+    </CollapsibleFilter>
   )
 }
 

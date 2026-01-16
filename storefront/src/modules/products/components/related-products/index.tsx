@@ -1,6 +1,10 @@
 import { Suspense } from "react"
 import { getRegion } from "@lib/data/regions"
 import { getProductsList, getProductsById } from "@lib/data/products"
+import { cache } from "react"
+
+// Cache getRegion to prevent duplicate calls
+const cachedGetRegion = cache(getRegion)
 import { HttpTypes } from "@medusajs/types"
 import ProductTile, { ProductTileSkeleton } from "../product-tile"
 
@@ -23,7 +27,7 @@ export default async function RelatedProducts({
   product,
   countryCode,
 }: RelatedProductsProps) {
-  const region = await getRegion(countryCode)
+  const region = await cachedGetRegion(countryCode)
 
   if (!region) {
     return null

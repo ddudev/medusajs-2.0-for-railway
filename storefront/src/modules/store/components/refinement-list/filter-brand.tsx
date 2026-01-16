@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation"
 import FilterCheckboxGroup from "@modules/common/components/filter-checkbox-group"
+import CollapsibleFilter from "@modules/common/components/collapsible-filter"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { Brand } from "@lib/data/brands"
 
@@ -34,11 +35,6 @@ const FilterBrand = ({
     setQueryParamsArray("brand", newValues)
   }
 
-  // Debug logging (remove in production)
-  if (typeof window !== 'undefined') {
-    console.log('[FilterBrand] Brands received:', brands?.length || 0, brands)
-  }
-
   const items = [
     ...(brands || []).map((brand) => ({
       value: brand.id,
@@ -51,14 +47,21 @@ const FilterBrand = ({
     return null
   }
 
+  // Default expanded if there are selected brands
+  const defaultExpanded = selectedBrandIds.length > 0
+
   return (
-    <FilterCheckboxGroup
+    <CollapsibleFilter
       title={t("filters.brand")}
-      items={items}
-      selectedValues={selectedBrandIds}
-      handleChange={handleChange}
+      defaultExpanded={defaultExpanded}
       data-testid={dataTestId}
-    />
+    >
+      <FilterCheckboxGroup
+        items={items}
+        selectedValues={selectedBrandIds}
+        handleChange={handleChange}
+      />
+    </CollapsibleFilter>
   )
 }
 

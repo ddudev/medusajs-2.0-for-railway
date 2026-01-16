@@ -1,26 +1,18 @@
-import { notFound } from "next/navigation"
+// This file is kept for backwards compatibility
+// Cart fetching is now done in Nav component and passed to TopPromoBar
+// This allows proper Server Component data fetching without "Server Functions cannot be called during initial render" errors
+
 import CartButtonClient from "./cart-button-client"
 import SlideInCartWrapper from "./slide-in-cart-wrapper"
-import { enrichLineItems, retrieveCart } from "@lib/data/cart"
+import { HttpTypes } from "@medusajs/types"
 
-const fetchCart = async () => {
-  const cart = await retrieveCart()
-
-  if (!cart) {
-    return null
-  }
-
-  if (cart?.items?.length) {
-    const enrichedItems = await enrichLineItems(cart.items, cart.region_id!)
-    cart.items = enrichedItems
-  }
-
-  return cart
+type CartButtonProps = {
+  cart: HttpTypes.StoreCart | null
 }
 
-export default async function CartButton() {
-  const cart = await fetchCart()
-
+// CartButton is now a simple wrapper that receives cart as a prop
+// This allows it to be used in both Server and Client Components
+export default function CartButton({ cart }: CartButtonProps) {
   return (
     <>
       <CartButtonClient cart={cart} />

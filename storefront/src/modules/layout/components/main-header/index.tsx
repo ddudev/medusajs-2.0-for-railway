@@ -1,94 +1,63 @@
-import { Suspense } from "react"
-import { Phone } from "@medusajs/icons"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import CartButton from "@modules/layout/components/cart-button"
-import SearchBar from "./search-bar"
-import HeaderLinks from "./header-links"
-import AccountLink from "./account-link"
 import MobileMenu from "@modules/layout/components/mobile-menu"
-import { getTranslations } from "@lib/i18n/server"
-import { getCategoriesList } from "@lib/data/categories"
-import { listRegions } from "@lib/data/regions"
+import CategoryMenuItem from "@modules/layout/components/category-nav/category-menu-item"
+import { HttpTypes } from "@medusajs/types"
 
-const MainHeader = async ({ countryCode }: { countryCode: string }) => {
-  const translations = await getTranslations(countryCode)
-  const { product_categories } = await getCategoriesList(0, 100)
-  const regions = await listRegions()
-
+const MainHeader = async ({
+  countryCode,
+  categories = []
+}: {
+  countryCode: string
+  categories?: HttpTypes.StoreProductCategory[]
+}) => {
   const displayCategories =
-    product_categories && product_categories.length > 0
-      ? product_categories.filter((cat) => !cat.parent_category).slice(0, 20)
+    categories && categories.length > 0
+      ? categories.filter((cat) => !cat.parent_category).slice(0, 20)
       : []
 
   return (
-    <div className="w-full bg-background-base border-b border-border-base">
-      {/* Top Row: Contact & Info Links */}
+    <div className="hidden md:block w-full bg-black relative overflow-visible" style={{ height: '60px' }}>
+      {/* Navigation bar - black background with orange All Products button and category links on same line */}
+      <div className="content-container h-full relative">
+        {/* Left: Orange All Products Button - 72px height, rounded only on bottom, overflowing downward by 12px - Absolute positioned */}
+        <LocalizedClientLink
+          href="/store"
+          className="absolute left-6 top-0 flex items-center gap-2 bg-primary text-white px-4 rounded-b-lg rounded-t-none hover:bg-primary-hover transition-colors whitespace-nowrap font-medium z-10"
+          style={{
+            height: '72px'
+          }}
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+          <span>Всички продукти</span>
+        </LocalizedClientLink>
 
-
-      {/* Bottom Row: Logo, Search, Actions */}
-      <div id="header-bottom-row" className="content-container py-4 relative">
-        <div className="flex items-center justify-between gap-4">
-          {/* Left: Mobile Menu + Logo */}
-          <div className="flex items-center gap-3 flex-shrink-0 md:flex-shrink-0">
-            {/* Mobile Menu (hamburger) */}
-            <MobileMenu regions={regions} categories={displayCategories} />
-            
-            {/* Logo */}
-            <LocalizedClientLink
-              href="/"
-              className="text-3xl md:text-4xl font-bold text-text-primary hover:opacity-80 transition-opacity"
-              data-testid="nav-store-link"
-            >
-              MStore
-            </LocalizedClientLink>
+        <nav className="flex items-center gap-6 h-full">
+          {/* Mobile Menu - hidden on desktop */}
+          <div className="md:hidden">
+            <MobileMenu regions={[]} categories={displayCategories} />
           </div>
 
-          {/* Center: Search Bar */}
-          <div className="flex-1 max-w-2xl mx-4 relative">
-            <SearchBar />
-          </div>
-
-          {/* Right: Phone, Account, Cart */}
-          <div className="flex items-center gap-4 md:gap-6 flex-shrink-0 md:flex-shrink-0">
-            {/* Phone */}
-            <div className="hidden md:flex items-center gap-2 text-text-secondary">
-              <Phone className="w-5 h-5" />
-              <a
-                href="tel:00877300815"
-                className="hover:text-text-primary transition-colors text-sm font-medium"
-              >
-                00877 300 815
-              </a>
+          {/* Category Links - White text on black background, on same line - with left margin to account for button */}
+          {displayCategories.length > 0 && (
+            <div className="hidden md:flex items-center gap-6 ml-[220px]">
+              {displayCategories.map((category) => (
+                <CategoryMenuItem key={category.handle} category={category} />
+              ))}
             </div>
-
-            {/* Registration/Account */}
-            <AccountLink />
-
-            {/* Cart */}
-            <Suspense
-              fallback={
-                <div className="flex items-center gap-2 text-text-secondary">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                    />
-                  </svg>
-                  <span className="hidden md:inline text-sm">0.00 {translations.cartButton.currency}</span>
-                </div>
-              }
-            >
-              <CartButton />
-            </Suspense>
-          </div>
-        </div>
+          )}
+        </nav>
       </div>
     </div>
   )

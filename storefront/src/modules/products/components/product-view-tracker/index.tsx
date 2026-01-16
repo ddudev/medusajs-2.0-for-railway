@@ -37,7 +37,7 @@ export default function ProductViewTracker({
         : undefined
       const currency = variant?.calculated_price?.currency_code || region.currency_code || 'EUR'
 
-      // Track product view in PostHog
+      // Track product view in PostHog (only once per product view)
       trackProductViewed({
         product_id: productId,
         product_name: product.title,
@@ -48,7 +48,9 @@ export default function ProductViewTracker({
         variant_name: variant?.title,
       })
     }
-  }, [product, productId, region, trackProductViewed])
+    // Only track once when component mounts, not on every prop change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId])
 
   // This component doesn't render anything
   return null

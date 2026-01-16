@@ -5,6 +5,7 @@ import { ChevronDown } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { Fragment, useState } from "react"
+import { usePathname } from "next/navigation"
 
 type CategoryMenuItemProps = {
     category: HttpTypes.StoreProductCategory
@@ -12,15 +13,23 @@ type CategoryMenuItemProps = {
 
 const CategoryMenuItem = ({ category }: CategoryMenuItemProps) => {
     const [isOpen, setIsOpen] = useState(false)
+    const pathname = usePathname()
     const hasChildren =
         category.category_children && category.category_children.length > 0
+
+    // Check if current category is active
+    const isActive = pathname?.includes(`/categories/${category.handle}`)
 
     if (!hasChildren) {
         return (
             <LocalizedClientLink
                 href={`/categories/${category.handle}`}
                 prefetch={false}
-                className="text-sm text-text-secondary hover:text-text-primary transition-colors whitespace-nowrap font-medium"
+                className={`text-sm text-white hover:text-primary transition-colors whitespace-nowrap font-medium relative pb-1 ${
+                    isActive 
+                        ? "after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white" 
+                        : "hover:after:absolute hover:after:bottom-0 hover:after:left-0 hover:after:w-full hover:after:h-[1px] hover:after:bg-white"
+                }`}
             >
                 {category.name}
             </LocalizedClientLink>
@@ -35,12 +44,16 @@ const CategoryMenuItem = ({ category }: CategoryMenuItemProps) => {
         >
             <Popover className="relative">
                 <Popover.Button
-                    className="flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary transition-colors whitespace-nowrap font-medium outline-none"
+                    className={`flex items-center gap-1 text-sm text-white hover:text-primary transition-colors whitespace-nowrap font-medium outline-none relative pb-1 ${
+                        isActive 
+                            ? "after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white" 
+                            : ""
+                    }`}
                 >
                     <LocalizedClientLink
                         href={`/categories/${category.handle}`}
                         prefetch={false}
-                        className="hover:text-text-primary"
+                        className="hover:text-primary"
                     >
                         {category.name}
                     </LocalizedClientLink>

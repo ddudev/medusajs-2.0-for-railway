@@ -34,13 +34,11 @@ const AccountLink = () => {
     return (
       <LocalizedClientLink
         href="/account"
-        className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
+        className="flex items-center gap-2 text-text-primary hover:opacity-80 transition-opacity"
         data-testid="nav-account-link"
       >
-        <User className="w-5 h-5" />
-        <span className="hidden md:inline text-sm font-medium">
-          {t("common.registration") || "Registration"}
-        </span>
+        <User className="w-8 h-8" viewBox="0 0 15 15" />
+        <span className="text-base font-medium md:block hidden">Вход</span>
       </LocalizedClientLink>
     )
   }
@@ -50,15 +48,11 @@ const AccountLink = () => {
     return (
       <LocalizedClientLink
         href="/account"
-        className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
+        className="flex items-center gap-2 text-text-primary hover:opacity-80 transition-opacity"
         data-testid="nav-account-link"
       >
-        <User className="w-5 h-5" />
-        <span className="hidden md:inline text-sm font-medium">
-          {customer.first_name 
-            ? `${customer.first_name}'s Account`
-            : t("common.myAccount") || "My Account"}
-        </span>
+        <User className="w-8 h-8" viewBox="0 0 15 15" />
+        <span className="text-base font-medium md:block hidden">Вход</span>
       </LocalizedClientLink>
     )
   }
@@ -67,13 +61,11 @@ const AccountLink = () => {
   return (
     <LocalizedClientLink
       href="/account"
-      className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
+      className="flex items-center gap-2 text-text-primary hover:opacity-80 transition-opacity"
       data-testid="nav-account-link"
     >
-      <User className="w-5 h-5" />
-      <span className="hidden md:inline text-sm font-medium">
-        {t("common.registration") || "Registration"}
-      </span>
+      <User className="w-8 h-8" viewBox="0 0 15 15" />
+      <span className="text-sm font-medium md:block hidden">Вход</span>
     </LocalizedClientLink>
   )
 }

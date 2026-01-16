@@ -33,12 +33,14 @@ const FilterButton = ({ "data-testid": dataTestId }: FilterButtonProps) => {
   return (
     <button
       onClick={openFilterDrawer}
-      className="md:hidden flex items-center gap-2 px-4 py-2 border border-border-base rounded-lg hover:bg-background-elevated transition-colors relative"
+      className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors relative group"
       data-testid={dataTestId}
       aria-label="Open filters"
     >
-      <Funnel className="w-5 h-5 text-text-secondary" />
-      <span className="text-sm font-medium text-text-primary">Филтри</span>
+      <span className="text-sm font-medium text-text-tertiary">Филтрирай:</span>
+      <Funnel className="w-5 h-5 text-white/80 group-hover:text-white" />
+      <span className="text-sm font-semibold text-white">Всички</span>
+
       {activeFilterCount > 0 && (
         <Badge
           badgeContent={activeFilterCount}

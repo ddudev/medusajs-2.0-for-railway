@@ -42,12 +42,22 @@ async function PaginatedProductsWrapper({
 
   return (
     <>
-      <div className="mb-4 flex flex-col gap-3">
+      {/* Results Count with Pagination and Sort - matches design */}
+      <div className="mb-6 flex items-center justify-between">
         <ProductCount
           currentPage={page}
           pageSize={result.pageSize}
           totalCount={result.totalCount}
+          totalPages={result.totalPages}
         />
+        {/* Sort Dropdown - Desktop only (mobile shown in header) */}
+        <div className="hidden md:flex">
+          <SortDropdown />
+        </div>
+      </div>
+      
+      {/* Active Filters */}
+      <div className="mb-4">
         <ActiveFilters
           collections={collections}
           categories={categories}
@@ -58,6 +68,8 @@ async function PaginatedProductsWrapper({
           selectedPriceRange={undefined}
         />
       </div>
+      
+      {/* Product Grid */}
       {result.products}
     </>
   )
@@ -112,91 +124,61 @@ export default async function CategoryTemplate({
       priceRange={undefined}
       translations={{}}
     >
-      <div
-        className="flex flex-col small:flex-row small:items-start small:gap-x-8 py-6 content-container"
-        data-testid="category-container"
-      >
-        <RefinementList 
-          collections={collections || []} 
-          categories={categories}
-          brands={brands}
-          maxPrice={maxPrice}
-          sortBy={sort} 
-          data-testid="sort-by-container" 
-        />
-        <div className="w-full">
-          {/* Header with breadcrumbs and sort dropdown - matches store page layout */}
-          <div className="mb-6">
-            <div className="flex flex-row text-2xl-semi gap-4 mb-4 md:mb-0">
-            {parents &&
-              parents.map((parent) => (
-                <span key={parent.id} className="text-ui-fg-subtle">
-                  <LocalizedClientLink
-                    className="mr-4 hover:text-black"
-                    href={`/categories/${parent.handle}`}
-                    prefetch={false}
-                    data-testid="sort-by-link"
-                  >
-                    {parent.name}
-                  </LocalizedClientLink>
-                  /
-                </span>
-              ))}
-            <h1 data-testid="category-page-title">{category.name}</h1>
-          </div>
-            <div className="flex items-center gap-4 md:hidden">
-              <FilterButton />
-              <SortDropdown />
-            </div>
-            <div className="hidden md:flex items-center justify-end">
-              <SortDropdown />
-            </div>
-          </div>
-        
-        {/* Category description and children - category-specific content */}
-        {category.description && (
-          <div className="mb-8 text-base-regular">
-            <p>{category.description}</p>
-          </div>
-        )}
-        {category.category_children && (
-          <div className="mb-8 text-base-large">
-            <ul className="grid grid-cols-1 gap-2">
-              {category.category_children?.map((c) => (
-                <li key={c.id}>
-                  <InteractiveLink href={`/categories/${c.handle}`} prefetch={false}>
-                    {c.name}
-                  </InteractiveLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        
-        {/* Products with ProductCount and ActiveFilters - matches store page */}
-        <Suspense 
-          key={filterKey}
-          fallback={
-            <>
-              <div className="mb-4">
-                <div className="h-6 w-48 bg-gray-200 animate-pulse rounded" />
+      <div className="content-container py-6">
+        {/* Mobile: Filters in drawer, Products full width */}
+        {/* Desktop: Filters sidebar + Products grid */}
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Filters Sidebar - Hidden on mobile, shown on desktop */}
+          <aside className="hidden md:block md:w-64 lg:w-80 flex-shrink-0">
+            <RefinementList 
+              collections={collections || []} 
+              categories={categories}
+              brands={brands}
+              maxPrice={maxPrice}
+            />
+          </aside>
+          
+          {/* Products Section */}
+          <div className="flex-1 min-w-0">
+            {/* Page Title */}
+            <div className="mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold text-text-primary mb-4" data-testid="category-page-title">
+                {category.name}
+              </h1>
+              
+              {/* Mobile: Filter and Sort buttons */}
+              <div className="flex items-center gap-4 md:hidden mb-4">
+                <FilterButton />
+                <SortDropdown />
               </div>
-              <SkeletonProductGrid />
-            </>
-          }
-        >
-          <PaginatedProductsWrapper
-            sortBy={sort}
-            page={pageNumber}
-            categoryIds={[category.id]}
-            countryCode={countryCode}
-            collections={collections || []}
-            categories={categories}
-            brands={brands}
-          />
-        </Suspense>
+            </div>
+        
+            {/* Products with Results Count, Pagination, and Sort - matches design */}
+            <Suspense 
+              key={filterKey}
+              fallback={
+                <>
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="h-6 w-48 bg-gray-200 animate-pulse rounded" />
+                    <div className="h-10 w-32 bg-gray-200 animate-pulse rounded" />
+                  </div>
+                  <SkeletonProductGrid />
+                </>
+              }
+            >
+              <PaginatedProductsWrapper
+                sortBy={sort}
+                page={pageNumber}
+                categoryIds={[category.id]}
+                countryCode={countryCode}
+                collections={collections || []}
+                categories={categories}
+                brands={brands}
+              />
+            </Suspense>
+          </div>
+        </div>
       </div>
-    </div>
     </StoreTemplateClient>
   )
 }
