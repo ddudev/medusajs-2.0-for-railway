@@ -1,44 +1,59 @@
 {
-  "name": "MS Store",
-  "short_name": "MS Store",
-  "description": "Shop online with MS Store - Your trusted e-commerce platform",
-  "start_url": "/",
+  "name": "Nez.bg",
+  "short_name": "Nez.bg",
+  "description": "Shop online with Nez.bg - Your trusted e-commerce platform",
+  "id": "https://nez.bg/",
+  "start_url": "https://nez.bg/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#519717",
-  "orientation": "portrait-primary",
+  "background_color": "#f9fafb",
+  "theme_color": "#ff6b35",
+  "orientation": "any",
+  "dir": "auto",
+  "lang": "bg-BG",
   "scope": "/",
-  "categories": ["shopping", "ecommerce"],
+  "categories": [
+    "shopping",
+    "ecommerce"
+  ],
   "icons": [
     {
-      "src": "/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512x512.png",
+      "src": "icon512_maskable.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon512_rounded.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Store",
       "short_name": "Store",
       "description": "Browse all products",
       "url": "/store",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Cart",
       "short_name": "Cart",
       "description": "View your cart",
       "url": "/cart",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
-  ]
+  ],
+  "screenshots": []
 }
-

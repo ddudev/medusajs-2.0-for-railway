@@ -150,7 +150,7 @@ async function networkOnly(request) {
   try {
     return await fetch(request)
   } catch (error) {
-    return new Response('Network request failed', { 
+    return new Response('Network request failed', {
       status: 503,
       statusText: 'Service Unavailable',
       headers: { 'Content-Type': 'text/plain' }
@@ -162,7 +162,7 @@ async function networkOnly(request) {
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName)
   const cachedResponse = await cache.match(request)
-  
+
   if (cachedResponse) {
     return cachedResponse
   }
@@ -183,11 +183,11 @@ async function cacheFirst(request, cacheName) {
 async function cacheFirstWithExpiry(request, cacheName, maxAge, maxItems) {
   const cache = await caches.open(cacheName)
   const cachedResponse = await cache.match(request)
-  
+
   if (cachedResponse) {
     const cachedDate = new Date(cachedResponse.headers.get('sw-cached-date'))
     const now = new Date()
-    
+
     if (now - cachedDate < maxAge * 1000) {
       return cachedResponse
     }
@@ -199,15 +199,15 @@ async function cacheFirstWithExpiry(request, cacheName, maxAge, maxItems) {
       const responseToCache = networkResponse.clone()
       const headers = new Headers(responseToCache.headers)
       headers.set('sw-cached-date', new Date().toISOString())
-      
+
       const cachedResponse = new Response(responseToCache.body, {
         status: responseToCache.status,
         statusText: responseToCache.statusText,
         headers: headers
       })
-      
+
       cache.put(request, cachedResponse)
-      
+
       // Limit cache size
       limitCacheSize(cacheName, maxItems)
     }
@@ -230,15 +230,15 @@ async function staleWhileRevalidateWithExpiry(request, cacheName, maxAge, maxIte
       const responseToCache = networkResponse.clone()
       const headers = new Headers(responseToCache.headers)
       headers.set('sw-cached-date', new Date().toISOString())
-      
+
       const cachedResponse = new Response(responseToCache.body, {
         status: responseToCache.status,
         statusText: responseToCache.statusText,
         headers: headers
       })
-      
+
       cache.put(request, cachedResponse)
-      
+
       // Limit cache size
       limitCacheSize(cacheName, maxItems)
     }
@@ -272,7 +272,7 @@ async function networkFirstWithCache(request, cacheName) {
 async function limitCacheSize(cacheName, maxItems) {
   const cache = await caches.open(cacheName)
   const keys = await cache.keys()
-  
+
   if (keys.length > maxItems) {
     // Remove oldest items (first in the keys array)
     const itemsToDelete = keys.length - maxItems
@@ -285,7 +285,7 @@ async function limitCacheSize(cacheName, maxItems) {
 // Push notification event handler
 self.addEventListener('push', (event) => {
   console.log('[Service Worker] Push notification received')
-  
+
   if (!event.data) {
     return
   }
@@ -295,13 +295,13 @@ self.addEventListener('push', (event) => {
     data = event.data.json()
   } catch (e) {
     data = {
-      title: 'MS Store',
+      title: 'Nez.bg',
       body: event.data.text() || 'You have a new notification',
     }
   }
 
   const options = {
-    title: data.title || 'MS Store',
+    title: data.title || 'Nez.bg',
     body: data.body || 'You have a new notification',
     icon: data.icon || '/icon-192x192.png',
     badge: data.badge || '/icon-192x192.png',
@@ -321,7 +321,7 @@ self.addEventListener('push', (event) => {
 // Notification click event handler
 self.addEventListener('notificationclick', (event) => {
   console.log('[Service Worker] Notification clicked')
-  
+
   event.notification.close()
 
   const data = event.notification.data || {}
@@ -346,7 +346,7 @@ self.addEventListener('notificationclick', (event) => {
 // Background sync for offline actions
 self.addEventListener('sync', (event) => {
   console.log('[Service Worker] Background sync:', event.tag)
-  
+
   if (event.tag === 'sync-cart') {
     event.waitUntil(syncCart())
   }
@@ -360,11 +360,11 @@ async function syncCart() {
 // Message handler for communication with main thread
 self.addEventListener('message', (event) => {
   console.log('[Service Worker] Message received:', event.data)
-  
+
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting()
   }
-  
+
   if (event.data && event.data.type === 'CACHE_URLS') {
     event.waitUntil(
       caches.open(STATIC_CACHE).then((cache) => {
@@ -372,7 +372,7 @@ self.addEventListener('message', (event) => {
       })
     )
   }
-  
+
   if (event.data && event.data.type === 'CLEAR_CACHE') {
     event.waitUntil(
       caches.keys().then((cacheNames) => {
