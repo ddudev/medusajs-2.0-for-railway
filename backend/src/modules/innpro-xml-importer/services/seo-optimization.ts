@@ -22,8 +22,8 @@ export class SEOOptimizationService {
   private timeout: number
 
   constructor(
-    ollamaService: OllamaTranslationServiceImpl, 
-    model: string = process.env.OLLAMA_MODEL || 'gemma3:latest', 
+    ollamaService: OllamaTranslationServiceImpl,
+    model: string = process.env.OLLAMA_MODEL || 'gemma3:latest',
     timeout: number = 600000 // 10 minutes for SEO generation
   ) {
     this.ollamaService = ollamaService
@@ -36,9 +36,9 @@ export class SEOOptimizationService {
    */
   private extractImagesFromDescription(description: string): Array<{ tag: string; url: string }> {
     if (!description) return []
-    
+
     const images: Array<{ tag: string; url: string }> = []
-    
+
     // Match <img> tags with various formats
     const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi
     let match
@@ -48,7 +48,7 @@ export class SEOOptimizationService {
         url: match[1], // Image URL
       })
     }
-    
+
     return images
   }
 
@@ -58,7 +58,7 @@ export class SEOOptimizationService {
    */
   private extractIncludedSection(description: string): string | null {
     if (!description) return null
-    
+
     // Look for "Included" heading followed by a list
     // Common patterns: <h3>Included</h3> followed by <ul> or <p> with list items
     const includedPatterns = [
@@ -73,18 +73,18 @@ export class SEOOptimizationService {
       // Pattern 5: Just <ul> with class containing "list" after "Included" text
       /<h3[^>]*>.*?Included.*?<\/h3>[\s\S]*?(<ul[^>]*class=["'][^"']*list[^"']*["'][^>]*>[\s\S]*?<\/ul>)/i,
     ]
-    
+
     for (const pattern of includedPatterns) {
       const match = description.match(pattern)
       if (match && match[1]) {
         // Return the heading and list together
-        const headingMatch = description.match(/(<h3[^>]*>.*?[Вв]ключено[^<]*<\/h3>)/i) || 
-                            description.match(/(<h3[^>]*>.*?Included.*?<\/h3>)/i)
+        const headingMatch = description.match(/(<h3[^>]*>.*?[Вв]ключено[^<]*<\/h3>)/i) ||
+          description.match(/(<h3[^>]*>.*?Included.*?<\/h3>)/i)
         const heading = headingMatch ? headingMatch[1] : '<h3>Включено</h3>'
         return `${heading}\n${match[1]}`
       }
     }
-    
+
     // Fallback: Look for plain text "Включено:" or "Included:" followed by list items
     const textIncludedPattern = /(?:^|\n)([Вв]ключено:|Included:)\s*\n((?:[-•*]\s*[^\n]+\n?)+)/i
     const textMatch = description.match(textIncludedPattern)
@@ -94,16 +94,16 @@ export class SEOOptimizationService {
         .filter(line => line.trim().match(/^[-•*]/))
         .map(line => line.replace(/^[-•*]\s*/, '').trim())
         .filter(item => item.length > 0)
-      
+
       if (listItems.length > 0) {
         const heading = '<h3>Включено</h3>'
         const listHtml = '<ul>\n' + listItems.map(item => `  <li>${item}</li>`).join('\n') + '\n</ul>'
         return `${heading}\n${listHtml}`
       }
     }
-    
+
     // Fallback: Look for <ul> with class="list-disc" or similar that appears after "Included" text
-    const includedIndex = description.toLowerCase().indexOf('включено') !== -1 
+    const includedIndex = description.toLowerCase().indexOf('включено') !== -1
       ? description.toLowerCase().indexOf('включено')
       : description.toLowerCase().indexOf('included')
     if (includedIndex !== -1) {
@@ -115,7 +115,7 @@ export class SEOOptimizationService {
         return `${heading}\n${ulMatch[1]}`
       }
     }
-    
+
     return null
   }
 
@@ -125,13 +125,13 @@ export class SEOOptimizationService {
    */
   private extractSpecificationsTable(description: string): string | null {
     if (!description) return null
-    
+
     // First, try to find HTML table wrapper or table element
     const tablePatterns = [
       /<div[^>]*class=["'][^"']*table-wrapper[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
       /<table[^>]*>([\s\S]*?)<\/table>/i,
     ]
-    
+
     for (const pattern of tablePatterns) {
       const match = description.match(pattern)
       if (match && match[0]) {
@@ -139,7 +139,7 @@ export class SEOOptimizationService {
         return match[0]
       }
     }
-    
+
     // Fallback: Look for text-based specifications with > prefix (like ">Производител\txTool")
     // This pattern matches lines starting with > followed by a label, tab/space, and value
     const textSpecPattern = /(?:^|\n)(>[^\n]+(?:\n>[^\n]+)*)/m
@@ -171,7 +171,7 @@ export class SEOOptimizationService {
         return tableHtml
       }
     }
-    
+
     return null
   }
 
@@ -188,7 +188,7 @@ export class SEOOptimizationService {
       'tool', 'industrial', 'professional',
       'solder', 'flux', 'adhesive',
     ]
-    
+
     const combined = `${title} ${category}`.toLowerCase()
     return keywords.some(keyword => combined.includes(keyword))
   }
@@ -212,7 +212,7 @@ export class SEOOptimizationService {
   } {
     const metadata = product.metadata || {}
     const parameters = metadata.parameters || []
-    
+
     // Extract features from parameters
     const features: string[] = []
     if (product.material) features.push(`Material: ${product.material}`)
@@ -220,7 +220,7 @@ export class SEOOptimizationService {
     if (product.length && product.width && product.height) {
       features.push(`Dimensions: ${product.length}x${product.width}x${product.height}mm`)
     }
-    
+
     // Extract from parameters array
     if (Array.isArray(parameters)) {
       parameters.forEach((param: any) => {
@@ -254,17 +254,17 @@ export class SEOOptimizationService {
 
     // Secondary keywords - build comprehensive list for SEO
     const secondaryKeywords: string[] = []
-    
+
     // Add brand/producer name (important for SEO)
     if (metadata.producer?.name) {
       secondaryKeywords.push(metadata.producer.name)
     }
-    
+
     // Add category name (important for SEO)
     if (metadata.category?.name && metadata.category.name !== primaryKeyword) {
       secondaryKeywords.push(metadata.category.name)
     }
-    
+
     // Add product type keywords from title (if not already primary keyword)
     if (product.title) {
       const titleWords = product.title.split(' ').filter(w => w.length > 0)
@@ -277,17 +277,17 @@ export class SEOOptimizationService {
         }
       })
     }
-    
+
     // Add material (if relevant)
     if (product.material && product.material.length > 2) {
       secondaryKeywords.push(product.material)
     }
-    
+
     // Add origin country (if relevant for SEO)
     if (product.origin_country && product.origin_country.length > 2) {
       secondaryKeywords.push(product.origin_country)
     }
-    
+
     // Limit to top 8 secondary keywords for SEO focus
     const finalSecondaryKeywords = secondaryKeywords.slice(0, 8)
 
@@ -333,11 +333,11 @@ export class SEOOptimizationService {
 
     // Extract images from original description
     const images = this.extractImagesFromDescription(originalDescriptionEn || '')
-    
+
     // Extract included section and specifications table
     const includedSection = this.extractIncludedSection(originalDescriptionEn || '')
     const specificationsTable = this.extractSpecificationsTable(originalDescriptionEn || '')
-    
+
     // Detect if product is technical
     const isTechnical = this.isTechnicalProduct(product)
 
@@ -608,12 +608,12 @@ JSON FORMATTING RULES
       for (let i = 0; i < includedMatches.length; i++) {
         const start = includedMatches[i].index
         const afterStart = description.substring(start)
-        
+
         // Find the end: next <h3> that's not "Включено", or <table>, or end of string
         const nextH3 = afterStart.match(/<h3[^>]*>(?!.*?[Вв]ключено)[^<]*<\/h3>/i)
         const nextTable = afterStart.match(/<table[^>]*>/i)
         const nextH2 = afterStart.match(/<h2[^>]*>/i)
-        
+
         let end = description.length
         if (nextH3 && nextH3.index !== undefined) {
           end = start + nextH3.index
@@ -622,7 +622,7 @@ JSON FORMATTING RULES
         } else if (nextH2 && nextH2.index !== undefined) {
           end = start + nextH2.index
         }
-        
+
         sections.push({ start, end })
       }
 
@@ -671,7 +671,7 @@ JSON FORMATTING RULES
    */
   private removeProductTitle(description: string, productTitle: string): string {
     if (!description || !productTitle) return description
-    
+
     // Remove title if it appears at the very beginning (with optional HTML tags)
     // Pattern: <h1>Title</h1> or <h2>Title</h2> or <h3>Title</h3> or just "Title" at start
     const titlePatterns = [
@@ -679,12 +679,12 @@ JSON FORMATTING RULES
       new RegExp(`^\\s*${this.escapeRegex(productTitle)}\\s*[–-]\\s*`, 'i'),
       new RegExp(`^\\s*${this.escapeRegex(productTitle)}\\s*`, 'i'),
     ]
-    
+
     let cleaned = description
     for (const pattern of titlePatterns) {
       cleaned = cleaned.replace(pattern, '')
     }
-    
+
     // Also remove if title appears in first paragraph
     const firstParagraphMatch = cleaned.match(/^<p[^>]*>(.*?)<\/p>/i)
     if (firstParagraphMatch && firstParagraphMatch[1]) {
@@ -696,7 +696,7 @@ JSON FORMATTING RULES
         cleaned = cleaned.replace(firstParagraphMatch[0], `<p>${cleanedPara}</p>`)
       }
     }
-    
+
     return cleaned.trim()
   }
 
@@ -712,16 +712,16 @@ JSON FORMATTING RULES
    */
   private areImagesAtEnd(description: string, expectedImageCount: number): boolean {
     if (!description || expectedImageCount === 0) return false
-    
+
     // Find all image tags
     const imageMatches = Array.from(description.matchAll(/<img[^>]+>/gi))
     if (imageMatches.length === 0) return false
-    
+
     // Check if all images are in the last 30% of the content
     const lastImageIndex = imageMatches[imageMatches.length - 1].index || 0
     const contentLength = description.length
     const threshold = contentLength * 0.7 // Last 30% of content
-    
+
     return lastImageIndex > threshold && imageMatches.length >= expectedImageCount * 0.8
   }
 
@@ -735,16 +735,16 @@ JSON FORMATTING RULES
     primaryKeyword: string
   ): string {
     if (!description || images.length === 0) return description
-    
+
     // Remove all existing images from description
     let descriptionWithoutImages = description.replace(/<img[^>]+>/gi, '').trim()
-    
+
     // Clean up multiple newlines
     descriptionWithoutImages = descriptionWithoutImages.replace(/\n{3,}/g, '\n\n')
-    
+
     // Find all paragraph and heading closing tags as insertion points
     const insertionPoints: Array<{ index: number; type: 'paragraph' | 'heading' }> = []
-    
+
     // Find all </p> tags
     const paragraphMatches = Array.from(descriptionWithoutImages.matchAll(/<\/p>/gi))
     paragraphMatches.forEach(match => {
@@ -752,7 +752,7 @@ JSON FORMATTING RULES
         insertionPoints.push({ index: match.index + 4, type: 'paragraph' })
       }
     })
-    
+
     // Find all </h2> and </h3> tags
     const headingMatches = Array.from(descriptionWithoutImages.matchAll(/<\/h2>|<\/h3>/gi))
     headingMatches.forEach(match => {
@@ -760,19 +760,19 @@ JSON FORMATTING RULES
         insertionPoints.push({ index: match.index + (match[0].length), type: 'heading' })
       }
     })
-    
+
     // Sort insertion points by index
     insertionPoints.sort((a, b) => a.index - b.index)
-    
+
     // Calculate spacing: distribute images evenly
-    const spacing = insertionPoints.length > 0 
+    const spacing = insertionPoints.length > 0
       ? Math.max(1, Math.floor(insertionPoints.length / images.length))
       : 1
-    
+
     // Build result with images inserted
     let result = descriptionWithoutImages
     let insertions = 0
-    
+
     // Insert images in reverse order to maintain correct indices
     for (let i = insertionPoints.length - 1; i >= 0 && insertions < images.length; i--) {
       if (i % spacing === 0 || insertionPoints[i].type === 'heading') {
@@ -781,20 +781,20 @@ JSON FORMATTING RULES
         const baseName = filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '').replace(/[_-]/g, ' ')
         const altText = `${primaryKeyword} ${baseName}`
         const imageHtml = `\n<img src="${img.url}" alt="${altText}" />\n`
-        
+
         const insertPos = insertionPoints[i].index
         result = result.substring(0, insertPos) + imageHtml + result.substring(insertPos)
         insertions++
       }
     }
-    
+
     // If there are still images to place, distribute remaining ones
     if (insertions < images.length) {
       const remainingImages = images.slice(insertions)
       const remainingSpacing = insertionPoints.length > insertions
         ? Math.max(1, Math.floor((insertionPoints.length - insertions) / remainingImages.length))
         : 1
-      
+
       for (let i = insertionPoints.length - 1; i >= 0 && insertions < images.length; i--) {
         if ((insertionPoints.length - 1 - i) % remainingSpacing === 0) {
           const img = images[insertions]
@@ -802,14 +802,14 @@ JSON FORMATTING RULES
           const baseName = filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '').replace(/[_-]/g, ' ')
           const altText = `${primaryKeyword} ${baseName}`
           const imageHtml = `\n<img src="${img.url}" alt="${altText}" />\n`
-          
+
           const insertPos = insertionPoints[i].index
           result = result.substring(0, insertPos) + imageHtml + result.substring(insertPos)
           insertions++
         }
       }
     }
-    
+
     // If still have images, place them before the last paragraph
     if (insertions < images.length) {
       const lastParagraphIndex = result.lastIndexOf('</p>')
@@ -820,11 +820,11 @@ JSON FORMATTING RULES
           const altText = `${primaryKeyword} ${baseName}`
           return `<img src="${img.url}" alt="${altText}" />\n`
         }).join('')
-        
+
         result = result.substring(0, lastParagraphIndex + 4) + '\n' + imagesHtml + result.substring(lastParagraphIndex + 4)
       }
     }
-    
+
     return result
   }
 
@@ -838,7 +838,7 @@ JSON FORMATTING RULES
     primaryKeyword: string
   ): string {
     if (!description || images.length === 0) return description
-    
+
     // Extract image URLs that are already in the description
     const existingImageUrls = new Set<string>()
     const existingImgMatches = description.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi)
@@ -850,23 +850,23 @@ JSON FORMATTING RULES
         }
       })
     }
-    
+
     // Find images that are missing
     const missingImages = images.filter(img => !existingImageUrls.has(img.url))
-    
+
     if (missingImages.length === 0) {
       return description // All images already present
     }
-    
+
     console.log(`[OLLAMA DESC]   Injecting ${missingImages.length} missing images into description`)
-    
+
     // Split description by closing tags to find insertion points
     // We'll inject images after paragraphs, but before the next section
     const parts: Array<{ content: string; isClosing: boolean }> = []
     let lastIndex = 0
     const tagRegex = /(<\/p>|<\/h2>|<\/h3>|<\/div>)/gi
     let match
-    
+
     while ((match = tagRegex.exec(description)) !== null) {
       if (match.index > lastIndex) {
         parts.push({ content: description.substring(lastIndex, match.index), isClosing: false })
@@ -874,19 +874,19 @@ JSON FORMATTING RULES
       parts.push({ content: match[0], isClosing: true })
       lastIndex = match.index + match[0].length
     }
-    
+
     if (lastIndex < description.length) {
       parts.push({ content: description.substring(lastIndex), isClosing: false })
     }
-    
+
     // Reconstruct description with images injected
     let result = ''
     let imageIndex = 0
     let paragraphCount = 0
-    
+
     for (const part of parts) {
       result += part.content
-      
+
       // After closing a paragraph/heading, inject an image every 2-3 paragraphs
       if (part.isClosing && imageIndex < missingImages.length) {
         paragraphCount++
@@ -902,7 +902,7 @@ JSON FORMATTING RULES
         }
       }
     }
-    
+
     // If there are still missing images, inject them before the last paragraph or at the end
     if (imageIndex < missingImages.length) {
       // Try to find a good insertion point (before last heading)
@@ -930,7 +930,7 @@ JSON FORMATTING RULES
         result += '\n' + imagesHtml
       }
     }
-    
+
     return result
   }
 
@@ -966,7 +966,7 @@ JSON FORMATTING RULES
       /^Превод:\s*/i,
       /^Резултат:\s*/i,
     ]
-    
+
     for (const artifact of aiArtifacts) {
       cleaned = cleaned.replace(artifact, '')
     }
@@ -985,7 +985,7 @@ JSON FORMATTING RULES
     try {
       // Clean the response: remove markdown code blocks if present
       let cleanedResponse = response.trim()
-      
+
       // Remove markdown code blocks more aggressively (handle various formats)
       cleanedResponse = cleanedResponse
         .replace(/^```json\s*/i, '')
@@ -994,7 +994,7 @@ JSON FORMATTING RULES
         .replace(/```json\s*/gi, '')
         .replace(/```\s*/g, '')
         .trim()
-      
+
       // Try to extract JSON object from response
       // Look for the first { and try to find matching }
       let jsonStart = cleanedResponse.indexOf('{')
@@ -1002,7 +1002,7 @@ JSON FORMATTING RULES
         console.warn('No JSON object found in response')
         return null
       }
-      
+
       // Find the matching closing brace
       let braceCount = 0
       let jsonEnd = -1
@@ -1016,14 +1016,14 @@ JSON FORMATTING RULES
           }
         }
       }
-      
+
       if (jsonEnd === -1) {
         console.warn('Could not find matching closing brace - response may be truncated')
-        
+
         // Try to extract partial JSON if response was truncated
         // Look for the last complete field we can find
         const partialJson = cleanedResponse.substring(jsonStart)
-        
+
         // Try to extract what we can using regex fallback
         console.warn('Attempting to extract partial data from truncated response')
         const extractJsonValue = (key: string, text: string): string => {
@@ -1077,12 +1077,12 @@ JSON FORMATTING RULES
             specificationsTable: partialResult.specificationsTable ? this.cleanDescription(partialResult.specificationsTable) : undefined,
           }
         }
-        
+
         return null
       }
-      
+
       let jsonStr = cleanedResponse.substring(jsonStart, jsonEnd)
-      
+
       // Try to parse as-is first (Ollama might already have proper escaping)
       try {
         const parsed = JSON.parse(jsonStr)
@@ -1098,7 +1098,7 @@ JSON FORMATTING RULES
       } catch (firstParseError) {
         // If first parse fails, try to fix common issues
         console.warn('[OLLAMA SEO] First JSON parse attempt failed, trying to fix escaping issues')
-        
+
         // Try to fix unescaped quotes in string values
         // This is a common issue where Ollama returns JSON with unescaped quotes inside strings
         try {
@@ -1106,23 +1106,23 @@ JSON FORMATTING RULES
           let fixedJson = ''
           let inString = false
           let escapeNext = false
-          
+
           for (let i = 0; i < jsonStr.length; i++) {
             const char = jsonStr[i]
             const prevChar = i > 0 ? jsonStr[i - 1] : ''
-            
+
             if (escapeNext) {
               fixedJson += char
               escapeNext = false
               continue
             }
-            
+
             if (char === '\\') {
               escapeNext = true
               fixedJson += char
               continue
             }
-            
+
             if (char === '"' && prevChar !== '\\') {
               // Check if this is the start/end of a string value (not a key)
               // Look ahead to see if this is followed by ':'
@@ -1152,7 +1152,7 @@ JSON FORMATTING RULES
               fixedJson += char
             }
           }
-          
+
           // Try parsing the fixed JSON
           const parsed = JSON.parse(fixedJson)
           console.log('[OLLAMA SEO] Successfully parsed JSON after fixing escaping')
@@ -1201,7 +1201,7 @@ JSON FORMATTING RULES
               .replace(/\\\\/g, '\\')
           }
         }
-        
+
         // For single-line values, try standard patterns
         // Try quoted key with quoted value (handles escaped quotes)
         const quotedPattern = new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, 'i')
@@ -1214,7 +1214,7 @@ JSON FORMATTING RULES
             .replace(/\\"/g, '"')
             .replace(/\\\\/g, '\\')
         }
-        
+
         // Try unquoted key with quoted value
         const unquotedPattern = new RegExp(`${key}\\s*[:=]\\s*"((?:[^"\\\\]|\\\\.)*)"`, 'i')
         const unquotedMatch = text.match(unquotedPattern)
@@ -1226,7 +1226,7 @@ JSON FORMATTING RULES
             .replace(/\\"/g, '"')
             .replace(/\\\\/g, '\\')
         }
-        
+
         return ''
       }
 
@@ -1281,10 +1281,10 @@ JSON FORMATTING RULES
   } | null> {
     const startTime = Date.now()
     const productTitle = product.title || 'Unknown'
-    
+
     try {
       const productInfo = this.extractProductInfo(product, originalDescriptionEn)
-      
+
       const prompt = `Generate SEO meta title and meta description for this product in Bulgarian.
 
 PRODUCT INFORMATION:
@@ -1300,7 +1300,7 @@ Meta Title (50-60 characters):
 - Include brand name if relevant
 - Keep it natural and readable
 - Format: "[Primary Keyword] - [Benefit/Feature] | [Brand/Store]"
-- Example: "xTool Apparel Printer - Печат на Дрехи | MS Store"
+- Example: "xTool Apparel Printer - Печат на Дрехи | Nez.bg"
 - Count characters carefully - must be 50-60 characters
 
 Meta Description (150-180 characters):
@@ -1327,7 +1327,7 @@ CRITICAL:
 - Count characters accurately`
 
       console.log(`[OLLAMA META] Generating meta description for "${productTitle.substring(0, 50)}"`)
-      
+
       const response = await fetch(`${this.ollamaService.baseUrl}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1343,14 +1343,14 @@ CRITICAL:
         }),
         signal: AbortSignal.timeout(this.timeout),
       })
-      
+
       if (!response.ok) {
         throw new Error(`Ollama API error: ${response.status} ${response.statusText}`)
       }
-      
+
       const data = await response.json()
       const responseText = data.response || data.text || ''
-      
+
       // Parse JSON response
       let parsed: { metaTitle: string; metaDescription: string } | null = null
       try {
@@ -1358,10 +1358,10 @@ CRITICAL:
           .replace(/```json\s*/gi, '')
           .replace(/```\s*/g, '')
           .trim()
-        
+
         const jsonStart = cleanedResponse.indexOf('{')
         const jsonEnd = cleanedResponse.lastIndexOf('}')
-        
+
         if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
           const jsonStr = cleanedResponse.substring(jsonStart, jsonEnd + 1)
           parsed = JSON.parse(jsonStr)
@@ -1370,7 +1370,7 @@ CRITICAL:
         console.warn(`[OLLAMA META] Failed to parse response: ${error instanceof Error ? error.message : 'Unknown'}`)
         return null
       }
-      
+
       if (parsed && parsed.metaTitle && parsed.metaDescription) {
         console.log(`[OLLAMA META] ✅ Generated meta title: ${parsed.metaTitle.length} chars, meta description: ${parsed.metaDescription.length} chars`)
         return {
@@ -1378,7 +1378,7 @@ CRITICAL:
           metaDescription: this.cleanDescription(parsed.metaDescription),
         }
       }
-      
+
       return null
     } catch (error) {
       console.warn(`[OLLAMA META] ❌ FAILED: ${error instanceof Error ? error.message : 'Unknown'}`)
@@ -1399,11 +1399,11 @@ CRITICAL:
     const startTime = Date.now()
     const productTitle = product.title || 'Unknown'
     const descriptionLength = originalDescriptionEn?.length || 0
-    
+
     try {
       const productInfo = this.extractProductInfo(product, originalDescriptionEn)
       const images = productInfo.images
-      
+
       // Build focused prompt for description only
       const imageInstructions = images.length > 0
         ? `\n\n🖼️ CRITICAL: IMAGES TO PRESERVE - READ CAREFULLY
@@ -1440,9 +1440,9 @@ INCORRECT Example (images at end):
         : '\n\n⚠️ NOTE: If the original description contains images, you MUST extract and include them WITHIN both descriptions using HTML <img> tags, placed contextually after relevant paragraphs.'
 
       // Determine target word count based on product complexity
-      const isComplexProduct = productInfo.isTechnical || 
-                               originalDescriptionEn.length > 3000 || 
-                               productInfo.features.length > 5
+      const isComplexProduct = productInfo.isTechnical ||
+        originalDescriptionEn.length > 3000 ||
+        productInfo.features.length > 5
       const targetWordCount = isComplexProduct ? '300-500 words' : '150-300 words'
       const targetWordCountMin = isComplexProduct ? 300 : 150
       const targetWordCountMax = isComplexProduct ? 500 : 300
@@ -1578,7 +1578,7 @@ JSON FORMATTING RULES
       console.log(`[OLLAMA DESC] Starting description optimization for "${productTitle.substring(0, 50)}"`)
       console.log(`[OLLAMA DESC]   Input description: ${descriptionLength} chars`)
       console.log(`[OLLAMA DESC]   Images to preserve: ${images.length}`)
-      
+
       const fetchStartTime = Date.now()
       const response = await fetch(`${this.ollamaService.baseUrl}/api/generate`, {
         method: 'POST',
@@ -1595,35 +1595,35 @@ JSON FORMATTING RULES
         }),
         signal: AbortSignal.timeout(this.timeout),
       })
-      
+
       if (!response.ok) {
         throw new Error(`Ollama API error: ${response.status} ${response.statusText}`)
       }
-      
+
       const data = await response.json()
       const responseText = data.response || data.text || ''
       const fetchTime = Date.now() - fetchStartTime
-      
+
       console.log(`[OLLAMA DESC]   HTTP fetch: ${(fetchTime / 1000).toFixed(1)}s`)
       console.log(`[OLLAMA DESC]   Response: ${responseText.length} chars`)
-      
+
       // Debug: Log first 500 chars of response to see what we're getting
       if (responseText.length > 0) {
         const preview = responseText.substring(0, Math.min(500, responseText.length))
         console.log(`[OLLAMA DESC]   Response preview (first 500 chars): ${preview}`)
       }
-      
+
       // Parse JSON response
       const parsed = this.parseDescriptionResponse(responseText)
-      
+
       if (parsed) {
         // Log description lengths before cleaning
         console.log(`[OLLAMA DESC]   Parsed description lengths - SEO: ${parsed.seoEnhancedDescription?.length || 0} chars, Technical: ${parsed.technicalSafeDescription?.length || 0} chars`)
-        
+
         // Validate: Ensure descriptions are not JSON structures
         const validateDescription = (desc: string | undefined, fieldName: string): string | undefined => {
           if (!desc || desc.length === 0) return desc
-          
+
           // Check if it looks like a JSON structure (starts with "fieldName":)
           if (desc.trim().startsWith(`"${fieldName}"`) || desc.trim().startsWith(`"${fieldName.toLowerCase()}"`)) {
             console.warn(`[OLLAMA DESC]   WARNING: ${fieldName} appears to be a JSON structure, not content. Attempting to extract value...`)
@@ -1641,10 +1641,10 @@ JSON FORMATTING RULES
             console.warn(`[OLLAMA DESC]   Could not extract value from JSON structure, returning empty`)
             return undefined
           }
-          
+
           return desc
         }
-        
+
         // Validate and clean descriptions
         const productName = product.title || ''
         if (parsed.seoEnhancedDescription) {
@@ -1665,22 +1665,22 @@ JSON FORMATTING RULES
             console.log(`[OLLAMA DESC]   Technical description has ${imageCount} images (expected: ${images.length})`)
           }
         }
-        
+
         // Final validation: Ensure at least one description is valid
         if (!parsed.seoEnhancedDescription && !parsed.technicalSafeDescription) {
           console.warn(`[OLLAMA DESC]   WARNING: Both descriptions are empty or invalid after validation`)
           throw new Error('Both descriptions are empty or invalid after validation')
         }
-        
+
         // Log word count for SEO description
         if (parsed.seoEnhancedDescription) {
           const wordCount = parsed.seoEnhancedDescription.split(/\s+/).length
           console.log(`[OLLAMA DESC]   SEO description word count: ${wordCount} words`)
-          
+
           // Check if images are missing or all at the end
           const imageCount = (parsed.seoEnhancedDescription.match(/<img[^>]+>/gi) || []).length
           const allImagesAtEnd = this.areImagesAtEnd(parsed.seoEnhancedDescription, images.length)
-          
+
           if (imageCount < images.length && images.length > 0) {
             console.warn(`[OLLAMA DESC]   WARNING: Only ${imageCount} images found, expected ${images.length}. Injecting missing images...`)
             parsed.seoEnhancedDescription = this.injectMissingImages(
@@ -1700,7 +1700,7 @@ JSON FORMATTING RULES
             console.log(`[OLLAMA DESC]   Images redistributed throughout description`)
           }
         }
-        
+
         console.log(`[OLLAMA DESC] ✅ Completed in ${((Date.now() - startTime) / 1000).toFixed(1)}s`)
         return {
           technicalSafeDescription: parsed.technicalSafeDescription,
@@ -1708,7 +1708,7 @@ JSON FORMATTING RULES
           shortDescription: parsed.shortDescription,
         }
       }
-      
+
       throw new Error('Failed to parse description response')
     } catch (error) {
       console.log(`[OLLAMA DESC] ❌ FAILED after ${((Date.now() - startTime) / 1000).toFixed(1)}s`)
@@ -1722,7 +1722,7 @@ JSON FORMATTING RULES
    */
   async extractIncludedItems(description: string): Promise<string | null> {
     const startTime = Date.now()
-    
+
     try {
       const prompt = `Extract the "What's Included" / "Included" / "Package Contents" section from this product description and translate it to Bulgarian.
 
@@ -1766,7 +1766,7 @@ Example output:
 </ul>`
 
       console.log(`[OLLAMA INCLUDED] Extracting included items from description (${description.length} chars)`)
-      
+
       const fetchStartTime = Date.now()
       const response = await fetch(`${this.ollamaService.baseUrl}/api/generate`, {
         method: 'POST',
@@ -1783,39 +1783,39 @@ Example output:
         }),
         signal: AbortSignal.timeout(120000), // 2 minutes
       })
-      
+
       if (!response.ok) {
         throw new Error(`Ollama API error: ${response.status} ${response.statusText}`)
       }
-      
+
       const data = await response.json()
       const responseText = (data.response || data.text || '').trim()
       const fetchTime = Date.now() - fetchStartTime
-      
+
       console.log(`[OLLAMA INCLUDED]   HTTP fetch: ${(fetchTime / 1000).toFixed(1)}s`)
       console.log(`[OLLAMA INCLUDED]   Response: ${responseText.length} chars`)
-      
+
       // Check if response is "null" or empty
       let trimmedResponse = responseText.trim()
-      
+
       // Remove markdown code blocks if present
       trimmedResponse = trimmedResponse
         .replace(/^```html\s*/i, '')
         .replace(/^```\s*/g, '')
         .replace(/```\s*$/g, '')
         .trim()
-      
+
       if (!trimmedResponse || trimmedResponse.toLowerCase() === 'null' || trimmedResponse.length < 10) {
         console.log(`[OLLAMA INCLUDED] ✅ No included items found`)
         return null
       }
-      
+
       // Check if response looks like HTML (should contain <h3> or <ul> or <li>)
       if (!trimmedResponse.includes('<') && !trimmedResponse.includes('Включено') && !trimmedResponse.includes('включено')) {
         console.log(`[OLLAMA INCLUDED] ⚠️  Response doesn't look like HTML, might be invalid: ${trimmedResponse.substring(0, 50)}`)
         return null
       }
-      
+
       // Clean and return
       const cleaned = this.cleanDescription(trimmedResponse)
       console.log(`[OLLAMA INCLUDED] ✅ Extracted ${cleaned.length} chars`)
@@ -1833,7 +1833,7 @@ Example output:
    */
   async extractTechnicalData(originalDescriptionEn: string): Promise<string | null> {
     const startTime = Date.now()
-    
+
     try {
       const prompt = `Extract the technical specifications/characteristics table from this product description and translate it to Bulgarian.
 
@@ -1886,7 +1886,7 @@ Example output:
 </table>`
 
       console.log(`[OLLAMA TECH] Extracting technical data from description (${originalDescriptionEn.length} chars)`)
-      
+
       const fetchStartTime = Date.now()
       const response = await fetch(`${this.ollamaService.baseUrl}/api/generate`, {
         method: 'POST',
@@ -1903,39 +1903,39 @@ Example output:
         }),
         signal: AbortSignal.timeout(120000), // 2 minutes
       })
-      
+
       if (!response.ok) {
         throw new Error(`Ollama API error: ${response.status} ${response.statusText}`)
       }
-      
+
       const data = await response.json()
       const responseText = (data.response || data.text || '').trim()
       const fetchTime = Date.now() - fetchStartTime
-      
+
       console.log(`[OLLAMA TECH]   HTTP fetch: ${(fetchTime / 1000).toFixed(1)}s`)
       console.log(`[OLLAMA TECH]   Response: ${responseText.length} chars`)
-      
+
       // Check if response is "null" or empty
       let trimmedResponse = responseText.trim()
-      
+
       // Remove markdown code blocks if present
       trimmedResponse = trimmedResponse
         .replace(/^```html\s*/i, '')
         .replace(/^```\s*/g, '')
         .replace(/```\s*$/g, '')
         .trim()
-      
+
       if (!trimmedResponse || trimmedResponse.toLowerCase() === 'null' || trimmedResponse.length < 10) {
         console.log(`[OLLAMA TECH] ✅ No technical data found`)
         return null
       }
-      
+
       // Check if response looks like HTML table (should contain <table> or <tr> or <th> or <td>)
       if (!trimmedResponse.includes('<table') && !trimmedResponse.includes('<tr') && !trimmedResponse.includes('<th') && !trimmedResponse.includes('Производител') && !trimmedResponse.includes('Модел')) {
         console.log(`[OLLAMA TECH] ⚠️  Response doesn't look like a table, might be invalid: ${trimmedResponse.substring(0, 50)}`)
         return null
       }
-      
+
       // Clean and return
       const cleaned = this.cleanDescription(trimmedResponse)
       console.log(`[OLLAMA TECH] ✅ Extracted ${cleaned.length} chars`)
@@ -1960,14 +1960,14 @@ Example output:
         .replace(/```json\s*/gi, '')
         .replace(/```\s*/g, '')
         .trim()
-      
+
       // Try to find JSON object
       let jsonStart = cleanedResponse.indexOf('{')
       if (jsonStart === -1) {
         console.warn('[OLLAMA DESC] No JSON object found in response')
         return null
       }
-      
+
       // Find matching closing brace
       let braceCount = 0
       let jsonEnd = -1
@@ -1981,34 +1981,34 @@ Example output:
           }
         }
       }
-      
+
       if (jsonEnd === -1) {
         console.warn('[OLLAMA DESC] Could not find matching closing brace')
         return null
       }
-      
+
       let jsonStr = cleanedResponse.substring(jsonStart, jsonEnd)
-      
+
       // Debug: Log JSON string length
       console.log(`[OLLAMA DESC]   Extracted JSON: ${jsonStr.length} chars`)
-      
+
       // Try to parse
       try {
         const parsed = JSON.parse(jsonStr)
-        
+
         // Debug: Log what we got from JSON.parse
         console.log(`[OLLAMA DESC]   JSON.parse success - Fields:`, {
           technicalSafeDescription: parsed.technicalSafeDescription?.substring(0, 50) || 'MISSING',
           seoEnhancedDescription: parsed.seoEnhancedDescription?.substring(0, 50) || 'MISSING',
           shortDescription: parsed.shortDescription?.substring(0, 50) || 'MISSING',
         })
-        
+
         const result = {
           technicalSafeDescription: this.cleanDescription(parsed.technicalSafeDescription || ''),
           seoEnhancedDescription: this.cleanDescription(parsed.seoEnhancedDescription || ''),
           shortDescription: this.cleanDescription(parsed.shortDescription || ''),
         }
-        
+
         // Debug: Log cleaned lengths and word counts
         const seoWordCount = result.seoEnhancedDescription ? result.seoEnhancedDescription.split(/\s+/).length : 0
         console.log(`[OLLAMA DESC]   After cleaning:`, {
@@ -2016,12 +2016,12 @@ Example output:
           seoEnhancedDescription: `${result.seoEnhancedDescription.length} chars (${seoWordCount} words)`,
           shortDescription: result.shortDescription.length,
         })
-        
+
         return result
       } catch (parseError: any) {
         console.warn(`[OLLAMA DESC] JSON.parse failed: ${parseError.message}`)
         console.warn(`[OLLAMA DESC] Attempting manual extraction...`)
-        
+
         // Try manual extraction with better multiline support
         // For HTML content, we need to handle multiline strings that may contain escaped quotes
         const extractValue = (key: string): string => {
@@ -2029,7 +2029,7 @@ Example output:
           // This handles multiline strings with escaped quotes properly
           const keyPattern = new RegExp(`"${key}"\\s*:\\s*"`, 'g')
           const keyMatch = jsonStr.match(keyPattern)
-          
+
           if (keyMatch) {
             const keyIndex = jsonStr.indexOf(keyMatch[0])
             if (keyIndex !== -1) {
@@ -2038,11 +2038,11 @@ Example output:
               let value = ''
               let i = startIndex
               let escapeNext = false
-              
+
               // Parse character by character to handle escaped quotes correctly
               while (i < jsonStr.length) {
                 const char = jsonStr[i]
-                
+
                 if (escapeNext) {
                   value += char
                   escapeNext = false
@@ -2065,7 +2065,7 @@ Example output:
                 }
                 i++
               }
-              
+
               if (value.length > 0) {
                 // Unescape the value
                 const unescaped = value
@@ -2079,12 +2079,12 @@ Example output:
               }
             }
           }
-          
+
           // Strategy 2: Try regex patterns (fallback)
           // Pattern for multiline strings (non-greedy, stops at unescaped quote followed by comma or brace)
           const multilinePattern = new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.|\\\\n|\\\\r|\\\\t)*?)"(?=\\s*[,}])`, 'gs')
           let match = jsonStr.match(multilinePattern)
-          
+
           if (match && match[1]) {
             const value = match[1]
               .replace(/\\n/g, '\n')
@@ -2095,24 +2095,24 @@ Example output:
             console.log(`[OLLAMA DESC]   Extracted ${key}: ${value.length} chars (using regex)`)
             return value
           }
-          
+
           console.warn(`[OLLAMA DESC]   Could not extract ${key} - key pattern: "${key}"`)
           return ''
         }
-        
+
         const result = {
           technicalSafeDescription: this.cleanDescription(extractValue('technicalSafeDescription')),
           seoEnhancedDescription: this.cleanDescription(extractValue('seoEnhancedDescription')),
           shortDescription: this.cleanDescription(extractValue('shortDescription')),
         }
-        
+
         const seoWordCount = result.seoEnhancedDescription ? result.seoEnhancedDescription.split(/\s+/).length : 0
         console.log(`[OLLAMA DESC]   Manual extraction result:`, {
           technicalSafeDescription: result.technicalSafeDescription.length,
           seoEnhancedDescription: `${result.seoEnhancedDescription.length} chars (${seoWordCount} words)`,
           shortDescription: result.shortDescription.length,
         })
-        
+
         return result
       }
     } catch (error: any) {
@@ -2130,25 +2130,25 @@ Example output:
     const startTime = Date.now()
     const productTitle = product.title || 'Unknown'
     const descriptionLength = originalDescriptionEn?.length || 0
-    
+
     try {
       // Extract product info
       const extractStartTime = Date.now()
       const productInfo = this.extractProductInfo(product, originalDescriptionEn)
       const extractTime = Date.now() - extractStartTime
-      
+
       // Build prompt
       const promptStartTime = Date.now()
       const prompt = this.buildSEOPrompt(productInfo)
       const promptTime = Date.now() - promptStartTime
-      
+
       // Estimate tokens (rough: ~4 chars per token)
       const estimatedPromptTokens = Math.ceil(prompt.length / 4)
       // Increase max response tokens to handle very long descriptions
       // With 124K context window, we can afford larger responses
       // Use 32K tokens for responses to ensure complete JSON even for complex products
       const maxResponseTokens = 32000
-      
+
       console.log(`[OLLAMA SEO] Starting optimization for "${productTitle.substring(0, 50)}"`)
       console.log(`[OLLAMA SEO]   Input description: ${descriptionLength} chars`)
       console.log(`[OLLAMA SEO]   Extract product info: ${extractTime}ms`)
@@ -2158,7 +2158,7 @@ Example output:
       // Call Ollama API for SEO optimization
       const ollamaStartTime = Date.now()
       console.log(`[OLLAMA SEO]   Starting Ollama API call...`)
-      
+
       const fetchStartTime = Date.now()
       const response = await fetch(`${this.ollamaService.baseUrl}/api/generate`, {
         method: 'POST',
@@ -2193,10 +2193,10 @@ Example output:
       const data = await response.json()
       const parseEndTime = Date.now()
       const parseTime = parseEndTime - parseStartTime
-      
+
       const responseText = data.response || data.text || ''
       const ollamaFetchTime = parseEndTime - ollamaStartTime
-      
+
       // Log fetch time with warnings
       const fetchSeconds = (fetchTime / 1000).toFixed(1)
       const totalSeconds = (ollamaFetchTime / 1000).toFixed(1)
@@ -2207,7 +2207,7 @@ Example output:
       } else {
         console.log(`[OLLAMA SEO]   HTTP fetch: ${fetchSeconds}s, JSON parse: ${(parseTime / 1000).toFixed(2)}s, Total: ${totalSeconds}s`)
       }
-      
+
       // Extract metadata from Ollama response
       const totalDuration = data.total_duration ? (data.total_duration / 1000000000) : 0
       const loadDuration = data.load_duration ? (data.load_duration / 1000000000) : 0
@@ -2215,7 +2215,7 @@ Example output:
       const evalDuration = data.eval_duration ? (data.eval_duration / 1000000000) : 0
       const promptEvalCount = data.prompt_eval_count || 0
       const promptEvalDuration = data.prompt_eval_duration ? (data.prompt_eval_duration / 1000000000) : 0
-      
+
       // Calculate timing differences
       // The "overhead" is the difference between HTTP fetch time and Ollama's reported total_duration
       // On localhost, this is NOT network latency - it's likely Ollama doing post-processing:
@@ -2225,22 +2225,22 @@ Example output:
       // Ollama's total_duration typically only measures model inference time, not response preparation
       const responsePrepOverhead = (fetchTime / 1000) - totalDuration
       const tokensPerSecond = evalCount > 0 && evalDuration > 0 ? (evalCount / evalDuration).toFixed(1) : 'N/A'
-      
+
       // Check if response was truncated
       const isTruncated = data.done === false && responseText.length > 0
       const estimatedResponseTokens = Math.ceil(responseText.length / 4)
-      
+
       console.log(`[OLLAMA SEO]   Response: ${responseText.length} chars (~${estimatedResponseTokens} tokens)${isTruncated ? ' ⚠️ TRUNCATED' : ''}`)
       if (totalDuration > 0) {
         console.log(`[OLLAMA SEO]   Ollama model inference: total=${totalDuration.toFixed(1)}s (load=${loadDuration.toFixed(1)}s, prompt_eval=${promptEvalCount} tokens in ${promptEvalDuration.toFixed(1)}s, eval=${evalCount} tokens in ${evalDuration.toFixed(1)}s = ${tokensPerSecond} tok/s)`)
-        
+
         // Breakdown of where time is spent
         console.log(`[OLLAMA SEO]   Time breakdown:`)
         console.log(`[OLLAMA SEO]     - Model inference: ${totalDuration.toFixed(1)}s (${((totalDuration / (fetchTime / 1000)) * 100).toFixed(1)}% of total)`)
         if (responsePrepOverhead > 0.5) {
           console.log(`[OLLAMA SEO]     - Response prep (serialization/HTTP): ${responsePrepOverhead.toFixed(1)}s (${((responsePrepOverhead / (fetchTime / 1000)) * 100).toFixed(1)}% of total)`)
           console.log(`[OLLAMA SEO]     - JSON parsing: ${(parseTime / 1000).toFixed(2)}s`)
-          
+
           // Explain the overhead on localhost
           if (responsePrepOverhead > 2) {
             console.log(`[OLLAMA SEO]     ⚠️  Note: On localhost, this overhead is likely Ollama's response serialization/formatting, not network latency`)
@@ -2254,7 +2254,7 @@ Example output:
       const seoParseStartTime = Date.now()
       const seoContent = this.parseSEOResponse(responseText)
       const seoParseTime = Date.now() - seoParseStartTime
-      
+
       // Clean up duplicate sections and remove product title
       const cleanStartTime = Date.now()
       if (seoContent) {
@@ -2269,14 +2269,14 @@ Example output:
         }
       }
       const cleanTime = Date.now() - cleanStartTime
-      
+
       const totalTime = Date.now() - startTime
-      
+
       // Summary log
       console.log(`[OLLAMA SEO]   Extract SEO content: ${seoParseTime}ms`)
       console.log(`[OLLAMA SEO]   Clean duplicates: ${cleanTime}ms`)
       console.log(`[OLLAMA SEO] ✅ Completed in ${(totalTime / 1000).toFixed(1)}s | Breakdown: extract=${extractTime}ms, prompt=${promptTime}ms, fetch=${ollamaFetchTime}ms (${(ollamaFetchTime / totalTime * 100).toFixed(1)}%), parse=${parseTime}ms, extract=${seoParseTime}ms, clean=${cleanTime}ms`)
-      
+
       if (!seoContent || (!seoContent.seoEnhancedDescription && !seoContent.technicalSafeDescription)) {
         throw new Error('Failed to extract SEO content from response')
       }
@@ -2286,11 +2286,11 @@ Example output:
       const totalTime = Date.now() - startTime
       const errorMsg = error instanceof Error ? error.message : 'Unknown error'
       const errorName = error instanceof Error ? error.name : 'Unknown'
-      
+
       console.log(`[OLLAMA SEO] ❌ FAILED after ${(totalTime / 1000).toFixed(1)}s`)
       console.log(`[OLLAMA SEO]   Error type: ${errorName}`)
       console.log(`[OLLAMA SEO]   Error message: ${errorMsg}`)
-      
+
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(`SEO optimization timeout after ${this.timeout}ms (${(this.timeout / 60000).toFixed(1)} minutes)`)
       }
