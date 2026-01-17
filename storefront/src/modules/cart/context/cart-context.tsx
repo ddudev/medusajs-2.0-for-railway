@@ -1,6 +1,7 @@
 "use client"
 
-import { createContext, useContext, useState, ReactNode } from "react"
+import { createContext, useContext, useState, useMemo, useCallback } from "react"
+import type { ReactNode } from "react"
 
 interface CartContextType {
   isOpen: boolean
@@ -11,19 +12,34 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+// Add display name for better HMR support
+if (typeof CartContext !== 'undefined') {
+  CartContext.displayName = "CartContext"
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const openCart = () => setIsOpen(true)
-  const closeCart = () => setIsOpen(false)
-  const toggleCart = () => setIsOpen((prev) => !prev)
+  // Use useCallback to ensure stable function references for HMR
+  const openCart = useCallback(() => setIsOpen(true), [])
+  const closeCart = useCallback(() => setIsOpen(false), [])
+  const toggleCart = useCallback(() => setIsOpen((prev) => !prev), [])
+
+  // Memoize context value to prevent unnecessary re-renders and HMR issues
+  const contextValue = useMemo(
+    () => ({ isOpen, openCart, closeCart, toggleCart }),
+    [isOpen, openCart, closeCart, toggleCart]
+  )
 
   return (
-    <CartContext.Provider value={{ isOpen, openCart, closeCart, toggleCart }}>
+    <CartContext.Provider value={contextValue}>
       {children}
     </CartContext.Provider>
   )
 }
+
+// Add display name for better HMR support
+CartProvider.displayName = "CartProvider"
 
 export function useCartDrawer() {
   const context = useContext(CartContext)

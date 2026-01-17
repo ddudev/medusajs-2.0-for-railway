@@ -48,6 +48,7 @@
     "pg": "^8.11.3",
     "posthog-js": "^1.313.0",
     "posthog-node": "^5.18.1",
+    "process": "^0.11.10",
     "qs": "^6.12.1",
     "react": "^19.2.1",
     "react-country-flag": "^3.0.2",

@@ -15,7 +15,7 @@ const nextConfig = {
   poweredByHeader: false,
   // Headers for service worker and PWA
   async headers() {
-    return [
+    const headers = [
       {
         source: '/sw.js',
         headers: [
@@ -43,6 +43,21 @@ const nextConfig = {
         ],
       },
     ]
+
+    // In development, prevent CSS caching to fix HMR issues
+    if (process.env.NODE_ENV === 'development') {
+      headers.push({
+        source: '/_next/static/css/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      })
+    }
+
+    return headers
   },
   // Enable Cache Components (Next.js 16.0.7 - moved to root level per warning)
   cacheComponents: true,
@@ -69,10 +84,27 @@ const nextConfig = {
   // 1. Use Turbopack (add empty config below) - faster builds, but webpack optimizations won't apply
   // 2. Use webpack (remove turbopack config, use --webpack flag) - keeps bundle splitting
   // For now, using Turbopack to silence the error. To use webpack: next build --webpack
-  turbopack: {},
+  turbopack: {
+    // Improve HMR stability - don't alias React core modules
+    // This helps prevent jsx-dev-runtime resolution issues
+  },
 
   // Bundle optimization (only applies when using webpack with --webpack flag)
   webpack: (config, { isServer }) => {
+    // Add process polyfill for client-side (needed for PostHog and other libraries)
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        process: require.resolve('process/browser'),
+      }
+      const webpack = require('webpack')
+      config.plugins = [
+        ...config.plugins,
+        new webpack.ProvidePlugin({
+          process: 'process/browser',
+        }),
+      ]
+    }
     // Optimize bundle splitting
     if (!isServer) {
       config.optimization = {

@@ -7,7 +7,8 @@ import { PWAInstallPrompt } from '@modules/common/components/pwa-install-prompt'
 
 export function PWAComponents() {
   useEffect(() => {
-    // Register service worker
+    // Register service worker (enabled in both dev and production)
+    // CSS files use stale-while-revalidate strategy to allow HMR updates
     registerServiceWorker({
       onUpdate: (registration) => {
         console.log('[PWA] Service worker update available')

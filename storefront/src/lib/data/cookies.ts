@@ -1,15 +1,25 @@
 import "server-only"
 import { cookies } from "next/headers"
+import { unstable_noStore as noStore } from "next/cache"
 
 export const getAuthHeaders = async (): Promise<{ authorization: string } | {}> => {
-  const cookieStore = await cookies()
-  const token = cookieStore.get("_medusa_jwt")?.value
+  // Prevent static generation - cookies are user-specific
+  noStore()
+  
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get("_medusa_jwt")?.value
 
-  if (token) {
-    return { authorization: `Bearer ${token}` }
+    if (token) {
+      return { authorization: `Bearer ${token}` }
+    }
+
+    return {}
+  } catch (error) {
+    // During prerendering, cookies() rejects when prerender is complete
+    // This is expected behavior in Next.js 16 - return empty headers
+    return {}
   }
-
-  return {}
 }
 
 export const setAuthToken = async (token: string) => {
@@ -30,8 +40,17 @@ export const removeAuthToken = async () => {
 }
 
 export const getCartId = async () => {
-  const cookieStore = await cookies()
-  return cookieStore.get("_medusa_cart_id")?.value
+  // Prevent static generation - cookies are user-specific
+  noStore()
+  
+  try {
+    const cookieStore = await cookies()
+    return cookieStore.get("_medusa_cart_id")?.value
+  } catch (error) {
+    // During prerendering, cookies() rejects when prerender is complete
+    // This is expected behavior in Next.js 16 - return undefined
+    return undefined
+  }
 }
 
 export const setCartId = async (cartId: string) => {
@@ -50,6 +69,9 @@ export const removeCartId = async () => {
 }
 
 export const getLastViewedProductIds = async (): Promise<string[]> => {
+  // Prevent static generation - cookies are user-specific
+  noStore()
+  
   try {
     const cookieStore = await cookies()
     const cookieValue = cookieStore.get("_medusa_last_viewed_products")?.value

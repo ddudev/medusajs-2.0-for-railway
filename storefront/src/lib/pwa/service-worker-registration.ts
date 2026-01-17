@@ -94,14 +94,39 @@ export function unregisterServiceWorker(): void {
     return
   }
 
+  // Unregister all service workers and clear caches
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => {
+      registration.unregister().then((success) => {
+        if (success) {
+          console.log('[PWA] Service Worker unregistered')
+        }
+      })
+    })
+  })
+
+  // Also try the ready promise approach
   navigator.serviceWorker.ready
     .then((registration) => {
       registration.unregister()
       console.log('[PWA] Service Worker unregistered')
     })
     .catch((error) => {
-      console.error('[PWA] Service Worker unregistration failed:', error)
+      // Ignore errors if no service worker is registered
+      if (error.message && !error.message.includes('no service worker')) {
+        console.error('[PWA] Service Worker unregistration error:', error)
+      }
     })
+
+  // Clear all caches to remove stale CSS
+  if ('caches' in window) {
+    caches.keys().then((cacheNames) => {
+      cacheNames.forEach((cacheName) => {
+        caches.delete(cacheName)
+      })
+      console.log('[PWA] All caches cleared')
+    })
+  }
 }
 
 export function checkServiceWorkerSupport(): boolean {

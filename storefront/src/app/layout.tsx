@@ -29,6 +29,10 @@ export default function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html lang="en" data-mode="light" className={inter.variable} suppressHydrationWarning>
       <head>
+        {/* Prevent CSS caching in development to fix HMR issues */}
+        {process.env.NODE_ENV === 'development' && (
+          <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        )}
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#519717" />

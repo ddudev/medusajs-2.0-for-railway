@@ -8,14 +8,27 @@ import ProductActions from "@modules/products/components/product-actions"
 export default async function ProductActionsWrapper({
   id,
   region,
+  initialProduct,
 }: {
   id: string
   region: HttpTypes.StoreRegion
+  initialProduct?: HttpTypes.StoreProduct
 }) {
-  const [product] = await getProductsById({
-    ids: [id],
-    regionId: region.id,
-  })
+  let product = initialProduct
+
+  try {
+    const [fetchedProduct] = await getProductsById({
+      ids: [id],
+      regionId: region.id,
+    })
+
+    if (fetchedProduct) {
+      product = fetchedProduct
+    }
+  } catch (error) {
+    console.error(`Failed to fetch fresh product data for ${id}, falling back to initial data. Error:`, error)
+    // Keep using initialProduct if available from closure
+  }
 
   if (!product) {
     return null

@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { searchParams } = new URL(request.url)
-    const cityId = searchParams.get("city_id")
+    // Use nextUrl to avoid prerendering issues
+    const cityId = request.nextUrl.searchParams.get("city_id")
 
     if (!cityId) {
       return NextResponse.json(

@@ -96,11 +96,23 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // === CACHE FIRST (Static Assets) ===
-  // JS, CSS, Fonts, Icons - cache aggressively, they have hashes in filenames
+  // === STALE WHILE REVALIDATE (CSS Files) ===
+  // CSS files - use stale-while-revalidate to allow HMR updates while maintaining speed
+  // This serves cached CSS instantly but updates in background, so design changes propagate
   if (
-    url.pathname.match(/\.(js|css|woff|woff2|ttf|eot|otf)$/) ||
-    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.match(/\.css$/) ||
+    url.pathname.startsWith('/_next/static/css/') ||
+    (url.pathname.startsWith('/_next/static/chunks/') && url.pathname.includes('.css'))
+  ) {
+    event.respondWith(staleWhileRevalidateWithExpiry(request, STATIC_CACHE, CACHE_DURATION.static, 100))
+    return
+  }
+
+  // === CACHE FIRST (Static Assets - JS, Fonts, Icons) ===
+  // JS, Fonts, Icons - cache aggressively, they have hashes in filenames
+  if (
+    url.pathname.match(/\.(js|woff|woff2|ttf|eot|otf)$/) ||
+    (url.pathname.startsWith('/_next/static/') && !url.pathname.match(/\.css/)) ||
     url.pathname.startsWith('/_next/data/')
   ) {
     event.respondWith(cacheFirst(request, STATIC_CACHE))

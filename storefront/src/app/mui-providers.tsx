@@ -12,6 +12,9 @@ import theme from '../lib/theme/mui-theme'
  * - AppRouterCacheProvider: Handles Emotion cache for SSR
  * - ThemeProvider: Provides MUI theme
  * - CssBaseline: Normalizes CSS across browsers
+ * 
+ * Note: Using default AppRouterCacheProvider without custom options
+ * to ensure HMR compatibility with Next.js 16
  */
 export function MuiProviders({ children }: { children: React.ReactNode }) {
   return (

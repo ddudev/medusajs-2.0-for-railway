@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   // Log immediately to ensure function is called
   console.log("=".repeat(50))
   console.log("[ECONT CITIES API] Request received at:", new Date().toISOString())
-  console.log("[ECONT CITIES API] Request URL:", request.url)
+  console.log("[ECONT CITIES API] Request URL:", request.nextUrl.toString())
   
   try {
     if (!PUBLISHABLE_API_KEY) {
@@ -34,9 +34,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Extract search query from URL
-    const { searchParams } = new URL(request.url)
-    const searchQuery = searchParams.get("q")
+    // Extract search query from URL (use nextUrl to avoid prerendering issues)
+    const searchQuery = request.nextUrl.searchParams.get("q")
     const queryParam = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ""
     
     const backendUrl = `${BACKEND_URL}/store/econt/cities${queryParam}`
