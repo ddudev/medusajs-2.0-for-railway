@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     if (tag) {
       // Revalidate by cache tag
-      revalidateTag(tag)
+      revalidateTag(tag, "max")
       return NextResponse.json({
         revalidated: true,
         tag,
@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
     }
 
     // If neither tag nor path specified, revalidate common tags
-    revalidateTag("products")
-    revalidateTag("regions")
+    revalidateTag("products", "max")
+    revalidateTag("regions", "max")
     revalidatePath("/", "page")
     
     return NextResponse.json({

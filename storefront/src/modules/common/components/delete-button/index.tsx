@@ -24,25 +24,31 @@ const DeleteButton = ({
   const handleDelete = async (id: string) => {
     setIsDeleting(true)
     
-    // Track removal before deleting
-    if (item) {
-      const price = item.unit_price ? Number(item.unit_price) / 100 : 0
-      const currency = item.currency_code || 'EUR'
+    try {
+      // Track removal before deleting
+      if (item) {
+        const price = item.unit_price ? Number(item.unit_price) / 100 : 0
+        const currency = item.currency_code || 'EUR'
+        
+        trackProductRemovedFromCart({
+          product_id: item.product_id || item.variant?.product_id || '',
+          product_name: item.product_title || item.variant?.product?.title || '',
+          variant_id: item.variant_id || '',
+          variant_name: item.variant?.title,
+          quantity: item.quantity,
+          currency: currency,
+          cart_value: 0, // Will be updated after cart refresh
+        })
+      }
       
-      trackProductRemovedFromCart({
-        product_id: item.product_id || item.variant?.product_id || '',
-        product_name: item.product_title || item.variant?.product?.title || '',
-        variant_id: item.variant_id || '',
-        variant_name: item.variant?.title,
-        quantity: item.quantity,
-        currency: currency,
-        cart_value: 0, // Will be updated after cart refresh
-      })
-    }
-    
-    await deleteLineItem(id).catch((err) => {
+      await deleteLineItem(id)
+      // Success - cart will be refreshed by parent component via revalidation
+    } catch (err: any) {
+      console.error("Failed to delete line item:", err)
+      // Show error to user (you might want to add a toast notification here)
+      alert(err.message || "Failed to remove item from cart. Please try again.")
       setIsDeleting(false)
-    })
+    }
   }
 
   return (

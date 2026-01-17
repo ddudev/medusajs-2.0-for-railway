@@ -49,7 +49,7 @@ export async function getOrSetCart(countryCode: string) {
     const cartResp = await sdk.store.cart.create({ region_id: region.id })
     cart = cartResp.cart
     await setCartId(cart.id)
-    revalidateTag("cart")
+    revalidateTag("cart", "max")
   }
 
   if (cart && cart?.region_id !== region.id) {
@@ -60,7 +60,7 @@ export async function getOrSetCart(countryCode: string) {
       {},
       authHeaders
     )
-    revalidateTag("cart")
+    revalidateTag("cart", "max")
   }
 
   return cart
@@ -76,7 +76,7 @@ export async function updateCart(data: HttpTypes.StoreUpdateCart) {
   return sdk.store.cart
     .update(cartId, data, {}, authHeaders)
     .then(({ cart }) => {
-      revalidateTag("cart")
+      revalidateTag("cart", "max")
       return cart
     })
     .catch(medusaError)
@@ -91,30 +91,35 @@ export async function addToCart({
   quantity: number
   countryCode: string
 }) {
-  if (!variantId) {
-    throw new Error("Missing variant ID when adding to cart")
-  }
+  try {
+    if (!variantId) {
+      throw new Error("Missing variant ID when adding to cart")
+    }
 
-  const cart = await getOrSetCart(countryCode)
-  if (!cart) {
-    throw new Error("Error retrieving or creating cart")
-  }
+    const cart = await getOrSetCart(countryCode)
+    if (!cart) {
+      throw new Error("Error retrieving or creating cart")
+    }
 
-  const authHeaders = await getAuthHeaders()
-  await sdk.store.cart
-    .createLineItem(
-      cart.id,
-      {
-        variant_id: variantId,
-        quantity,
-      },
-      {},
-      authHeaders
-    )
-    .then(() => {
-      revalidateTag("cart")
-    })
-    .catch(medusaError)
+    const authHeaders = await getAuthHeaders()
+    await sdk.store.cart
+      .createLineItem(
+        cart.id,
+        {
+          variant_id: variantId,
+          quantity,
+        },
+        {},
+        authHeaders
+      )
+      .then(() => {
+        revalidateTag("cart", "max")
+      })
+      .catch(medusaError)
+  } catch (error: any) {
+    // Ensure errors are properly propagated without closing the connection
+    throw new Error(error.message || "Failed to add item to cart")
+  }
 }
 
 export async function updateLineItem({
@@ -137,7 +142,7 @@ export async function updateLineItem({
   await sdk.store.cart
     .updateLineItem(cartId, lineId, { quantity }, {}, authHeaders)
     .then(() => {
-      revalidateTag("cart")
+      revalidateTag("cart", "max")
     })
     .catch(medusaError)
 }
@@ -147,19 +152,25 @@ export async function deleteLineItem(lineId: string) {
     throw new Error("Missing lineItem ID when deleting line item")
   }
 
-  const cartId = await getCartId()
-  if (!cartId) {
-    throw new Error("Missing cart ID when deleting line item")
-  }
+  try {
+    const cartId = await getCartId()
+    if (!cartId) {
+      throw new Error("Missing cart ID when deleting line item")
+    }
 
-  const authHeaders = await getAuthHeaders()
-  await sdk.store.cart
-    .deleteLineItem(cartId, lineId, authHeaders)
-    .then(() => {
-      revalidateTag("cart")
-    })
-    .catch(medusaError)
-  revalidateTag("cart")
+    const authHeaders = await getAuthHeaders()
+    await sdk.store.cart
+      .deleteLineItem(cartId, lineId, {}, authHeaders)
+      .then(() => {
+        revalidateTag("cart", "max")
+      })
+      .catch(medusaError)
+    
+    revalidateTag("cart", "max")
+  } catch (error: any) {
+    // Re-throw with a more user-friendly message
+    throw new Error(error.message || "Failed to delete item from cart")
+  }
 }
 
 export async function enrichLineItems(
@@ -225,7 +236,7 @@ export async function setShippingMethod({
       authHeaders
     )
     .then(() => {
-      revalidateTag("cart")
+      revalidateTag("cart", "max")
     })
     .catch(medusaError)
 }
@@ -241,7 +252,7 @@ export async function initiatePaymentSession(
   return sdk.store.payment
     .initiatePaymentSession(cart, data, {}, authHeaders)
     .then((resp) => {
-      revalidateTag("cart")
+      revalidateTag("cart", "max")
       return resp
     })
     .catch(medusaError)
@@ -255,7 +266,7 @@ export async function applyPromotions(codes: string[]) {
 
   await updateCart({ promo_codes: codes })
     .then(() => {
-      revalidateTag("cart")
+      revalidateTag("cart", "max")
     })
     .catch(medusaError)
 }
@@ -483,7 +494,7 @@ export async function placeOrder() {
   const cartRes = await sdk.store.cart
     .complete(cartId, {}, authHeaders)
     .then((cartRes) => {
-      revalidateTag("cart")
+      revalidateTag("cart", "max")
       return cartRes
     })
     .catch(medusaError)
@@ -524,11 +535,11 @@ export async function updateRegion(countryCode: string, currentPath: string) {
 
   if (cartId) {
     await updateCart({ region_id: region.id })
-    revalidateTag("cart")
+    revalidateTag("cart", "max")
   }
 
-  revalidateTag("regions")
-  revalidateTag("products")
+  revalidateTag("regions", "max")
+  revalidateTag("products", "max")
 
   redirect(`/${countryCode}${currentPath}`)
 }
