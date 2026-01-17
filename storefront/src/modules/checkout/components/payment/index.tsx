@@ -52,6 +52,7 @@ const Payment = ({
 
   const useOptions: StripeCardElementOptions = useMemo(() => {
     return {
+      hidePostalCode: true,
       style: {
         base: {
           fontFamily: "Inter, sans-serif",
@@ -103,7 +104,9 @@ const Payment = ({
     }
 
     initiateSession()
-  }, [selectedPaymentMethod, activeSession, cart, isLoading, trackCheckoutPaymentMethodSelected, trackCheckoutStepCompleted])
+    // Use cart.id and activeSession?.id instead of full objects to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPaymentMethod, activeSession?.id, cart.id, isLoading])
 
   useEffect(() => {
     setError(null)

@@ -10,6 +10,7 @@ import ErrorMessage from "../error-message"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { useAnalytics } from "@lib/analytics/use-analytics"
 import { useRef } from "react"
+import { useRouter } from "next/navigation"
 
 const Contact = ({
   cart,
@@ -20,7 +21,14 @@ const Contact = ({
 }) => {
   const { t } = useTranslation()
   const { trackCheckoutStepCompleted, trackCheckoutContactCompleted } = useAnalytics()
-  const [formData, setFormData] = useState<Record<string, any>>({})
+  const router = useRouter()
+  // Initialize with empty strings to prevent uncontrolled to controlled warning
+  const [formData, setFormData] = useState<Record<string, any>>({
+    email: "",
+    first_name: "",
+    last_name: "",
+    phone: "",
+  })
   const [isSaving, setIsSaving] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
   const hasTrackedContactRef = useRef(false)
@@ -39,11 +47,10 @@ const Contact = ({
     // Pre-fill from customer if logged in and cart doesn't have email
     if (customer && !cart?.email) {
       setFormData((prev) => ({
-        ...prev,
-        email: customer.email || prev.email,
-        first_name: customer.first_name || prev.first_name,
-        last_name: customer.last_name || prev.last_name,
-        phone: customer.phone || prev.phone,
+        email: customer.email || prev.email || "",
+        first_name: customer.first_name || prev.first_name || "",
+        last_name: customer.last_name || prev.last_name || "",
+        phone: customer.phone || prev.phone || "",
       }))
     }
   }, [cart, customer])
@@ -81,6 +88,10 @@ const Contact = ({
       }
 
       await updateContactInfo(data)
+      
+      // Refresh the page to update cart data in Server Components
+      // This ensures the cart.email is available to PaymentButton component
+      router.refresh()
       
       // Track contact completed when email and phone are both filled
       if (cart && !hasTrackedContactRef.current) {

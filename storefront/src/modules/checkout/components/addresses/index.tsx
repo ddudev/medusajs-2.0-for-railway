@@ -6,7 +6,7 @@ import Spinner from "@modules/common/icons/spinner"
 
 import { setAddresses } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
-import { useFormState } from "react-dom"
+import { useActionState } from "react"
 import ErrorMessage from "../error-message"
 import ShippingAddress from "../shipping-address"
 import { SubmitButton } from "../submit-button"
@@ -20,7 +20,7 @@ const Addresses = ({
   customer: HttpTypes.StoreCustomer | null
 }) => {
   const { t } = useTranslation()
-  const [message, formAction] = useFormState(setAddresses, null)
+  const [message, formAction] = useActionState(setAddresses, null)
 
   return (
     <div className="bg-white">

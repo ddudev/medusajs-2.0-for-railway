@@ -268,6 +268,59 @@ export async function initiatePaymentSession(
   }
 ) {
   const authHeaders = await getAuthHeaders()
+  
+  // Get the region's currency code (this is the currency configured in the backend)
+  // The cart's currency should match the region's currency
+  const regionCurrency = cart.region?.currency_code?.toLowerCase()
+  const cartCurrency = cart.currency_code?.toLowerCase()
+  
+  // If cart currency doesn't match region currency, try to sync the cart
+  if (regionCurrency && cartCurrency && cartCurrency !== regionCurrency) {
+    console.warn(
+      `Cart currency (${cartCurrency.toUpperCase()}) doesn't match region currency (${regionCurrency.toUpperCase()}). ` +
+      `Attempting to sync cart with region...`
+    )
+    
+    try {
+      // Update region_id to force cart to sync with region's currency
+      const updatedCart = await sdk.store.cart
+        .update(cart.id, { region_id: cart.region_id }, {}, authHeaders)
+        .then(({ cart }) => cart)
+        .catch((err) => {
+          console.warn('Failed to sync cart with region:', err.message)
+          return null
+        })
+      
+      if (updatedCart && updatedCart.currency_code?.toLowerCase() === regionCurrency) {
+        revalidateTag("cart", "max")
+        return sdk.store.payment
+          .initiatePaymentSession(updatedCart, data, {}, authHeaders)
+          .then((resp) => {
+            revalidateTag("cart", "max")
+            return resp
+          })
+          .catch(medusaError)
+      }
+    } catch (err) {
+      console.warn('Error syncing cart with region:', err)
+    }
+    
+    // If sync failed, throw a clear error
+    throw new Error(
+      `Payment session cannot be created: Cart currency (${cartCurrency.toUpperCase()}) doesn't match region currency (${regionCurrency.toUpperCase()}). ` +
+      `The cart should use the currency configured in the region. Please refresh the cart or contact support.`
+    )
+  }
+  
+  // Ensure we have a valid currency (use region currency as source of truth)
+  const currencyToUse = regionCurrency || cartCurrency
+  if (!currencyToUse) {
+    throw new Error(
+      'Payment session cannot be created: No currency found in cart or region. ' +
+      'Please ensure the cart has a valid region with a currency configured in the backend.'
+    )
+  }
+  
   return sdk.store.payment
     .initiatePaymentSession(cart, data, {}, authHeaders)
     .then((resp) => {

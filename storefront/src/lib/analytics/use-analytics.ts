@@ -137,6 +137,27 @@ export function useAnalytics() {
   }
 
   /**
+   * Track checkout contact completed
+   */
+  const trackCheckoutContactCompleted = (properties: CheckoutEventProperties & { has_email?: boolean; has_phone?: boolean; country_code?: string }) => {
+    trackEvent('checkout_contact_completed', properties)
+  }
+
+  /**
+   * Track checkout shipping method selected
+   */
+  const trackCheckoutShippingMethodSelected = (properties: CheckoutEventProperties & { shipping_method?: string; shipping_price?: number }) => {
+    trackEvent('checkout_shipping_method_selected', properties)
+  }
+
+  /**
+   * Track checkout payment method selected
+   */
+  const trackCheckoutPaymentMethodSelected = (properties: CheckoutEventProperties & { payment_method?: string }) => {
+    trackEvent('checkout_payment_method_selected', properties)
+  }
+
+  /**
    * Track checkout abandoned
    */
   const trackCheckoutAbandoned = (properties: CheckoutEventProperties & { step_abandoned_at?: string; time_in_checkout?: number; reason?: string }) => {
@@ -160,6 +181,9 @@ export function useAnalytics() {
     trackCartUpdated,
     trackCheckoutStarted,
     trackCheckoutStepCompleted,
+    trackCheckoutContactCompleted,
+    trackCheckoutShippingMethodSelected,
+    trackCheckoutPaymentMethodSelected,
     trackCheckoutAbandoned,
     // Direct access to PostHog instance (for advanced usage)
     posthog,

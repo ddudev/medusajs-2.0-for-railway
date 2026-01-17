@@ -16,7 +16,12 @@ const ShippingAddress = ({
   cart: HttpTypes.StoreCart | null
 }) => {
   const { t } = useTranslation()
-  const [formData, setFormData] = useState<Record<string, any>>({})
+  // Initialize with empty strings to prevent uncontrolled to controlled warning
+  const [formData, setFormData] = useState<Record<string, any>>({
+    "shipping_address.address_1": "",
+    "shipping_address.postal_code": "",
+    "shipping_address.city": "",
+  })
 
   const countriesInRegion = useMemo(
     () => cart?.region?.countries?.map((c) => c.iso_2),

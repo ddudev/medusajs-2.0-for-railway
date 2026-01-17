@@ -6,7 +6,7 @@ import Input from "@modules/common/components/input"
 import NativeSelect from "@modules/common/components/native-select"
 
 import AccountInfo from "../account-info"
-import { useFormState } from "react-dom"
+import { useActionState } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { updateCustomerAddress } from "@lib/data/customer"
 
@@ -34,7 +34,7 @@ const ProfileBillingAddress: React.FC<MyInformationProps> = ({
 
   const [successState, setSuccessState] = React.useState(false)
 
-  const [state, formAction] = useFormState(updateCustomerAddress, {
+  const [state, formAction] = useActionState(updateCustomerAddress, {
     error: false,
     success: false,
   })
