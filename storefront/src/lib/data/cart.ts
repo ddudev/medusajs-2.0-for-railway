@@ -38,32 +38,40 @@ export async function retrieveCart() {
 }
 
 export async function getOrSetCart(countryCode: string) {
-  let cart = await retrieveCart()
-  const region = await getRegion(countryCode)
+  try {
+    let cart = await retrieveCart()
+    const region = await getRegion(countryCode)
 
-  if (!region) {
-    throw new Error(`Region not found for country code: ${countryCode}`)
+    if (!region) {
+      throw new Error(`Region not found for country code: ${countryCode}`)
+    }
+
+    if (!cart) {
+      const cartResp = await sdk.store.cart.create({ region_id: region.id })
+      cart = cartResp.cart
+      // Set cart ID cookie - if it fails, continue anyway (cart is still created)
+      await setCartId(cart.id).catch((err) => {
+        console.warn("Failed to set cart ID cookie, but cart was created:", err)
+      })
+      revalidateTag("cart", "max")
+    }
+
+    if (cart && cart?.region_id !== region.id) {
+      const authHeaders = await getAuthHeaders()
+      await sdk.store.cart.update(
+        cart.id,
+        { region_id: region.id },
+        {},
+        authHeaders
+      )
+      revalidateTag("cart", "max")
+    }
+
+    return cart
+  } catch (error: any) {
+    // Ensure errors are properly handled without closing the connection
+    throw new Error(error.message || "Failed to get or create cart")
   }
-
-  if (!cart) {
-    const cartResp = await sdk.store.cart.create({ region_id: region.id })
-    cart = cartResp.cart
-    await setCartId(cart.id)
-    revalidateTag("cart", "max")
-  }
-
-  if (cart && cart?.region_id !== region.id) {
-    const authHeaders = await getAuthHeaders()
-    await sdk.store.cart.update(
-      cart.id,
-      { region_id: region.id },
-      {},
-      authHeaders
-    )
-    revalidateTag("cart", "max")
-  }
-
-  return cart
 }
 
 export async function updateCart(data: HttpTypes.StoreUpdateCart) {
@@ -91,19 +99,20 @@ export async function addToCart({
   quantity: number
   countryCode: string
 }) {
-  try {
-    if (!variantId) {
-      throw new Error("Missing variant ID when adding to cart")
-    }
+  if (!variantId) {
+    throw new Error("Missing variant ID when adding to cart")
+  }
 
+  try {
     const cart = await getOrSetCart(countryCode)
     if (!cart) {
       throw new Error("Error retrieving or creating cart")
     }
 
     const authHeaders = await getAuthHeaders()
-    await sdk.store.cart
-      .createLineItem(
+    
+    try {
+      await sdk.store.cart.createLineItem(
         cart.id,
         {
           variant_id: variantId,
@@ -112,13 +121,23 @@ export async function addToCart({
         {},
         authHeaders
       )
-      .then(() => {
+      
+      // Revalidate after successful addition - wrap in try-catch to prevent connection closure
+      try {
         revalidateTag("cart", "max")
-      })
-      .catch(medusaError)
+      } catch (revalidateError) {
+        // Log but don't throw - cart item was added successfully
+        console.warn("Failed to revalidate cart tag:", revalidateError)
+      }
+    } catch (sdkError: any) {
+      // Handle SDK errors without closing connection
+      throw medusaError(sdkError)
+    }
   } catch (error: any) {
     // Ensure errors are properly propagated without closing the connection
-    throw new Error(error.message || "Failed to add item to cart")
+    // Re-throw with a clean error message
+    const errorMessage = error.message || "Failed to add item to cart"
+    throw new Error(errorMessage)
   }
 }
 

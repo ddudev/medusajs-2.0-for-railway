@@ -23,20 +23,32 @@ export const getAuthHeaders = async (): Promise<{ authorization: string } | {}> 
 }
 
 export const setAuthToken = async (token: string) => {
-  const cookieStore = await cookies()
-  cookieStore.set("_medusa_jwt", token, {
-    maxAge: 60 * 60 * 24 * 7,
-    httpOnly: true,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
-  })
+  try {
+    const cookieStore = await cookies()
+    cookieStore.set("_medusa_jwt", token, {
+      maxAge: 60 * 60 * 24 * 7,
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    })
+  } catch (error) {
+    // During connection close or prerendering, cookies() may fail
+    // Log but don't throw to prevent connection closure
+    console.warn("Failed to set auth token cookie:", error)
+  }
 }
 
 export const removeAuthToken = async () => {
-  const cookieStore = await cookies()
-  cookieStore.set("_medusa_jwt", "", {
-    maxAge: -1,
-  })
+  try {
+    const cookieStore = await cookies()
+    cookieStore.set("_medusa_jwt", "", {
+      maxAge: -1,
+    })
+  } catch (error) {
+    // During connection close or prerendering, cookies() may fail
+    // Log but don't throw to prevent connection closure
+    console.warn("Failed to remove auth token cookie:", error)
+  }
 }
 
 export const getCartId = async () => {
@@ -54,18 +66,30 @@ export const getCartId = async () => {
 }
 
 export const setCartId = async (cartId: string) => {
-  const cookieStore = await cookies()
-  cookieStore.set("_medusa_cart_id", cartId, {
-    maxAge: 60 * 60 * 24 * 7,
-    httpOnly: true,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
-  })
+  try {
+    const cookieStore = await cookies()
+    cookieStore.set("_medusa_cart_id", cartId, {
+      maxAge: 60 * 60 * 24 * 7,
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    })
+  } catch (error) {
+    // During connection close or prerendering, cookies() may fail
+    // Log but don't throw to prevent connection closure
+    console.warn("Failed to set cart ID cookie:", error)
+  }
 }
 
 export const removeCartId = async () => {
-  const cookieStore = await cookies()
-  cookieStore.set("_medusa_cart_id", "", { maxAge: -1 })
+  try {
+    const cookieStore = await cookies()
+    cookieStore.set("_medusa_cart_id", "", { maxAge: -1 })
+  } catch (error) {
+    // During connection close or prerendering, cookies() may fail
+    // Log but don't throw to prevent connection closure
+    console.warn("Failed to remove cart ID cookie:", error)
+  }
 }
 
 export const getLastViewedProductIds = async (): Promise<string[]> => {
