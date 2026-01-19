@@ -15,26 +15,44 @@ export default async function orderPlacedHandler({
   const orderModuleService: IOrderModuleService = container.resolve(Modules.ORDER)
   const cartModuleService: ICartModuleService = container.resolve(Modules.CART)
   
-  const order = await orderModuleService.retrieveOrder(data.id, { relations: ['items', 'summary', 'shipping_address', 'cart'] })
+  const order = await orderModuleService.retrieveOrder(data.id, { relations: ['items', 'summary', 'shipping_address'] })
   const shippingAddress = await (orderModuleService as any).orderAddressService_.retrieve(order.shipping_address.id)
 
-  // Extract Econt office info from cart metadata if available
+  // Extract Econt office info from order metadata or cart metadata if available
+  // Note: In MedusaJS 2.0, cart_id is not directly on OrderDTO, so we check order metadata first
   let econtOfficeInfo = null
-  if (order.cart_id) {
-    try {
-      const cart = await cartModuleService.retrieveCart(order.cart_id)
-      const econtData = cart.metadata?.econt as any
+  try {
+    // First, check if Econt info is stored directly in order metadata
+    const orderEcontData = (order as any).metadata?.econt as any
+    if (orderEcontData?.selectedOffice) {
+      econtOfficeInfo = {
+        officeName: orderEcontData.selectedOffice.name || 'Econt Office',
+        officeAddress: orderEcontData.selectedOffice.address?.fullAddress || orderEcontData.selectedOffice.address?.street || '',
+        city: orderEcontData.selectedOffice.address?.city || orderEcontData.selectedCity?.name || ''
+      }
+    } else {
+      // Try to get cart ID from order metadata or context
+      const cartId = (order as any).metadata?.cart_id || (order as any).context?.cart_id
       
-      if (econtData?.selectedOffice) {
-        econtOfficeInfo = {
-          officeName: econtData.selectedOffice.name || 'Econt Office',
-          officeAddress: econtData.selectedOffice.address?.fullAddress || econtData.selectedOffice.address?.street || '',
-          city: econtData.selectedOffice.address?.city || econtData.selectedCity?.name || ''
+      if (cartId) {
+        try {
+          const cart = await cartModuleService.retrieveCart(cartId)
+          const econtData = cart.metadata?.econt as any
+          
+          if (econtData?.selectedOffice) {
+            econtOfficeInfo = {
+              officeName: econtData.selectedOffice.name || 'Econt Office',
+              officeAddress: econtData.selectedOffice.address?.fullAddress || econtData.selectedOffice.address?.street || '',
+              city: econtData.selectedOffice.address?.city || econtData.selectedCity?.name || ''
+            }
+          }
+        } catch (error) {
+          console.warn('Could not retrieve Econt office info from cart:', error)
         }
       }
-    } catch (error) {
-      console.warn('Could not retrieve Econt office info from cart:', error)
     }
+  } catch (error) {
+    console.warn('Error retrieving Econt office info:', error)
   }
 
   try {
