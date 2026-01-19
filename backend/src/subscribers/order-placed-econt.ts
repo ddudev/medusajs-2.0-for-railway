@@ -61,7 +61,8 @@ export default async function orderPlacedEcontHandler({
             }
           } catch (lookupError) {
             // Don't fail order placement if office lookup fails
-            container.resolve("logger").warn("Could not enrich Econt office details:", lookupError)
+            const logger = container.resolve("logger")
+            logger.warn(`Could not enrich Econt office details: ${lookupError instanceof Error ? lookupError.message : String(lookupError)}`)
           }
         }
         

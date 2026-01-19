@@ -16,9 +16,11 @@ export default async function customerCreatedHandler({
   const notificationModuleService: INotificationModuleService = container.resolve(Modules.NOTIFICATION)
   const customerModuleService: ICustomerModuleService = container.resolve(Modules.CUSTOMER)
   
+  let customer: any = null
+  
   try {
     // Retrieve full customer data from customer module
-    const customer = await customerModuleService.retrieveCustomer(data.id)
+    customer = await customerModuleService.retrieveCustomer(data.id)
     
     console.log('📧 Customer email:', customer.email)
     console.log('👤 Customer name:', customer.first_name)
@@ -57,18 +59,19 @@ export default async function customerCreatedHandler({
     console.log('✅ Welcome email queued for customer:', customer.email)
   } catch (error: any) {
     const errorMessage = error?.message || String(error)
+    const customerEmail = customer?.email || 'unknown'
     
     // Check for SendGrid-specific errors
     if (errorMessage.includes('Maximum credits exceeded') || errorMessage.includes('credits')) {
       console.warn('⚠️  SendGrid credit limit exceeded. Welcome email not sent.')
       console.warn('💡 To fix: Upgrade your SendGrid plan or wait for credit reset.')
-      console.warn('📧 Customer registration succeeded, but welcome email was skipped:', customer?.email || 'unknown')
+      console.warn('📧 Customer registration succeeded, but welcome email was skipped:', customerEmail)
     } else if (errorMessage.includes('SendGrid')) {
       console.error('❌ SendGrid error sending welcome email:', errorMessage)
-      console.error('📧 Customer:', customer?.email || 'unknown')
+      console.error('📧 Customer:', customerEmail)
     } else {
       console.error('❌ Error sending welcome email:', errorMessage)
-      console.error('📧 Customer:', customer?.email || 'unknown')
+      console.error('📧 Customer:', customerEmail)
     }
     
     // Only log full error details in development

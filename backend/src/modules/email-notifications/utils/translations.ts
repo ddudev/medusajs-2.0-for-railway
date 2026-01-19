@@ -1,7 +1,7 @@
 import enTranslations from '../translations/en.json'
 import bgTranslations from '../translations/bg.json'
 
-type Locale = 'en' | 'bg'
+export type Locale = 'en' | 'bg'
 
 const translationsMap: Record<Locale, typeof enTranslations> = {
   en: enTranslations,

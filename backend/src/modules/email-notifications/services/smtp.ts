@@ -152,7 +152,7 @@ export class SMTPNotificationService extends AbstractNotificationProviderService
             filename: attachment.filename,
             content: attachment.content,
             contentType: attachment.content_type,
-            contentDisposition: attachment.disposition ?? 'attachment',
+            contentDisposition: (attachment.disposition === 'inline' ? 'inline' : 'attachment') as 'inline' | 'attachment',
             cid: attachment.id ?? undefined,
           }))
         : undefined,
@@ -161,8 +161,9 @@ export class SMTPNotificationService extends AbstractNotificationProviderService
     // Send the email via SMTP
     try {
       const info = await this.transporter_.sendMail(mailOptions)
+      const messageId = (info as any)?.messageId || 'unknown'
       this.logger_.log(
-        `✅ Successfully sent "${templateKey}" email to ${notification.to} via SMTP (Message ID: ${info.messageId})`
+        `✅ Successfully sent "${templateKey}" email to ${notification.to} via SMTP (Message ID: ${messageId})`
       )
       return {}
     } catch (error: any) {
