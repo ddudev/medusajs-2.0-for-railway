@@ -29,34 +29,65 @@ export const PRODUCT_LIMIT = 12
 // TODO: Will add generateStaticParams and "use cache" + cacheLife() after analyzing build errors
 
 export async function generateStaticParams() {
-  const { collections } = await getCollectionsList()
+  // Next.js 16 Cache Components requires at least one result
+  const defaultCountryCode = 'bg' // Default for this store
+  
+  try {
+    const { collections } = await getCollectionsList()
 
-  if (!collections) {
-    return []
+    const countryCodes = await listRegions().then(
+      (regions: StoreRegion[]) =>
+        regions
+          ?.map((r) => r.countries?.map((c) => c.iso_2))
+          .flat()
+          .filter(Boolean) as string[]
+    ) || [defaultCountryCode]
+
+    // Ensure we have at least one country code
+    const validCountryCodes = countryCodes.length > 0 ? countryCodes : [defaultCountryCode]
+
+    // If no collections, return at least one placeholder to satisfy Next.js 16 requirement
+    if (!collections || collections.length === 0) {
+      return [{
+        countryCode: defaultCountryCode,
+        handle: 'placeholder', // This will trigger notFound() in the page component
+      }]
+    }
+
+    const collectionHandles = collections
+      .map((collection: StoreCollection) => collection.handle)
+      .filter((handle): handle is string => Boolean(handle)) // Filter out undefined handles
+
+    // Ensure we have at least one handle
+    if (collectionHandles.length === 0) {
+      return [{
+        countryCode: defaultCountryCode,
+        handle: 'placeholder',
+      }]
+    }
+
+    const staticParams = validCountryCodes
+      .map((countryCode: string) =>
+        collectionHandles.map((handle: string) => ({
+          countryCode,
+          handle,
+        }))
+      )
+      .flat()
+
+    // Ensure we return at least one result
+    return staticParams.length > 0 ? staticParams : [{
+      countryCode: defaultCountryCode,
+      handle: 'placeholder',
+    }]
+  } catch (error) {
+    // If anything fails, return at least one placeholder
+    console.warn('Error generating static params for collections:', error)
+    return [{
+      countryCode: defaultCountryCode,
+      handle: 'placeholder',
+    }]
   }
-
-  const countryCodes = await listRegions().then(
-    (regions: StoreRegion[]) =>
-      regions
-        ?.map((r) => r.countries?.map((c) => c.iso_2))
-        .flat()
-        .filter(Boolean) as string[]
-  )
-
-  const collectionHandles = collections.map(
-    (collection: StoreCollection) => collection.handle
-  )
-
-  const staticParams = countryCodes
-    ?.map((countryCode: string) =>
-      collectionHandles.map((handle: string | undefined) => ({
-        countryCode,
-        handle,
-      }))
-    )
-    .flat()
-
-  return staticParams
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

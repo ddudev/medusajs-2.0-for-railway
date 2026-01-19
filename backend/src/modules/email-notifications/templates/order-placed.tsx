@@ -298,7 +298,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
               fontWeight: '600',
               margin: '0 0 8px'
             }}>
-              📦 {translations.pickupOffice}
+              {translations.pickupOffice}
             </Text>
             <Text style={{ 
               color: '#92400E',
