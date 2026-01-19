@@ -24,8 +24,10 @@ interface OrderPlacedPreviewProps {
 export interface OrderPlacedTemplateProps {
   order: OrderDTO & { 
     display_id: string
-    summary: { 
-      raw_current_order_total: { value: number }
+    total?: number
+    summary?: { 
+      raw_current_order_total?: { value: number }
+      total?: number
     }
   }
   shippingAddress: OrderAddressDTO
@@ -46,14 +48,13 @@ export const isOrderPlacedTemplateData = (data: any): data is OrderPlacedTemplat
   (typeof data.countryCode === 'string' || !data.countryCode)
 
 // Helper function to format currency
+// Note: Amount is already in currency units (euros, not cents)
 const formatCurrency = (amount: number, currencyCode: string): string => {
   const currency = currencyCode.toUpperCase()
   
-  // Convert from cents to main unit
-  const mainAmount = amount / 100
-  
+  // Amount is already in main currency unit (euros), no conversion needed
   // Format with 2 decimal places
-  const formatted = mainAmount.toFixed(2)
+  const formatted = Number(amount).toFixed(2)
   
   // Add currency symbol or code
   const symbols: Record<string, string> = {
@@ -187,7 +188,13 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
               <tr>
                 <td style={{ padding: '8px 0', color: '#6B7280', fontSize: '14px' }}>{translations.orderTotal}</td>
                 <td style={{ padding: '8px 0', color: '#FF6B35', fontSize: '18px', fontWeight: 'bold', textAlign: 'right' }}>
-                  {formatCurrency(order.summary.raw_current_order_total.value, order.currency_code)}
+                  {formatCurrency(
+                    order.total || 
+                    order.summary?.total || 
+                    order.summary?.raw_current_order_total?.value || 
+                    0, 
+                    order.currency_code
+                  )}
                 </td>
               </tr>
             </tbody>
@@ -443,6 +450,7 @@ OrderPlacedTemplate.PreviewProps = {
       country_code: 'BG',
       phone: '+359 888 123 456'
     },
+    total: 11997, // 119.97 BGN in cents
     summary: { raw_current_order_total: { value: 11997 } } // 119.97 BGN in cents
   } as any,
   shippingAddress: {

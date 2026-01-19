@@ -1,6 +1,7 @@
 import { Modules } from "@medusajs/framework/utils"
 import { IOrderModuleService, ICartModuleService } from "@medusajs/framework/types"
 import { SubscriberArgs, SubscriberConfig } from "@medusajs/medusa"
+import { ECONT_SHIPPING_MODULE } from "../modules/econt-shipping"
 
 /**
  * Subscriber that saves Econt shipping data from cart metadata to order metadata
@@ -36,11 +37,39 @@ export default async function orderPlacedEcontHandler({
       const cart = await cartModuleService.retrieveCart(cartId)
 
       if (cart.metadata?.econt) {
-        // Save Econt data to order metadata
+        const econtData = cart.metadata.econt as any
+        
+        // If office delivery is selected, try to enrich with office details
+        if (econtData?.shipping_to === "OFFICE" && econtData?.office_code && econtData?.city_id) {
+          try {
+            const econtService = container.resolve(ECONT_SHIPPING_MODULE) as any
+            
+            // Get office details from service to store in order metadata
+            if (econtService?.getOffices) {
+              const offices = await econtService.getOffices(econtData.city_id)
+              const office = offices.find((o: any) => o.office_code === econtData.office_code)
+              
+              if (office) {
+                // Enrich Econt data with office details for email template
+                econtData.office_name = office.name
+                econtData.office_address = office.address
+                // city_name should already be in econtData, but ensure it's set
+                if (!econtData.city_name && office.city_name) {
+                  econtData.city_name = office.city_name
+                }
+              }
+            }
+          } catch (lookupError) {
+            // Don't fail order placement if office lookup fails
+            container.resolve("logger").warn("Could not enrich Econt office details:", lookupError)
+          }
+        }
+        
+        // Save Econt data to order metadata (with enriched office details if available)
         await orderModuleService.updateOrders(data.id, {
           metadata: {
             ...order.metadata,
-            econt: cart.metadata.econt,
+            econt: econtData,
           },
         })
       }

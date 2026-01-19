@@ -5,6 +5,7 @@ import { EmailTemplates } from '../modules/email-notifications/templates'
 import { PLACEHOLDER_TEMPLATE_ID } from '../lib/notification-templates'
 import { SUPPORT_EMAIL } from '../lib/constants'
 import { getEmailLocale } from '../modules/email-notifications/utils/translations'
+import { ECONT_SHIPPING_MODULE } from '../modules/econt-shipping'
 
 export default async function orderPlacedHandler({
   event: { data },
@@ -24,6 +25,14 @@ export default async function orderPlacedHandler({
   const locale = getEmailLocale(countryCode)
   console.log('🌍 Order country code:', countryCode)
   console.log('🌐 Email locale:', locale)
+  
+  // Debug order total fields
+  console.log('💰 Order total fields:', {
+    order_total: (order as any).total,
+    summary_total: (order as any).summary?.total,
+    summary_raw_current_order_total: (order as any).summary?.raw_current_order_total?.value,
+    summary_keys: order.summary ? Object.keys(order.summary) : 'no summary'
+  })
 
   // Extract Econt office info from order metadata or cart metadata if available
   // Note: In MedusaJS 2.0, cart_id is not directly on OrderDTO, so we check order metadata first
@@ -31,14 +40,52 @@ export default async function orderPlacedHandler({
   try {
     // First, check if Econt info is stored directly in order metadata
     const orderEcontData = (order as any).metadata?.econt as any
-    if (orderEcontData?.selectedOffice) {
-      econtOfficeInfo = {
-        officeName: orderEcontData.selectedOffice.name || 'Econt Office',
-        officeAddress: orderEcontData.selectedOffice.address?.fullAddress || orderEcontData.selectedOffice.address?.street || '',
-        city: orderEcontData.selectedOffice.address?.city || orderEcontData.selectedCity?.name || ''
+    
+    // Check if Econt office delivery is selected (shipping_to === "OFFICE")
+    if (orderEcontData?.shipping_to === "OFFICE" && orderEcontData?.office_code) {
+      // First, check if office details are already stored in metadata (enriched by order-placed-econt subscriber)
+      if (orderEcontData.office_name || orderEcontData.office_address) {
+        econtOfficeInfo = {
+          officeName: orderEcontData.office_name || `Econt Office ${orderEcontData.office_code}`,
+          officeAddress: orderEcontData.office_address || '',
+          city: orderEcontData.city_name || ''
+        }
+        console.log('📦 Found Econt office from order metadata:', econtOfficeInfo)
+      } else if (orderEcontData?.city_id) {
+        // Office details not stored, try to look up from Econt service
+        try {
+          const econtService = container.resolve(ECONT_SHIPPING_MODULE) as any
+          
+          // Get offices for the city and find the one with matching office_code
+          if (econtService?.getOffices) {
+            const offices = await econtService.getOffices(orderEcontData.city_id)
+            const office = offices.find((o: any) => o.office_code === orderEcontData.office_code)
+            
+            if (office) {
+              econtOfficeInfo = {
+                officeName: office.name || 'Econt Office',
+                officeAddress: office.address || '',
+                city: office.city_name || orderEcontData.city_name || ''
+              }
+              console.log('📦 Found Econt office from service:', econtOfficeInfo)
+            }
+          }
+        } catch (lookupError) {
+          console.warn('Could not look up Econt office from service:', lookupError)
+        }
+      }
+      
+      // Fallback: use office_code and city_name if available
+      if (!econtOfficeInfo && orderEcontData.city_name) {
+        econtOfficeInfo = {
+          officeName: `Econt Office ${orderEcontData.office_code}`,
+          officeAddress: '',
+          city: orderEcontData.city_name
+        }
+        console.log('📦 Using fallback Econt office info:', econtOfficeInfo)
       }
     } else {
-      // Try to get cart ID from order metadata or context
+      // Try to get cart ID from order metadata or context to check cart metadata
       const cartId = (order as any).metadata?.cart_id || (order as any).context?.cart_id
       
       if (cartId) {
@@ -46,17 +93,49 @@ export default async function orderPlacedHandler({
           const cart = await cartModuleService.retrieveCart(cartId)
           const econtData = cart.metadata?.econt as any
           
-          if (econtData?.selectedOffice) {
-            econtOfficeInfo = {
-              officeName: econtData.selectedOffice.name || 'Econt Office',
-              officeAddress: econtData.selectedOffice.address?.fullAddress || econtData.selectedOffice.address?.street || '',
-              city: econtData.selectedOffice.address?.city || econtData.selectedCity?.name || ''
+          // Check if Econt office delivery is selected
+          if (econtData?.shipping_to === "OFFICE" && econtData?.office_code) {
+            // Try to look up office details from Econt service if city_id is available
+            if (econtData.city_id) {
+              try {
+                const econtService = container.resolve(ECONT_SHIPPING_MODULE) as any
+                
+                if (econtService?.getOffices) {
+                  const offices = await econtService.getOffices(econtData.city_id)
+                  const office = offices.find((o: any) => o.office_code === econtData.office_code)
+                  
+                  if (office) {
+                    econtOfficeInfo = {
+                      officeName: office.name || 'Econt Office',
+                      officeAddress: office.address || '',
+                      city: office.city_name || econtData.city_name || ''
+                    }
+                    console.log('📦 Found Econt office from cart/service:', econtOfficeInfo)
+                  }
+                }
+              } catch (lookupError) {
+                console.warn('Could not look up Econt office from service:', lookupError)
+              }
+            }
+            
+            // Fallback: use office_code and city_name if available
+            if (!econtOfficeInfo && econtData.city_name) {
+              econtOfficeInfo = {
+                officeName: `Econt Office ${econtData.office_code}`,
+                officeAddress: '',
+                city: econtData.city_name
+              }
+              console.log('📦 Using fallback Econt office info from cart:', econtOfficeInfo)
             }
           }
         } catch (error) {
           console.warn('Could not retrieve Econt office info from cart:', error)
         }
       }
+    }
+    
+    if (!econtOfficeInfo) {
+      console.log('📦 No Econt office info found (might be home delivery)')
     }
   } catch (error) {
     console.warn('Error retrieving Econt office info:', error)
