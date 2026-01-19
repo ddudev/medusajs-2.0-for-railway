@@ -1,36 +1,17 @@
 "use client"
 
-import { useCartDrawer } from "@modules/cart/context/cart-context"
-import { HttpTypes } from "@medusajs/types"
-import { FreeShippingEligibility, getFreeShippingEligibility } from "@lib/data/free-shipping"
+import { useCartDrawer } from "@lib/store/ui-store"
 import { convertToLocaleParts } from "@lib/util/money"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
-import { useEffect, useState } from "react"
+import { useCart, useCartItemCount } from "@lib/hooks/use-cart"
+import { useFreeShipping } from "@lib/hooks/use-promotions"
 
-type CartButtonClientProps = {
-  cart: HttpTypes.StoreCart | null
-}
-
-const CartButtonClient = ({ cart }: CartButtonClientProps) => {
+const CartButtonClient = () => {
   const { t } = useTranslation()
   const { openCart } = useCartDrawer()
-
-  const [eligibility, setEligibility] = useState<FreeShippingEligibility | null>(null)
-
-  useEffect(() => {
-    if (cart) {
-      const fetchEligibility = async () => {
-        const eligibility = await getFreeShippingEligibility()
-        setEligibility(eligibility)
-      }
-      fetchEligibility()
-    }
-  }, [cart])
-
-  const totalItems =
-    cart?.items?.reduce((acc, item) => {
-      return acc + item.quantity
-    }, 0) || 0
+  const { data: cart } = useCart()
+  const { data: eligibility } = useFreeShipping()
+  const totalItems = useCartItemCount()
 
   const total = cart?.total ?? 0
 

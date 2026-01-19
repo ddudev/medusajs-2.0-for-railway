@@ -29,7 +29,7 @@ const CartTemplate = ({
               {/* Free Shipping Progress - Mobile Only (Above Products) */}
               {cart && cart.region && (
                 <div className="lg:hidden bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <FreeShippingProgressWrapper cartId={cart.id} variant="default" />
+                  <FreeShippingProgressWrapper variant="default" />
                 </div>
               )}
               
@@ -45,7 +45,7 @@ const CartTemplate = ({
                   <>
                     {/* Free Shipping Progress - Desktop Only */}
                     <div className="hidden lg:block bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                      <FreeShippingProgressWrapper cartId={cart.id} variant="default" />
+                      <FreeShippingProgressWrapper variant="default" />
                     </div>
                     
                     {/* Order Summary */}

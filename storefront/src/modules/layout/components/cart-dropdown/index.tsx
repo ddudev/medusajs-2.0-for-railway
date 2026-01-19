@@ -107,7 +107,7 @@ const CartDropdown = ({
                 {/* Free Shipping Progress Bar */}
                 {cartState.id && (
                   <div className="px-4 pt-4 pb-2">
-                    <FreeShippingProgressWrapper cartId={cartState.id} variant="compact" />
+                    <FreeShippingProgressWrapper variant="compact" />
                   </div>
                 )}
                 <div className="overflow-y-scroll max-h-[402px] px-4 grid grid-cols-1 gap-y-8 no-scrollbar p-px">

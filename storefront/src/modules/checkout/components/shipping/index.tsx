@@ -9,13 +9,14 @@ import Radio from "@modules/common/components/radio"
 import ErrorMessage from "@modules/checkout/components/error-message"
 import EcontShipping from "@modules/checkout/components/econt-shipping"
 // Removed step navigation imports - single-page checkout
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { setShippingMethod } from "@lib/data/cart"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 import { sdk } from "@lib/config"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { useAnalytics } from "@lib/analytics/use-analytics"
+import { useCheckoutCart } from "@lib/context/checkout-cart-context"
 
 type ShippingProps = {
   cart: HttpTypes.StoreCart
@@ -23,7 +24,7 @@ type ShippingProps = {
 }
 
 const Shipping: React.FC<ShippingProps> = ({
-  cart,
+  cart: initialCart,
   availableShippingMethods: initialShippingMethods,
 }) => {
   const [isLoading, setIsLoading] = useState(false)
@@ -31,6 +32,8 @@ const Shipping: React.FC<ShippingProps> = ({
   const [availableShippingMethods, setAvailableShippingMethods] = useState<HttpTypes.StoreCartShippingOption[] | null>(initialShippingMethods)
   const { t } = useTranslation()
   const { trackCheckoutShippingMethodSelected, trackCheckoutStepCompleted } = useAnalytics()
+  const { cart: contextCart, updateCartData } = useCheckoutCart()
+  const cart = contextCart || initialCart
 
   const selectedShippingMethod = availableShippingMethods?.find(
     // To do: remove the previously selected shipping method instead of using the last one
@@ -48,7 +51,23 @@ const Shipping: React.FC<ShippingProps> = ({
     const selectedMethod = availableShippingMethods?.find(m => m.id === id)
     
     await setShippingMethod({ cartId: cart.id, shippingMethodId: id })
-      .then(() => {
+      .then(async () => {
+        // Fetch updated cart to get the new shipping method
+        const { cart: updatedCart } = await sdk.store.cart.retrieve(cart.id, {
+          fields: "+items.*,+items.variant.*,+items.variant.calculated_price,+items.variant.product.*,+payment_collection.*,+payment_collection.payment_sessions.*"
+        })
+        
+        // Update ONLY shipping_methods and totals to minimize re-renders
+        if (updatedCart) {
+          updateCartData({
+            shipping_methods: updatedCart.shipping_methods,
+            shipping_total: updatedCart.shipping_total,
+            subtotal: updatedCart.subtotal,
+            total: updatedCart.total,
+            tax_total: updatedCart.tax_total,
+          })
+        }
+        
         // Track shipping method selected
         if (selectedMethod) {
           const shippingPrice = selectedMethod.amount ? Number(selectedMethod.amount) / 100 : 0
@@ -82,14 +101,18 @@ const Shipping: React.FC<ShippingProps> = ({
   // Use a ref to prevent fetching if we just fetched (debounce)
   const lastFetchRef = useRef<string | null>(null)
   
+  // Memoize econt data as a stable string to prevent unnecessary effect re-runs
+  const econtDataKey = useMemo(() => {
+    return cart.metadata?.econt ? JSON.stringify(cart.metadata.econt) : null
+  }, [cart.metadata?.econt])
+  
   useEffect(() => {
     const fetchShippingMethods = async () => {
       // Create a key from cart state to prevent duplicate fetches
       const fetchKey = JSON.stringify({
         cartId: cart.id,
-        econtData: cart.metadata?.econt,
+        econtData: econtDataKey,
         shippingMethodsCount: cart.shipping_methods?.length,
-        shippingTotal: cart.shipping_total,
       })
       
       // Skip if we just fetched with the same key
@@ -112,11 +135,11 @@ const Shipping: React.FC<ShippingProps> = ({
       }
     }
 
-    // Fetch when shipping methods are actually added/removed or cart changes
+    // Fetch when shipping methods are actually added/removed or econt data changes
     if (cart.id && cart.shipping_methods?.length !== availableShippingMethods?.length) {
       fetchShippingMethods()
     }
-  }, [cart.id, cart.metadata?.econt, cart.shipping_methods?.length, cart.shipping_total, availableShippingMethods?.length])
+  }, [cart.id, econtDataKey, cart.shipping_methods?.length, availableShippingMethods?.length])
 
   return (
     <div className="bg-white">

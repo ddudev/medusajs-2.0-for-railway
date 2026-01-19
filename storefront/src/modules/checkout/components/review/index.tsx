@@ -4,9 +4,14 @@ import { Heading, Text } from "@medusajs/ui"
 
 import PaymentButton from "../payment-button"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import { useCheckoutCart } from "@lib/context/checkout-cart-context"
 
-const Review = ({ cart }: { cart: any }) => {
+const Review = ({ cart: initialCart }: { cart: any }) => {
   const { t } = useTranslation()
+  // Use updated cart from context
+  const { cart: contextCart } = useCheckoutCart()
+  const cart = contextCart || initialCart
+  
   const paidByGiftcard =
     cart?.gift_cards && cart?.gift_cards?.length > 0 && cart?.total === 0
 

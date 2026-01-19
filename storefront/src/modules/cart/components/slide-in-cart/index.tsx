@@ -3,7 +3,7 @@
 import { Fragment } from "react"
 import { Dialog, Transition } from "@headlessui/react"
 import { XMark } from "@medusajs/icons"
-import { useCartDrawer } from "../../context/cart-context"
+import { useCartDrawer } from "@lib/store/ui-store"
 import { HttpTypes } from "@medusajs/types"
 import CartItem from "./cart-item"
 import CartActions from "./cart-actions"
@@ -20,7 +20,7 @@ type SlideInCartProps = {
 }
 
 const SlideInCart = ({ cart }: SlideInCartProps) => {
-  const { isOpen, closeCart } = useCartDrawer()
+  const { isCartOpen, closeCart } = useCartDrawer()
   const { t } = useTranslation()
   const { trackCartViewed } = useAnalytics()
 
@@ -31,7 +31,7 @@ const SlideInCart = ({ cart }: SlideInCartProps) => {
 
   // Track cart viewed when drawer opens
   useEffect(() => {
-    if (isOpen && cart && cart.items && cart.items.length > 0) {
+    if (isCartOpen && cart && cart.items && cart.items.length > 0) {
       trackCartViewed({
         cart_value: cart.total ? Number(cart.total) / 100 : 0,
         item_count: totalItems,
@@ -39,10 +39,10 @@ const SlideInCart = ({ cart }: SlideInCartProps) => {
         cart_id: cart.id,
       })
     }
-  }, [isOpen, cart, totalItems, trackCartViewed])
+  }, [isCartOpen, cart, totalItems, trackCartViewed])
 
   return (
-    <Transition show={isOpen} as={Fragment}>
+    <Transition show={isCartOpen} as={Fragment}>
       <Dialog onClose={closeCart} className="relative z-modal">
         {/* Backdrop */}
         <Transition.Child
@@ -90,7 +90,7 @@ const SlideInCart = ({ cart }: SlideInCartProps) => {
                     {/* Free Shipping Progress Bar */}
                     {cart.id && (
                       <div className="mb-4">
-                        <FreeShippingProgressWrapper cartId={cart.id} variant="compact" />
+                        <FreeShippingProgressWrapper variant="compact" />
                       </div>
                     )}
                     <div className="space-y-4">

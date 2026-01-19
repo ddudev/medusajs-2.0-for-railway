@@ -3,7 +3,6 @@
 import { Text, clx } from "@medusajs/ui"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
-import { updateLineItem } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import CartItemSelect from "@modules/cart/components/cart-item-select"
 import ErrorMessage from "@modules/checkout/components/error-message"
@@ -14,8 +13,7 @@ import LineItemUnitPrice from "@modules/common/components/line-item-unit-price"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Spinner from "@modules/common/icons/spinner"
 import Thumbnail from "@modules/products/components/thumbnail"
-import { useState } from "react"
-import { useAnalytics } from "@lib/analytics/use-analytics"
+import { useUpdateLineItem } from "@lib/hooks/use-cart"
 
 type ItemProps = {
   item: HttpTypes.StoreCartLineItem
@@ -23,39 +21,22 @@ type ItemProps = {
 }
 
 const Item = ({ item, type = "full" }: ItemProps) => {
-  const [updating, setUpdating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const { trackCartUpdated } = useAnalytics()
+  const updateLineItem = useUpdateLineItem()
   const { t } = useTranslation()
 
   const { handle } = item.variant?.product ?? {}
 
-  const changeQuantity = async (quantity: number) => {
-    setError(null)
-    setUpdating(true)
-
-    await updateLineItem({
+  const changeQuantity = (quantity: number) => {
+    // Use TanStack Query mutation with optimistic updates
+    updateLineItem.mutate({
       lineId: item.id,
       quantity,
     })
-      .then(() => {
-        // Track cart updated
-        const currency = item.currency_code || 'EUR'
-        trackCartUpdated({
-          cart_value: 0, // Will be updated after cart refresh
-          item_count: quantity,
-          currency: currency,
-          line_item_id: item.id,
-          new_quantity: quantity,
-        })
-      })
-      .catch((err) => {
-        setError(err.message)
-      })
-      .finally(() => {
-        setUpdating(false)
-      })
   }
+
+  // Get updating state from mutation
+  const updating = updateLineItem.isPending
+  const error = updateLineItem.error?.message || null
 
   // TODO: Update this to grab the actual max inventory
   const maxQtyFromInventory = 10

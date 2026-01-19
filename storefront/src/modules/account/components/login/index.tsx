@@ -1,4 +1,4 @@
-import { useActionState } from "react"
+import { useActionState, useState } from "react"
 
 import { LOGIN_VIEW } from "@modules/account/templates/login-template"
 import Input from "@modules/common/components/input"
@@ -6,6 +6,7 @@ import ErrorMessage from "@modules/checkout/components/error-message"
 import { SubmitButton } from "@modules/checkout/components/submit-button"
 import { login } from "@lib/data/customer"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import ForgotPassword from "@modules/account/components/forgot-password"
 
 type Props = {
   setCurrentView: (view: LOGIN_VIEW) => void
@@ -13,6 +14,7 @@ type Props = {
 
 const Login = ({ setCurrentView }: Props) => {
   const [message, formAction] = useActionState(login, null)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
   const { t } = useTranslation()
 
   return (
@@ -35,14 +37,23 @@ const Login = ({ setCurrentView }: Props) => {
             required
             data-testid="email-input"
           />
-          <Input
-            label={t("login.password")}
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            data-testid="password-input"
-          />
+          <div className="relative">
+            <Input
+              label={t("login.password")}
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              data-testid="password-input"
+            />
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="absolute right-0 -bottom-6 text-sm text-primary hover:text-primary-hover hover:underline transition-colors"
+            >
+              Forgot password?
+            </button>
+          </div>
         </div>
         <ErrorMessage error={message} data-testid="login-error-message" />
         <SubmitButton data-testid="sign-in-button" className="w-full mt-8 h-12 md:h-14 text-base font-semibold transition-all">
@@ -59,6 +70,11 @@ const Login = ({ setCurrentView }: Props) => {
           {t("login.joinUs")}
         </button>
       </div>
+      
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <ForgotPassword onClose={() => setShowForgotPassword(false)} />
+      )}
     </div>
   )
 }

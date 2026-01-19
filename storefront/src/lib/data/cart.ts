@@ -21,9 +21,18 @@ export async function retrieveCart() {
     }
 
     const authHeaders = await getAuthHeaders()
-    // No caching - cart is user-specific and must be fresh
+    // Fetch cart with full details including:
+    // - Line items with variant prices and product data
+    // - Payment collection with payment sessions (needed for Stripe/PayPal)
+    // - Shipping and billing addresses
     const result = await sdk.store.cart
-      .retrieve(cartId, {}, { next: { tags: ["cart"] }, ...authHeaders })
+      .retrieve(
+        cartId,
+        {
+          fields: "+items.*,+items.variant.*,+items.variant.calculated_price,+items.variant.product.*,+payment_collection.*,+payment_collection.payment_sessions.*"
+        },
+        { next: { tags: ["cart"] }, ...authHeaders }
+      )
       .then(({ cart }) => cart)
       .catch((error) => {
         console.error("Error retrieving cart:", error)
@@ -84,7 +93,9 @@ export async function updateCart(data: HttpTypes.StoreUpdateCart) {
   return sdk.store.cart
     .update(cartId, data, {}, authHeaders)
     .then(({ cart }) => {
-      revalidateTag("cart", "max")
+      // Note: Removed revalidateTag to prevent page refresh during checkout
+      // Cart state is managed client-side with CheckoutCartProvider in checkout flow
+      // For non-checkout flows, TanStack Query handles cache updates
       return cart
     })
     .catch(medusaError)
@@ -122,13 +133,9 @@ export async function addToCart({
         authHeaders
       )
       
-      // Revalidate after successful addition - wrap in try-catch to prevent connection closure
-      try {
-        revalidateTag("cart", "max")
-      } catch (revalidateError) {
-        // Log but don't throw - cart item was added successfully
-        console.warn("Failed to revalidate cart tag:", revalidateError)
-      }
+      // Note: Removed revalidateTag to prevent page refresh
+      // Cart state is managed client-side with TanStack Query
+      // The mini-cart drawer will update automatically via useCart hook
     } catch (sdkError: any) {
       // Handle SDK errors without closing connection
       throw medusaError(sdkError)
@@ -161,7 +168,8 @@ export async function updateLineItem({
   await sdk.store.cart
     .updateLineItem(cartId, lineId, { quantity }, {}, authHeaders)
     .then(() => {
-      revalidateTag("cart", "max")
+      // Note: Removed revalidateTag to prevent page refresh
+      // Cart state is managed client-side with TanStack Query (useUpdateLineItem hook)
     })
     .catch(medusaError)
 }
@@ -181,11 +189,10 @@ export async function deleteLineItem(lineId: string) {
     await sdk.store.cart
       .deleteLineItem(cartId, lineId, {}, authHeaders)
       .then(() => {
-        revalidateTag("cart", "max")
+        // Note: Removed revalidateTag to prevent page refresh
+        // Cart state is managed client-side with TanStack Query
       })
       .catch(medusaError)
-    
-    revalidateTag("cart", "max")
   } catch (error: any) {
     // Re-throw with a more user-friendly message
     throw new Error(error.message || "Failed to delete item from cart")
@@ -255,7 +262,8 @@ export async function setShippingMethod({
       authHeaders
     )
     .then(() => {
-      revalidateTag("cart", "max")
+      // Note: Removed revalidateTag to prevent page refresh during checkout
+      // Cart state is now managed client-side with TanStack Query in checkout flow
     })
     .catch(medusaError)
 }
@@ -292,11 +300,11 @@ export async function initiatePaymentSession(
         })
       
       if (updatedCart && updatedCart.currency_code?.toLowerCase() === regionCurrency) {
-        revalidateTag("cart", "max")
+        // Note: Removed revalidateTag to prevent page refresh during checkout
         return sdk.store.payment
           .initiatePaymentSession(updatedCart, data, {}, authHeaders)
           .then((resp) => {
-            revalidateTag("cart", "max")
+            // Cart state is managed client-side in checkout
             return resp
           })
           .catch(medusaError)
@@ -324,7 +332,8 @@ export async function initiatePaymentSession(
   return sdk.store.payment
     .initiatePaymentSession(cart, data, {}, authHeaders)
     .then((resp) => {
-      revalidateTag("cart", "max")
+      // Note: Removed revalidateTag to prevent page refresh
+      // Cart state is now managed client-side with TanStack Query
       return resp
     })
     .catch(medusaError)
@@ -338,7 +347,8 @@ export async function applyPromotions(codes: string[]) {
 
   await updateCart({ promo_codes: codes })
     .then(() => {
-      revalidateTag("cart", "max")
+      // Note: Removed revalidateTag to prevent page refresh
+      // Cart state is managed client-side with CheckoutCartProvider in checkout
     })
     .catch(medusaError)
 }
@@ -574,7 +584,8 @@ export async function placeOrder() {
   const cartRes = await sdk.store.cart
     .complete(cartId, {}, authHeaders)
     .then((cartRes) => {
-      revalidateTag("cart", "max")
+      // Note: Removed revalidateTag - we're redirecting to order confirmation immediately
+      // No need to revalidate cart since we're leaving the checkout page
       return cartRes
     })
     .catch(medusaError)
