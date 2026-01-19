@@ -1,7 +1,7 @@
 "use client"
 
 import { HttpTypes } from "@medusajs/types"
-import React, { createContext, useContext, useState, useCallback } from "react"
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react"
 
 type CheckoutCartContextType = {
   cart: HttpTypes.StoreCart | null
@@ -24,6 +24,42 @@ export function CheckoutCartProvider({
     setCart((prevCart) => {
       if (!prevCart) return prevCart
       
+      // Check if updates actually change anything
+      // This prevents unnecessary re-renders when data hasn't changed
+      let hasChanges = false
+      
+      for (const key in updates) {
+        if (key === 'shipping_address' || key === 'billing_address') {
+          // Skip address checks for now (handled separately)
+          continue
+        }
+        
+        if (key === 'payment_collection') {
+          // Special handling for payment_collection
+          const prevCollection = prevCart.payment_collection
+          const newCollection = updates.payment_collection
+          
+          // Check if payment collection actually changed
+          if (prevCollection?.id !== newCollection?.id ||
+              prevCollection?.payment_sessions?.length !== newCollection?.payment_sessions?.length) {
+            hasChanges = true
+            break
+          }
+          continue
+        }
+        
+        // Simple equality check for primitives and reference check for objects
+        if (prevCart[key as keyof HttpTypes.StoreCart] !== updates[key as keyof Partial<HttpTypes.StoreCart>]) {
+          hasChanges = true
+          break
+        }
+      }
+      
+      // If nothing changed, return the same reference to prevent re-renders
+      if (!hasChanges && !updates.shipping_address && !updates.billing_address) {
+        return prevCart
+      }
+      
       return {
         ...prevCart,
         ...updates,
@@ -45,8 +81,14 @@ export function CheckoutCartProvider({
     window.location.reload()
   }, [])
 
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(
+    () => ({ cart, updateCartData, refreshCart }),
+    [cart, updateCartData, refreshCart]
+  )
+
   return (
-    <CheckoutCartContext.Provider value={{ cart, updateCartData, refreshCart }}>
+    <CheckoutCartContext.Provider value={contextValue}>
       {children}
     </CheckoutCartContext.Provider>
   )

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -19,9 +19,10 @@ import {
 import { AddShoppingCart, FavoriteBorder } from '@mui/icons-material'
 import { HttpTypes } from '@medusajs/types'
 import { getProductPrice } from '@lib/util/get-product-price'
-import { addToCartAction } from '@modules/products/actions/add-to-cart'
 import { useTranslation } from '@lib/i18n/hooks/use-translation'
-import { useCartDrawer } from '@modules/cart/context/cart-context'
+import { useAddToCart } from '@lib/hooks/use-cart'
+import { useCartDrawer } from '@lib/store/ui-store'
+import { useToasts } from '@lib/store/ui-store'
 import QuickViewModal from './quick-view-modal'
 import { PriceDisplayParts } from '@modules/common/components/price-display'
 
@@ -43,11 +44,14 @@ export default function ProductTileContent({
 }) {
   const { t } = useTranslation()
   const params = useParams()
-  const router = useRouter()
   const { openCart } = useCartDrawer()
+  const { showToast } = useToasts()
+  const addToCartMutation = useAddToCart()
   const actualCountryCode = (params?.countryCode as string) || countryCode
-  const [isAdding, setIsAdding] = useState(false)
   const [quickViewOpen, setQuickViewOpen] = useState(false)
+  
+  // Get loading state from mutation
+  const isAdding = addToCartMutation.isPending
 
   const { cheapestPrice } = getProductPrice({
     product: pricedProduct,
@@ -95,35 +99,34 @@ export default function ProductTileContent({
   }
 
   // Handle direct add to cart (for single variant products)
-  const handleAddToCartDirect = async () => {
+  const handleAddToCartDirect = () => {
     if (!defaultVariant?.id || !isInStock || isAdding) {
       return
     }
 
-    setIsAdding(true)
-
-    try {
-      const result = await addToCartAction({
+    // Use TanStack Query mutation with optimistic updates
+    addToCartMutation.mutate(
+      {
         variantId: defaultVariant.id,
         quantity: 1,
-        countryCode: actualCountryCode,
-      })
-
-      if (result.success) {
-        router.refresh()
-        setTimeout(() => {
-          openCart()
-        }, 300)
-      } else {
-        console.error('Failed to add to cart:', result.error)
-        alert(`Failed to add to cart: ${result.error}`)
+      },
+      {
+        onSuccess: () => {
+          // Open cart drawer - no router.refresh() needed!
+          setTimeout(() => {
+            openCart()
+          }, 300)
+        },
+        onError: (error) => {
+          console.error('Failed to add to cart:', error)
+          showToast({
+            type: 'error',
+            message: `Failed to add to cart: ${error.message}`,
+            duration: 4000,
+          })
+        },
       }
-    } catch (error) {
-      console.error('Failed to add to cart:', error)
-      alert(`Failed to add to cart: ${error}`)
-    } finally {
-      setIsAdding(false)
-    }
+    )
   }
 
   return (

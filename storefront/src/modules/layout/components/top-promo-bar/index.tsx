@@ -4,18 +4,16 @@ import Image from "next/image"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import SearchBar from "@modules/layout/components/main-header/search-bar"
 import AccountLink from "@modules/layout/components/main-header/account-link"
-import CartButtonClient from "@modules/layout/components/cart-button/cart-button-client"
-import SlideInCartWrapper from "@modules/layout/components/cart-button/slide-in-cart-wrapper"
+import CartButton from "@modules/layout/components/cart-button"
 import { HttpTypes } from "@medusajs/types"
 
 import MobileMenu from "@modules/layout/components/mobile-menu"
 
 type TopHeaderProps = {
-  cart: HttpTypes.StoreCart | null
   categories?: HttpTypes.StoreProductCategory[]
 }
 
-const TopHeader = ({ cart, categories = [] }: TopHeaderProps) => {
+const TopHeader = ({ categories = [] }: TopHeaderProps) => {
   return (
     <div className="w-full bg-white h-[64px] md:h-[106px] border-b border-gray-100 md:border-none shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-[100] sticky top-0">
       <div className="content-container h-full">
@@ -58,8 +56,7 @@ const TopHeader = ({ cart, categories = [] }: TopHeaderProps) => {
             </div>
 
             <AccountLink />
-            <CartButtonClient cart={cart} />
-            <SlideInCartWrapper cart={cart} />
+            <CartButton />
           </div>
         </div>
       </div>

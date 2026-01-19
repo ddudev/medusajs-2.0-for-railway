@@ -2,7 +2,7 @@
 
 import { Button } from "@medusajs/ui"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import { useCartDrawer } from "../../context/cart-context"
+import { useCartDrawer } from "@lib/store/ui-store"
 import { HttpTypes } from "@medusajs/types"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 

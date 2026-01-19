@@ -1,22 +1,15 @@
-// This file is kept for backwards compatibility
-// Cart fetching is now done in Nav component and passed to TopPromoBar
-// This allows proper Server Component data fetching without "Server Functions cannot be called during initial render" errors
+// CartButton - Client Component that uses TanStack Query for cart data
+// No longer needs cart prop - fetches from cache automatically
 
 import CartButtonClient from "./cart-button-client"
 import SlideInCartWrapper from "./slide-in-cart-wrapper"
-import { HttpTypes } from "@medusajs/types"
 
-type CartButtonProps = {
-  cart: HttpTypes.StoreCart | null
-}
-
-// CartButton is now a simple wrapper that receives cart as a prop
-// This allows it to be used in both Server and Client Components
-export default function CartButton({ cart }: CartButtonProps) {
+// CartButton no longer needs props - uses query hooks internally
+export default function CartButton() {
   return (
     <>
-      <CartButtonClient cart={cart} />
-      <SlideInCartWrapper cart={cart} />
+      <CartButtonClient />
+      <SlideInCartWrapper />
     </>
   )
 }

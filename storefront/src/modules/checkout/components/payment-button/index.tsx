@@ -126,7 +126,6 @@ const StripePaymentButton = ({
 
   const stripe = useStripe()
   const elements = useElements()
-  const card = elements?.getElement("card")
 
   const session = cart.payment_collection?.payment_sessions?.find(
     (s) => s.status === "pending"
@@ -137,16 +136,29 @@ const StripePaymentButton = ({
   const handlePayment = async () => {
     setSubmitting(true)
 
-    if (!stripe || !elements || !card || !cart) {
+    if (!stripe || !elements || !cart || !session?.data.client_secret) {
+      const errorMsg = !stripe || !elements 
+        ? "Payment system not ready. Please refresh the page."
+        : "Payment session not initialized. Please try again."
+      
+      setErrorMessage(errorMsg)
+      setSubmitting(false)
+      return
+    }
+
+    // Get the card element - it should be mounted by now
+    const cardElement = elements.getElement("card")
+    if (!cardElement) {
+      setErrorMessage("Card input not ready. Please refresh the page.")
       setSubmitting(false)
       return
     }
 
     // Use shipping address for billing (Bulgaria requirement - billing always same as shipping)
     await stripe
-      .confirmCardPayment(session?.data.client_secret as string, {
+      .confirmCardPayment(session.data.client_secret as string, {
         payment_method: {
-          card: card,
+          card: cardElement,
           billing_details: {
             name:
               (cart.shipping_address?.first_name || "Customer") +

@@ -46,8 +46,15 @@ const OfficeSelector: React.FC<OfficeSelectorProps> = ({
       return
     }
 
-    // Skip if we've already fetched this city
-    if (fetchedCityIdRef.current === cityId) {
+    // If offices array is empty but we think we fetched this city, reset the ref
+    // This handles Fast Refresh state resets
+    if (fetchedCityIdRef.current === cityId && offices.length === 0) {
+      fetchedCityIdRef.current = null
+    }
+
+    // Skip if we've already fetched this city AND we have offices
+    // This prevents refetching but allows retry if offices array is empty
+    if (fetchedCityIdRef.current === cityId && offices.length > 0) {
       // If we already have offices for this city, ensure loading is false
       setIsLoading(false)
       isFetchingRef.current = false
@@ -70,32 +77,25 @@ const OfficeSelector: React.FC<OfficeSelectorProps> = ({
         setSearchQuery("") // Clear search
         setIsOpen(false) // Close dropdown
         
-        console.log(`[OfficeSelector] Fetching offices for city_id=${currentCityId}`)
         const allOffices = await getEcontOffices(currentCityId)
-        console.log(`[OfficeSelector] Received ${allOffices.length} offices from API`)
-        console.log(`[OfficeSelector] Offices with coordinates: ${allOffices.filter(o => o.latitude && o.longitude).length}`)
         
         // Check if this effect is still valid (cityId hasn't changed)
         if (cancelled) {
-          console.log(`[OfficeSelector] Request was cancelled, not setting offices`)
           return
         }
         
         // Verify we're still working with the same cityId
         if (currentCityId !== cityId) {
-          console.log(`[OfficeSelector] CityId changed during fetch, not setting offices`)
+
           return
         }
         
-        console.log(`[OfficeSelector] Setting ${allOffices.length} offices and closing loading state`)
         // Use functional updates to ensure state is set correctly
         setOffices(() => {
-          console.log(`[OfficeSelector] setOffices called with ${allOffices.length} offices`)
           return allOffices
         })
         fetchedCityIdRef.current = currentCityId
         setIsLoading(() => {
-          console.log(`[OfficeSelector] setIsLoading(false) called`)
           return false
         })
         isFetchingRef.current = false
@@ -122,13 +122,12 @@ const OfficeSelector: React.FC<OfficeSelectorProps> = ({
 
     // Cleanup: cancel request if cityId changes
     return () => {
-      console.log(`[OfficeSelector] Cleanup: cancelling fetch for city_id=${cityId}`)
       cancelled = true
       isFetchingRef.current = false
       // Don't clear offices or loading state here - only cancel the in-flight request
       // The new effect will handle state if cityId actually changed
     }
-  }, [cityId])
+  }, [cityId, offices.length]) // Include offices.length to detect Fast Refresh state resets
 
   // Filter offices locally based on search query
   const filteredOffices = useMemo(() => {
@@ -171,15 +170,6 @@ const OfficeSelector: React.FC<OfficeSelectorProps> = ({
   const officesWithCoords = offices.filter(
     (o) => o.latitude && o.longitude
   )
-
-  // Debug logging
-  console.log(`[OfficeSelector] Render state:`, {
-    isLoading,
-    officesCount: offices.length,
-    isOpen,
-    hasError: !!error,
-    cityId,
-  })
 
   if (isLoading) {
     return (

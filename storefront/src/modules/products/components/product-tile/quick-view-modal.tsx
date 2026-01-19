@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import {
   Dialog,
   DialogTitle,
@@ -19,8 +19,9 @@ import { HttpTypes } from '@medusajs/types'
 import { isEqual } from '@lib/utils/is-equal'
 import OptionSelect from '@modules/products/components/product-actions/option-select'
 import ProductPrice from '@modules/products/components/product-price'
-import { addToCartAction } from '@modules/products/actions/add-to-cart'
-import { useCartDrawer } from '@modules/cart/context/cart-context'
+import { useAddToCart } from '@lib/hooks/use-cart'
+import { useCartDrawer } from '@lib/store/ui-store'
+import { useToasts } from '@lib/store/ui-store'
 import { useTranslation } from '@lib/i18n/hooks/use-translation'
 import Image from 'next/image'
 
@@ -48,12 +49,15 @@ export default function QuickViewModal({
 }: QuickViewModalProps) {
   const { t } = useTranslation()
   const params = useParams()
-  const router = useRouter()
   const { openCart } = useCartDrawer()
+  const { showToast } = useToasts()
+  const addToCartMutation = useAddToCart()
   const actualCountryCode = (params?.countryCode as string) || countryCode
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
-  const [isAdding, setIsAdding] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Get loading state from mutation
+  const isAdding = addToCartMutation.isPending
 
   // Preselect first variant if only one exists
   useEffect(() => {
@@ -68,7 +72,6 @@ export default function QuickViewModal({
     if (!open) {
       setOptions({})
       setError(null)
-      setIsAdding(false)
     } else if (product.variants?.length === 1) {
       const variantOptions = optionsAsKeymap(product.variants[0].options)
       setOptions(variantOptions ?? {})
@@ -110,36 +113,33 @@ export default function QuickViewModal({
     setError(null)
   }
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
     if (!selectedVariant?.id) {
       setError(t("product.selectVariant") || "Please select a variant")
       return
     }
 
-    setIsAdding(true)
     setError(null)
 
-    try {
-      const result = await addToCartAction({
+    // Use TanStack Query mutation with optimistic updates
+    addToCartMutation.mutate(
+      {
         variantId: selectedVariant.id,
         quantity: 1,
-        countryCode: actualCountryCode,
-      })
-
-      if (result.success) {
-        router.refresh()
-        setTimeout(() => {
-          openCart()
-          onClose()
-        }, 300)
-      } else {
-        setError(result.error || t("product.addToCartError") || "Failed to add to cart")
+      },
+      {
+        onSuccess: () => {
+          // Open cart drawer and close modal - no router.refresh() needed!
+          setTimeout(() => {
+            openCart()
+            onClose()
+          }, 300)
+        },
+        onError: (error) => {
+          setError(error.message || t("product.addToCartError") || "Failed to add to cart")
+        },
       }
-    } catch (err: any) {
-      setError(err.message || t("product.addToCartError") || "Failed to add to cart")
-    } finally {
-      setIsAdding(false)
-    }
+    )
   }
 
   const thumbnail = product.thumbnail || product.images?.[0]?.url

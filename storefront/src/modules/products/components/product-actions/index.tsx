@@ -1,7 +1,7 @@
 "use client"
 
 import { isEqual } from "@lib/utils/is-equal"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import { useIntersection } from "@lib/hooks/use-in-view"
@@ -10,11 +10,12 @@ import MobileActions from "./mobile-actions"
 import PriceBox from "../price-box"
 import TrustBadges from "../trust-badges"
 import QuickBuy from "../quick-buy"
-import { addToCart } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import { useStorefrontConfig } from "@lib/hooks/use-storefront-config"
-import { useCartDrawer } from "@modules/cart/context/cart-context"
 import { useAnalytics } from "@lib/analytics/use-analytics"
+import { useAddToCart } from "@lib/hooks/use-cart"
+import { useCartDrawer } from "@lib/store/ui-store"
+import { useToasts } from "@lib/store/ui-store"
 
 type ProductActionsProps = {
   product: HttpTypes.StoreProduct
@@ -38,12 +39,12 @@ export default function ProductActions({
 }: ProductActionsProps) {
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
   const [quantity, setQuantity] = useState(1)
-  const [isAdding, setIsAdding] = useState(false)
   const countryCode = useParams().countryCode as string
-  const router = useRouter()
   const { openCart } = useCartDrawer()
+  const { showToast } = useToasts()
   const config = useStorefrontConfig()
   const { trackProductAddedToCart, trackEvent } = useAnalytics()
+  const addToCartMutation = useAddToCart()
 
   // If there is only 1 variant, preselect the options
   useEffect(() => {
@@ -134,47 +135,61 @@ export default function ProductActions({
   }
 
   // add the selected variant to the cart
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
     if (!selectedVariant?.id) return null
 
-    setIsAdding(true)
+    // Track product info for analytics
+    const price = selectedVariant.calculated_price?.calculated_amount
+      ? Number(selectedVariant.calculated_price.calculated_amount) / 100
+      : undefined
+    const currency = selectedVariant.calculated_price?.currency_code || region.currency_code || 'EUR'
 
-    try {
-      await addToCart({
+    // Use TanStack Query mutation with optimistic updates
+    addToCartMutation.mutate(
+      {
         variantId: selectedVariant.id,
         quantity: quantity,
-        countryCode,
-      })
+      },
+      {
+        onSuccess: () => {
+          // Track analytics
+          trackProductAddedToCart({
+            product_id: product.id!,
+            product_name: product.title,
+            product_price: price,
+            product_category: product.categories?.[0]?.name,
+            currency: currency,
+            variant_id: selectedVariant.id,
+            variant_name: selectedVariant.title,
+            quantity: quantity,
+            cart_value: (price || 0) * quantity,
+          })
 
-      // Track product added to cart
-      const price = selectedVariant.calculated_price?.calculated_amount
-        ? Number(selectedVariant.calculated_price.calculated_amount) / 100
-        : undefined
-      const currency = selectedVariant.calculated_price?.currency_code || region.currency_code || 'EUR'
+          // Show success toast
+          showToast({
+            type: 'success',
+            message: 'Added to cart',
+            duration: 2000,
+          })
 
-      trackProductAddedToCart({
-        product_id: product.id!,
-        product_name: product.title,
-        product_price: price,
-        product_category: product.categories?.[0]?.name,
-        currency: currency,
-        variant_id: selectedVariant.id,
-        variant_name: selectedVariant.title,
-        quantity: quantity,
-        // Cart value will be updated after router.refresh(), track with product price for now
-        cart_value: (price || 0) * quantity,
-      })
-
-      // Refresh the router to update cart data
-      router.refresh()
-      // Open the cart drawer
-      openCart()
-    } catch (error) {
-      console.error('Failed to add to cart:', error)
-    } finally {
-      setIsAdding(false)
-    }
+          // Open cart drawer - no router.refresh() needed!
+          openCart()
+        },
+        onError: (error) => {
+          // Error toast shown automatically by mutation
+          console.error('Failed to add to cart:', error)
+          showToast({
+            type: 'error',
+            message: 'Failed to add to cart. Please try again.',
+            duration: 4000,
+          })
+        },
+      }
+    )
   }
+
+  // Get loading state from mutation
+  const isAdding = addToCartMutation.isPending
 
   return (
     <>

@@ -21,6 +21,17 @@ export const BACKEND_URL = process.env.BACKEND_PUBLIC_URL ?? process.env.RAILWAY
 export const ADMIN_UI_URL = process.env.ADMIN_UI_URL ?? process.env.FRONTEND_URL ?? 'http://localhost:9000'
 
 /**
+ * Public URL for the storefront
+ * This should point to where your storefront is hosted
+ */
+export const STOREFRONT_URL = process.env.STOREFRONT_URL ?? 'http://localhost:8000'
+
+/**
+ * Support email address for customer communications
+ */
+export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL ?? 'support@yourstore.com'
+
+/**
  * Database URL for Postgres instance used by the backend
  */
 export const DATABASE_URL = assertValue(

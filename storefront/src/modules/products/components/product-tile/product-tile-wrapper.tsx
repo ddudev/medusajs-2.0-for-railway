@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { HttpTypes } from '@medusajs/types'
 import ProductTile, { ProductTileSkeleton } from './index'
-import ProductTileContent from './product-tile-content'
+import ProductTileClientWrapper from './product-tile-client-wrapper'
 
 type ProductTileWrapperProps = {
   product: HttpTypes.StoreProduct
@@ -23,10 +23,10 @@ export default function ProductTileWrapper({
   priority = false,
   pricedProduct,
 }: ProductTileWrapperProps) {
-  // If pricedProduct is provided, use synchronous component (works in Client Components)
+  // If pricedProduct is provided, use client wrapper (prevents QueryClient SSR errors)
   if (pricedProduct) {
     return (
-      <ProductTileContent
+      <ProductTileClientWrapper
         product={product}
         pricedProduct={pricedProduct}
         countryCode={countryCode}

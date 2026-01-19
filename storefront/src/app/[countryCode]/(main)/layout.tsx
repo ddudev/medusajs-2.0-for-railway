@@ -4,7 +4,8 @@ import { Suspense } from "react"
 import Footer from "@modules/layout/templates/footer"
 import Nav from "@modules/layout/templates/nav"
 import { getBaseURL } from "@lib/util/env"
-import { CartProvider } from "@modules/cart/context/cart-context"
+import { QueryProvider } from "@lib/query/provider"
+import { ToastContainer } from "@modules/common/components/toast-container"
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
@@ -23,10 +24,11 @@ export default async function PageLayout(props: {
     : 'us' // Fallback to 'us' if countryCode is missing
 
   // Nav includes CartButton which accesses cookies - wrap in Suspense
-  // CartProvider is a client component that just manages state - no Suspense needed
+  // QueryProvider provides TanStack Query context for server state management
+  // Zustand UI store (cart drawer, toasts) is initialized automatically
   // Children are already wrapped in Suspense in root layout - don't double-wrap to avoid hydration errors
   return (
-    <CartProvider>
+    <QueryProvider>
       <Suspense fallback={
         <div className="sticky top-0 inset-x-0 z-50 h-20 bg-background-base animate-pulse" />
       }>
@@ -34,6 +36,7 @@ export default async function PageLayout(props: {
       </Suspense>
       {props.children}
       <Footer countryCode={countryCode} />
-    </CartProvider>
+      <ToastContainer />
+    </QueryProvider>
   )
 }

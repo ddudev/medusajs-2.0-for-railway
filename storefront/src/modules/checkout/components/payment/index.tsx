@@ -16,9 +16,11 @@ import { StripeContext } from "@modules/checkout/components/payment-wrapper"
 import { initiatePaymentSession } from "@lib/data/cart"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { useAnalytics } from "@lib/analytics/use-analytics"
+import { useCheckoutCart } from "@lib/context/checkout-cart-context"
+import { sdk } from "@lib/config"
 
 const Payment = ({
-  cart,
+  cart: initialCart,
   availablePaymentMethods,
 }: {
   cart: any
@@ -26,9 +28,15 @@ const Payment = ({
 }) => {
   const { t } = useTranslation()
   const { trackCheckoutPaymentMethodSelected, trackCheckoutStepCompleted } = useAnalytics()
-  const activeSession = cart.payment_collection?.payment_sessions?.find(
-    (paymentSession: any) => paymentSession.status === "pending"
-  )
+  const { cart: contextCart, updateCartData } = useCheckoutCart()
+  const cart = contextCart || initialCart
+  
+  // Memoize activeSession to prevent recalculation on every render
+  const activeSession = useMemo(() => {
+    return cart.payment_collection?.payment_sessions?.find(
+      (paymentSession: any) => paymentSession.status === "pending"
+    )
+  }, [cart.payment_collection?.payment_sessions])
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -78,9 +86,22 @@ const Payment = ({
           provider_id: selectedPaymentMethod,
         })
         
+        // Fetch updated cart to get the new payment session
+        const { cart: updatedCart } = await sdk.store.cart.retrieve(cart.id, {
+          fields: "+payment_collection.*,+payment_collection.payment_sessions.*"
+        })
+        
+        // Update context with payment_collection
+        // Smart update logic in context will prevent re-renders if data hasn't changed
+        if (updatedCart?.payment_collection) {
+          updateCartData({
+            payment_collection: updatedCart.payment_collection
+          })
+        }
+        
         // Track payment method selected
         const cartValue = cart.total ? Number(cart.total) / 100 : 0
-        const paymentMethodName = paymentInfoMap[selectedPaymentMethod]?.label || selectedPaymentMethod
+        const paymentMethodName = paymentInfoMap[selectedPaymentMethod]?.title || selectedPaymentMethod
         
         trackCheckoutPaymentMethodSelected({
           cart_value: cartValue,
@@ -105,8 +126,9 @@ const Payment = ({
 
     initiateSession()
     // Use cart.id and activeSession?.id instead of full objects to prevent infinite loops
+    // Note: updateCartData is stable (useCallback), no need to include in deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPaymentMethod, activeSession?.id, cart.id, isLoading])
+  }, [selectedPaymentMethod, activeSession?.id, cart.id])
 
   useEffect(() => {
     setError(null)
@@ -124,6 +146,7 @@ const Payment = ({
       <div>
           {!paidByGiftcard && availablePaymentMethods?.length && (
             <>
+              {/* @ts-expect-error - Headless UI RadioGroup type incompatibility with React 19 */}
               <RadioGroup
                 value={selectedPaymentMethod}
                 onChange={(value: string) => setSelectedPaymentMethod(value)}

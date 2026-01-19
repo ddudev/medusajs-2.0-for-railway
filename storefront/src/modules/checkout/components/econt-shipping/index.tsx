@@ -63,6 +63,7 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
   const [econtData, setEcontData] = useState<EcontData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const lastSavedDataRef = useRef<string | null>(null) // Track last saved data to prevent loops
+  const hasLocalSelectionsRef = useRef<boolean>(false) // Track if user has made selections
 
   // Update shipping type when shipping method changes
   useEffect(() => {
@@ -80,7 +81,14 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
   }, [shippingMethod])
 
   // Load existing Econt data from cart metadata
+  // IMPORTANT: Preserve local selections during cart updates (e.g., payment session init)
   useEffect(() => {
+    // If user has made local selections, don't override them with cart metadata
+    // This prevents race conditions when cart is updated before save completes
+    if (hasLocalSelectionsRef.current) {
+      return
+    }
+    
     if (cart.metadata?.econt) {
       const existing = cart.metadata.econt as EcontData
       // Use detected shipping type, but preserve existing if it matches
@@ -103,6 +111,8 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
         const dataKey = JSON.stringify(existing)
         lastSavedDataRef.current = dataKey
         setEcontData(existing)
+        // Mark that we have selections loaded from cart
+        hasLocalSelectionsRef.current = true
       } else {
         // Invalid or stale data - clear everything
         setSelectedCity(null)
@@ -110,7 +120,8 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
         setSelectedCityPostcode(null)
         setSelectedOffice(null)
         setEcontData(null)
-        lastSavedDataRef.current = null // Reset ref when clearing data
+        lastSavedDataRef.current = null
+        hasLocalSelectionsRef.current = false
         // Clear invalid metadata from cart
         if (cart.id) {
           saveEcontCartData(cart.id, {
@@ -128,7 +139,8 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
       setSelectedCityPostcode(null)
       setSelectedOffice(null)
       setEcontData(null)
-      lastSavedDataRef.current = null // Reset ref when clearing data
+      lastSavedDataRef.current = null
+      hasLocalSelectionsRef.current = false
     }
   }, [cart.metadata, cart.id, shippingMethod])
 
@@ -215,6 +227,9 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
       return
     }
     
+    // Mark that user has made local selections
+    hasLocalSelectionsRef.current = true
+    
     setSelectedCity(cityId)
     setSelectedCityName(cityName)
     setSelectedCityPostcode(postcode)
@@ -244,6 +259,9 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
   }
 
   const handleOfficeSelect = (officeCode: string) => {
+    // Mark that user has made local selections
+    hasLocalSelectionsRef.current = true
+    
     setSelectedOffice(officeCode)
     setEcontData({
       ...econtData,
@@ -258,6 +276,9 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
     if (!selectedCity || !selectedCityName || !selectedCityPostcode) {
       return // Don't update if city is not selected
     }
+
+    // Mark that user has made local selections
+    hasLocalSelectionsRef.current = true
 
     setEcontData((prev) => {
       const newData = {
@@ -327,7 +348,6 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
 
       {shouldShowOfficeSelector && (
         <OfficeSelector
-          key={`office-${selectedCity}`} // Force re-render when city changes
           cityId={selectedCity}
           onOfficeSelect={handleOfficeSelect}
           selectedOfficeCode={selectedOffice}

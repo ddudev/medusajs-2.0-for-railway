@@ -65,6 +65,8 @@
     "@medusajs/client-types": "preview",
     "@medusajs/ui-preset": "preview",
     "@playwright/test": "^1.41.1",
+    "@tanstack/react-query": "^5.90.19",
+    "@tanstack/react-query-devtools": "^5.91.2",
     "@types/lodash": "^4.14.195",
     "@types/node": "^24.10.1",
     "@types/pg": "^8.11.0",
@@ -79,6 +81,7 @@
     "postcss": "^8.4.8",
     "prettier": "^2.8.8",
     "tailwindcss": "^3.0.23",
-    "typescript": "^5.3.2"
+    "typescript": "^5.3.2",
+    "zustand": "^5.0.10"
   }
 }

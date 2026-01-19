@@ -345,3 +345,75 @@ export async function fetchCustomerClient(): Promise<HttpTypes.StoreCustomer | n
     return null
   }
 }
+
+/**
+ * Request password reset - sends an email with reset link
+ * @param _currentState - Previous form state (for useActionState)
+ * @param formData - Form data containing email
+ * @returns Error message or null on success
+ */
+export async function requestPasswordReset(_currentState: unknown, formData: FormData) {
+  const email = formData.get("email") as string
+
+  if (!email) {
+    return "Email is required"
+  }
+
+  try {
+    // MedusaJS 2.0 auth module endpoint for password reset
+    await sdk.client.fetch('/auth/customer/emailpass/reset-password', {
+      method: "POST",
+      body: {
+        identifier: email,
+      },
+    })
+
+    // Always return success to prevent email enumeration
+    return null
+  } catch (error: any) {
+    console.error("Password reset request error:", error)
+    // Don't reveal if email exists or not for security
+    return null
+  }
+}
+
+/**
+ * Reset password using token from email
+ * @param _currentState - Previous form state (for useActionState)
+ * @param formData - Form data containing token and new password
+ * @returns Error message or null on success
+ */
+export async function resetPassword(_currentState: unknown, formData: FormData) {
+  const token = formData.get("token") as string
+  const password = formData.get("password") as string
+  const confirmPassword = formData.get("confirmPassword") as string
+
+  if (!token) {
+    return "Reset token is required"
+  }
+
+  if (!password || password.length < 8) {
+    return "Password must be at least 8 characters"
+  }
+
+  if (password !== confirmPassword) {
+    return "Passwords do not match"
+  }
+
+  try {
+    // MedusaJS 2.0 auth module endpoint for password reset confirmation
+    await sdk.client.fetch('/auth/customer/emailpass/update', {
+      method: "POST",
+      body: {
+        token,
+        password,
+      },
+    })
+
+    // Password reset successful
+    return null
+  } catch (error: any) {
+    console.error("Password reset error:", error)
+    return error?.message || "Invalid or expired reset token. Please request a new one."
+  }
+}
