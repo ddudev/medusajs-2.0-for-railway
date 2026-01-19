@@ -10,10 +10,10 @@ import ErrorMessage from "../error-message"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { useAnalytics } from "@lib/analytics/use-analytics"
 import { useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useCheckoutCart } from "@lib/context/checkout-cart-context"
 
 const Contact = ({
-  cart,
+  cart: initialCart,
   customer,
 }: {
   cart: HttpTypes.StoreCart | null
@@ -21,7 +21,8 @@ const Contact = ({
 }) => {
   const { t } = useTranslation()
   const { trackCheckoutStepCompleted, trackCheckoutContactCompleted } = useAnalytics()
-  const router = useRouter()
+  const { cart, updateCartData } = useCheckoutCart()
+  
   // Initialize with empty strings to prevent uncontrolled to controlled warning
   const [formData, setFormData] = useState<Record<string, any>>({
     email: "",
@@ -29,9 +30,10 @@ const Contact = ({
     last_name: "",
     phone: "",
   })
-  const [isSaving, setIsSaving] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
   const hasTrackedContactRef = useRef(false)
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const pendingChangesRef = useRef<Record<string, string>>({})
 
   useEffect(() => {
     // Pre-fill from cart if available
@@ -56,55 +58,79 @@ const Contact = ({
   }, [cart, customer])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     })
+    
+    // Store pending changes
+    pendingChangesRef.current[name] = value
+    
     // Clear error when user starts typing
     if (error) setError(null)
   }
 
-  const handleBlur = async (fieldName: string, value: string) => {
-    // Don't save if value is empty or hasn't changed
-    if (!value || value === (cart?.email || cart?.shipping_address?.[fieldName as keyof typeof cart.shipping_address] || "")) {
+  const savePendingChanges = async () => {
+    const changes = pendingChangesRef.current
+    if (Object.keys(changes).length === 0) return
+
+    // Get current cart values to compare
+    const currentValues: Record<string, string> = {
+      email: cart?.email || "",
+      first_name: cart?.shipping_address?.first_name || "",
+      last_name: cart?.shipping_address?.last_name || "",
+      phone: cart?.shipping_address?.phone || "",
+    }
+
+    // Only save fields that have actually changed and are not empty
+    const dataToSave: {
+      email?: string
+      first_name?: string
+      last_name?: string
+      phone?: string
+    } = {}
+
+    let hasChanges = false
+
+    for (const [fieldName, value] of Object.entries(changes)) {
+      if (value && value !== currentValues[fieldName]) {
+        dataToSave[fieldName as keyof typeof dataToSave] = value
+        hasChanges = true
+      }
+    }
+
+    if (!hasChanges) {
+      pendingChangesRef.current = {}
       return
     }
 
-    setIsSaving((prev) => ({ ...prev, [fieldName]: true }))
     setError(null)
 
     try {
-      const data: {
-        email?: string
-        first_name?: string
-        last_name?: string
-        phone?: string
-      } = {}
-
-      if (fieldName === "email") {
-        data.email = value
-      } else {
-        data[fieldName as keyof typeof data] = value
-      }
-
-      await updateContactInfo(data)
+      // Save to backend and get updated cart
+      const updatedCart = await updateContactInfo(dataToSave)
       
-      // Refresh the page to update cart data in Server Components
-      // This ensures the cart.email is available to PaymentButton component
-      router.refresh()
+      // Update local cart state immediately (no refresh needed!)
+      updateCartData(updatedCart)
+      
+      // Clear pending changes after successful save
+      pendingChangesRef.current = {}
+      
+      // Check if all required fields are now filled for payment
+      const finalEmail = dataToSave.email || formData.email || cart?.email
+      const finalPhone = dataToSave.phone || formData.phone || cart?.shipping_address?.phone
       
       // Track contact completed when email and phone are both filled
       if (cart && !hasTrackedContactRef.current) {
-        const hasEmail = fieldName === "email" ? !!value : !!formData.email || !!cart.email
-        const hasPhone = fieldName === "phone" ? !!value : !!formData.phone || !!cart.shipping_address?.phone
-        
-        if (hasEmail && hasPhone) {
+        if (finalEmail && finalPhone) {
           trackCheckoutContactCompleted({
             cart_value: cart.total ? Number(cart.total) / 100 : 0,
             item_count: cart.items?.length || 0,
             currency: cart.currency_code || 'EUR',
-            has_email: hasEmail,
-            has_phone: hasPhone,
+            has_email: !!finalEmail,
+            has_phone: !!finalPhone,
             country_code: cart.shipping_address?.country_code || cart.region?.countries?.[0]?.iso_2 || '',
           })
           
@@ -120,9 +146,26 @@ const Contact = ({
       }
     } catch (err: any) {
       setError(err.message || "Failed to save contact information")
-    } finally {
-      setIsSaving((prev) => ({ ...prev, [fieldName]: false }))
     }
+  }
+
+  const handleBlur = async (fieldName: string, value: string) => {
+    // Clear any existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+
+    // Don't save if value is empty
+    if (!value) {
+      delete pendingChangesRef.current[fieldName]
+      return
+    }
+
+    // Debounce the save to allow multiple fields to be filled quickly (e.g., autofill)
+    // Wait 500ms after the last blur event before saving
+    saveTimeoutRef.current = setTimeout(() => {
+      savePendingChanges()
+    }, 500)
   }
 
   return (
@@ -176,14 +219,7 @@ const Contact = ({
           data-testid="contact-phone-input"
         />
       </div>
-      {(Object.values(isSaving).some((saving) => saving) || error) && (
-        <div className="mt-4">
-          {Object.values(isSaving).some((saving) => saving) && (
-            <p className="text-small-regular text-ui-fg-subtle">{t("checkout.saving")}</p>
-          )}
-          <ErrorMessage error={error} data-testid="contact-error-message" />
-        </div>
-      )}
+      <ErrorMessage error={error} data-testid="contact-error-message" />
       <Divider className="mt-8" />
     </div>
   )

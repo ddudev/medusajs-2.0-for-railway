@@ -10,6 +10,7 @@ import SuspenseLoading from "@modules/common/components/suspense-loading"
 import { enrichLineItems, retrieveCart } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import { getCustomer } from "@lib/data/customer"
+import { CheckoutCartProvider } from "@lib/context/checkout-cart-context"
 
 // Lazy load checkout summary (heavy component)
 const CheckoutSummary = dynamicImport(
@@ -52,17 +53,19 @@ async function CheckoutContent() {
   const customer = await getCustomer()
 
   return (
-    <div className="content-container py-12">
-      <CheckoutTracker cart={cart} />
-      <div className="max-w-6xl mx-auto grid grid-cols-1 small:grid-cols-2 gap-x-8 small:gap-x-12">
-      <Wrapper cart={cart}>
-        <CheckoutForm cart={cart} customer={customer} />
-      </Wrapper>
-      <Suspense fallback={<SuspenseLoading />}>
-        <CheckoutSummary cart={cart} />
-      </Suspense>
+    <CheckoutCartProvider initialCart={cart}>
+      <div className="content-container py-12">
+        <CheckoutTracker cart={cart} />
+        <div className="max-w-6xl mx-auto grid grid-cols-1 small:grid-cols-2 gap-x-8 small:gap-x-12">
+        <Wrapper cart={cart}>
+          <CheckoutForm cart={cart} customer={customer} />
+        </Wrapper>
+        <Suspense fallback={<SuspenseLoading />}>
+          <CheckoutSummary cart={cart} />
+        </Suspense>
+        </div>
       </div>
-    </div>
+    </CheckoutCartProvider>
   )
 }
 

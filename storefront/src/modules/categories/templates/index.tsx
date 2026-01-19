@@ -7,7 +7,6 @@ import RefinementList from "@modules/store/components/refinement-list"
 import SortDropdown, { SortOptions } from "@modules/store/components/sort-dropdown"
 import ActiveFilters from "@modules/store/components/active-filters"
 import ProductCount from "@modules/store/components/product-count"
-import FilterButton from "@modules/store/components/filter-button"
 import PaginatedProducts from "@modules/store/templates/paginated-products"
 import StoreTemplateClient from "@modules/store/templates/store-template-client"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
@@ -50,10 +49,8 @@ async function PaginatedProductsWrapper({
           totalCount={result.totalCount}
           totalPages={result.totalPages}
         />
-        {/* Sort Dropdown - Desktop only (mobile shown in header) */}
-        <div className="hidden md:flex">
-          <SortDropdown />
-        </div>
+        {/* Sort Dropdown - Visible on all screen sizes (stays in content area) */}
+        <SortDropdown />
       </div>
       
       {/* Active Filters */}
@@ -145,12 +142,6 @@ export default async function CategoryTemplate({
               <h1 className="text-2xl md:text-3xl font-bold text-text-primary mb-4" data-testid="category-page-title">
                 {category.name}
               </h1>
-              
-              {/* Mobile: Filter and Sort buttons */}
-              <div className="flex items-center gap-4 md:hidden mb-4">
-                <FilterButton />
-                <SortDropdown />
-              </div>
             </div>
         
             {/* Products with Results Count, Pagination, and Sort - matches design */}

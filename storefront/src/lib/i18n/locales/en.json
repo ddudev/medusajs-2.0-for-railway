@@ -47,6 +47,16 @@
     "remove": "Remove",
     "product": "Product",
     "price": "Price",
+    "item": "Item",
+    "summary": "Summary",
+    "goToCheckout": "Go to checkout",
+    "each": "each",
+    "totalPrice": "Total",
+    "signIn": {
+      "title": "Already have an account?",
+      "description": "Sign in for a better experience.",
+      "button": "Sign in"
+    },
     "freeShipping": {
       "title": "Free Shipping",
       "progress": "Add {amount} more for free shipping",
@@ -81,6 +91,7 @@
     "title": "Filters",
     "apply": "Apply",
     "filter": "Filter",
+    "openFilters": "Open filters",
     "sortBy": "Sort by",
     "results": "results",
     "showing": "Showing",

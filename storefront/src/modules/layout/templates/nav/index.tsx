@@ -2,9 +2,13 @@ import { Suspense, cache } from "react"
 
 import TopHeader from "@modules/layout/components/top-promo-bar"
 import MainHeader from "@modules/layout/components/main-header"
+import HeaderFilterDropdown from "@modules/layout/components/header-filter-dropdown"
 import CartButton from "@modules/layout/components/cart-button"
 import { enrichLineItems, retrieveCart } from "@lib/data/cart"
 import { getCategoriesList } from "@lib/data/categories"
+import { getCollectionsList } from "@lib/data/collections"
+import { getActiveBrands } from "@lib/data/brands"
+import { getMaxProductPrice } from "@lib/data/products"
 
 // Cache the cart fetch to prevent duplicate calls within the same request
 const fetchCart = cache(async () => {
@@ -32,6 +36,13 @@ export default async function Nav({ countryCode }: { countryCode: string }) {
   // Fetch cart in Server Component to avoid "Server Functions cannot be called during initial render" error
   const cart = await fetchCart()
   const { product_categories } = await getCategoriesList(0, 100)
+  
+  // Fetch filter data for header filter dropdown (only used on PLP pages)
+  const [{ collections }, brands, maxPrice] = await Promise.all([
+    getCollectionsList(0, 100),
+    getActiveBrands(),
+    getMaxProductPrice({ countryCode }),
+  ])
 
   return (
     <div className="sticky top-0 inset-x-0 z-50 group">
@@ -40,6 +51,14 @@ export default async function Nav({ countryCode }: { countryCode: string }) {
 
       {/* Main Header - Black bar with orange All Products button and category links */}
       <MainHeader countryCode={countryCode} categories={product_categories} />
+      
+      {/* Mobile Filter Dropdown - Attached to header, only shows on PLP pages */}
+      <HeaderFilterDropdown
+        collections={collections}
+        categories={product_categories}
+        brands={brands}
+        maxPrice={maxPrice}
+      />
     </div>
   )
 }

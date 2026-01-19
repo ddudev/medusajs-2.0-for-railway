@@ -1,22 +1,26 @@
+"use client"
+
 import { Heading, Text } from "@medusajs/ui"
+import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
 import InteractiveLink from "@modules/common/components/interactive-link"
 
 const EmptyCartMessage = () => {
+  const { t } = useTranslation()
+
   return (
-    <div className="py-48 px-2 flex flex-col justify-center items-start" data-testid="empty-cart-message">
+    <div className="py-16 md:py-24 px-4 flex flex-col justify-center items-center text-center" data-testid="empty-cart-message">
       <Heading
         level="h1"
-        className="flex flex-row text-3xl-regular gap-x-2 items-baseline"
+        className="text-2xl md:text-3xl font-bold text-gray-900 mb-4"
       >
-        Cart
+        {t("cart.empty")}
       </Heading>
-      <Text className="text-base-regular mt-4 mb-6 max-w-[32rem]">
-        You don&apos;t have anything in your cart. Let&apos;s change that, use
-        the link below to start browsing our products.
+      <Text className="text-base text-gray-600 mb-8 max-w-md">
+        {t("cart.emptyDescription")}
       </Text>
       <div>
-        <InteractiveLink href="/store">Explore products</InteractiveLink>
+        <InteractiveLink href="/store">{t("cart.exploreProducts")}</InteractiveLink>
       </div>
     </div>
   )

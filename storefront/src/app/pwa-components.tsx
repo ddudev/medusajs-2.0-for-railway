@@ -12,11 +12,6 @@ export function PWAComponents() {
     registerServiceWorker({
       onUpdate: (registration) => {
         console.log('[PWA] Service worker update available')
-        // Optionally show update notification to user
-        if (window.confirm('New version available. Reload to update?')) {
-          registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
-          window.location.reload()
-        }
       },
       onSuccess: () => {
         console.log('[PWA] Service worker registered successfully')

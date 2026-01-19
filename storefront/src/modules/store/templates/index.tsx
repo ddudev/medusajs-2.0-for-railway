@@ -5,7 +5,6 @@ import RefinementList from "@modules/store/components/refinement-list"
 import SortDropdown, { SortOptions } from "@modules/store/components/sort-dropdown"
 import ActiveFilters from "@modules/store/components/active-filters"
 import ProductCount from "@modules/store/components/product-count"
-import FilterButton from "@modules/store/components/filter-button"
 import MobileFilterDrawer from "@modules/store/components/refinement-list/mobile-filter-drawer"
 import { getCollectionsList } from "@lib/data/collections"
 import { getCategoriesList } from "@lib/data/categories"
@@ -59,10 +58,8 @@ async function PaginatedProductsWrapper({
           totalCount={result.totalCount}
           totalPages={result.totalPages || 1}
         />
-        {/* Sort Dropdown - Desktop only (mobile shown in header) */}
-        <div className="hidden md:flex">
-          <SortDropdown />
-        </div>
+        {/* Sort Dropdown - Visible on all screen sizes (stays in content area) */}
+        <SortDropdown />
       </div>
 
       {/* Active Filters */}
@@ -158,13 +155,6 @@ const StoreTemplate = async ({
               <h1 className="text-2xl md:text-3xl font-bold text-text-primary mb-6" data-testid="store-page-title">
                 {getTranslation(translations, "common.allProducts")}
               </h1>
-
-              {/* Mobile/Tablet: Filter and Sort buttons in a dark bar */}
-              <div className="flex items-center gap-4 lg:hidden mb-8 bg-[#111111] p-2 rounded-xl">
-                <FilterButton />
-                <div className="h-8 w-px bg-white/10" />
-                <SortDropdown />
-              </div>
             </div>
 
             <Suspense

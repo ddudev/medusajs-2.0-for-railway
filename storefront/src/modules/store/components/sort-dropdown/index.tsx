@@ -58,23 +58,28 @@ const SortDropdown = ({
   }
 
   return (
-    <div className="flex items-center gap-2" data-testid={dataTestId}>
-      <span className="text-sm font-medium text-text-tertiary">{t("filters.sortBy")}:</span>
+    <div className="flex items-center gap-1" data-testid={dataTestId}>
+      <span className="text-sm font-normal text-gray-600">{t("filters.sortBy")}:</span>
       <FormControl
         size="small"
         sx={{
-          minWidth: 150,
+          minWidth: 120,
           '& .MuiOutlinedInput-root': {
             borderRadius: '8px',
-            color: 'white',
-            fontWeight: 600,
+            color: '#1f2937',
+            fontWeight: 500,
             fontSize: '0.875rem',
+            backgroundColor: 'white',
+            border: '1px solid #e5e7eb',
             '& fieldset': { border: 'none' },
             '&:hover fieldset': { border: 'none' },
             '&.Mui-focused fieldset': { border: 'none' },
+            '&:hover': {
+              backgroundColor: '#f9fafb',
+            },
           },
           '& .MuiSelect-icon': {
-            color: 'white',
+            color: '#6b7280',
           }
         }}
       >
@@ -85,19 +90,27 @@ const SortDropdown = ({
           IconComponent={KeyboardArrowDown}
           sx={{
             '& .MuiSelect-select': {
-              padding: '4px 32px 4px 0px',
+              padding: '6px 32px 6px 12px',
             },
           }}
           MenuProps={{
             PaperProps: {
               sx: {
-                bgcolor: '#1a1a1a',
-                color: 'white',
+                bgcolor: 'white',
+                color: '#1f2937',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                borderRadius: '8px',
+                '& .MuiMenuItem-root': {
+                  fontSize: '0.875rem',
+                },
                 '& .MuiMenuItem-root:hover': {
-                  bgcolor: 'rgba(255,255,255,0.1)',
+                  bgcolor: '#f3f4f6',
                 },
                 '& .Mui-selected': {
-                  bgcolor: 'rgba(255,255,255,0.2) !important',
+                  bgcolor: '#e5e7eb !important',
+                  '&:hover': {
+                    bgcolor: '#d1d5db !important',
+                  },
                 },
               },
             },

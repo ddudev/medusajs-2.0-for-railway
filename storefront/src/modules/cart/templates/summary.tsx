@@ -1,6 +1,7 @@
 "use client"
 
 import { Button, Heading } from "@medusajs/ui"
+import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
 import CartTotals from "@modules/common/components/cart-totals"
 import Divider from "@modules/common/components/divider"
@@ -25,21 +26,24 @@ function getCheckoutStep(cart: HttpTypes.StoreCart) {
 }
 
 const Summary = ({ cart }: SummaryProps) => {
+  const { t } = useTranslation()
   const step = getCheckoutStep(cart)
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <Heading level="h2" className="text-[2rem] leading-[2.75rem]">
-        Summary
+    <div className="flex flex-col gap-y-6">
+      <Heading level="h2" className="text-xl md:text-2xl font-bold text-gray-900 pb-4 border-b border-gray-100">
+        {t("cart.summary")}
       </Heading>
       <DiscountCode cart={cart} />
-      <Divider />
+      <Divider className="my-2" />
       <CartTotals totals={cart} />
       <LocalizedClientLink
         href={"/checkout?step=" + step}
         data-testid="checkout-button"
       >
-        <Button className="w-full h-10">Go to checkout</Button>
+        <Button className="w-full h-12 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-colors">
+          {t("cart.goToCheckout")}
+        </Button>
       </LocalizedClientLink>
     </div>
   )

@@ -403,7 +403,7 @@ export async function updateContactInfo(data: {
   first_name?: string
   last_name?: string
   phone?: string
-}) {
+}): Promise<HttpTypes.StoreCart> {
   try {
     const cartId = await getCartId()
     if (!cartId) {
@@ -451,7 +451,15 @@ export async function updateContactInfo(data: {
     updateData.shipping_address = shippingAddress
     updateData.billing_address = shippingAddress
 
-    await updateCart(updateData)
+    const updatedCart = await updateCart(updateData)
+    
+    // Return the updated cart with the changes applied locally
+    return {
+      ...cart,
+      email: updateData.email ?? cart.email,
+      shipping_address: shippingAddress as HttpTypes.StoreCartAddress,
+      billing_address: shippingAddress as HttpTypes.StoreCartAddress,
+    } as HttpTypes.StoreCart
   } catch (e: any) {
     throw new Error(e.message || "Failed to update contact information")
   }
