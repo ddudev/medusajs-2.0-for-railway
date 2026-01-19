@@ -133,6 +133,12 @@ devDependencies:
   '@playwright/test':
     specifier: ^1.41.1
     version: 1.57.0
+  '@tanstack/react-query':
+    specifier: ^5.90.19
+    version: 5.90.19(react@19.2.1)
+  '@tanstack/react-query-devtools':
+    specifier: ^5.91.2
+    version: 5.91.2(@tanstack/react-query@5.90.19)(react@19.2.1)
   '@types/lodash':
     specifier: ^4.14.195
     version: 4.17.21
@@ -178,6 +184,9 @@ devDependencies:
   typescript:
     specifier: ^5.3.2
     version: 5.9.3
+  zustand:
+    specifier: ^5.0.10
+    version: 5.0.10(@types/react@19.2.7)(react@19.2.1)
 
 packages:
 
@@ -4224,6 +4233,34 @@ packages:
       tailwindcss: 3.4.18
     dev: true
 
+  /@tanstack/query-core@5.90.19:
+    resolution: {integrity: sha512-GLW5sjPVIvH491VV1ufddnfldyVB+teCnpPIvweEfkpRx7CfUmUGhoh9cdcUKBh/KwVxk22aNEDxeTsvmyB/WA==}
+    dev: true
+
+  /@tanstack/query-devtools@5.92.0:
+    resolution: {integrity: sha512-N8D27KH1vEpVacvZgJL27xC6yPFUy0Zkezn5gnB3L3gRCxlDeSuiya7fKge8Y91uMTnC8aSxBQhcK6ocY7alpQ==}
+    dev: true
+
+  /@tanstack/react-query-devtools@5.91.2(@tanstack/react-query@5.90.19)(react@19.2.1):
+    resolution: {integrity: sha512-ZJ1503ay5fFeEYFUdo7LMNFzZryi6B0Cacrgr2h1JRkvikK1khgIq6Nq2EcblqEdIlgB/r7XDW8f8DQ89RuUgg==}
+    peerDependencies:
+      '@tanstack/react-query': ^5.90.14
+      react: ^18 || ^19
+    dependencies:
+      '@tanstack/query-devtools': 5.92.0
+      '@tanstack/react-query': 5.90.19(react@19.2.1)
+      react: 19.2.1
+    dev: true
+
+  /@tanstack/react-query@5.90.19(react@19.2.1):
+    resolution: {integrity: sha512-qTZRZ4QyTzQc+M0IzrbKHxSeISUmRB3RPGmao5bT+sI6ayxSRhn0FXEnT5Hg3as8SBFcRosrXXRFB+yAcxVxJQ==}
+    peerDependencies:
+      react: ^18 || ^19
+    dependencies:
+      '@tanstack/query-core': 5.90.19
+      react: 19.2.1
+    dev: true
+
   /@tanstack/react-table@8.20.5(react-dom@19.2.1)(react@19.2.1):
     resolution: {integrity: sha512-WEHopKw3znbUZ61s9i0+i9g8drmDo6asTWbrQh8Us63DAk/M0FkmIqERew6P71HI75ksZ2Pxyuf4vvKh9rAkiA==}
     engines: {node: '>=12'}
@@ -7765,7 +7802,6 @@ packages:
   /react@19.2.1:
     resolution: {integrity: sha512-DGrYcCWK7tvYMnWh79yrPHt+vdx9tY+1gPZa7nJQtO/p8bLTDaHp4dzwEhQB7pZ4Xe3ok4XKuEPrVuc+wlpkmw==}
     engines: {node: '>=0.10.0'}
-    dev: false
 
   /read-cache@1.0.0:
     resolution: {integrity: sha512-Owdv/Ft7IjOgm/i0xvNDZ1LrRANRfew4b2prF3OWMQLxLfu3bS8FVhCsrSCMK4lR56Y9ya+AThoTpDCTxCmpRA==}
@@ -8737,4 +8773,26 @@ packages:
 
   /zod@4.1.13:
     resolution: {integrity: sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==}
+    dev: true
+
+  /zustand@5.0.10(@types/react@19.2.7)(react@19.2.1):
+    resolution: {integrity: sha512-U1AiltS1O9hSy3rul+Ub82ut2fqIAefiSuwECWt6jlMVUGejvf+5omLcRBSzqbRagSM3hQZbtzdeRc6QVScXTg==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
+    dependencies:
+      '@types/react': 19.2.7
+      react: 19.2.1
     dev: true
