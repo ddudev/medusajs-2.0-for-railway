@@ -12,6 +12,13 @@ import {
   RESEND_FROM_EMAIL,
   SENDGRID_API_KEY,
   SENDGRID_FROM_EMAIL,
+  SMTP_HOST,
+  SMTP_PORT,
+  SMTP_SECURE,
+  SMTP_USER,
+  SMTP_PASSWORD,
+  SMTP_FROM,
+  SMTP_FROM_NAME,
   SHOULD_DISABLE_ADMIN,
   STORE_CORS,
   STRIPE_API_KEY,
@@ -100,27 +107,23 @@ const medusaConfig = {
         }
       }
     }] : []),
-    ...(SENDGRID_API_KEY && SENDGRID_FROM_EMAIL || RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
+    ...(SENDGRID_API_KEY && SENDGRID_FROM_EMAIL || RESEND_API_KEY && RESEND_FROM_EMAIL || (SMTP_HOST && SMTP_USER && SMTP_PASSWORD && SMTP_FROM) ? [{
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
       options: {
         providers: [
-          ...(SENDGRID_API_KEY && SENDGRID_FROM_EMAIL ? [{
+          ...(SMTP_HOST && SMTP_USER && SMTP_PASSWORD && SMTP_FROM ? [{
             resolve: './src/modules/email-notifications',
-            id: 'sendgrid',
+            id: 'smtp',
             options: {
               channels: ['email'],
-              api_key: SENDGRID_API_KEY,
-              from: SENDGRID_FROM_EMAIL,
-            }
-          }] : []),
-          ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/email-notifications',
-            id: 'resend',
-            options: {
-              channels: ['email'],
-              api_key: RESEND_API_KEY,
-              from: RESEND_FROM_EMAIL,
+              host: SMTP_HOST,
+              port: SMTP_PORT || 587,
+              secure: SMTP_SECURE,
+              user: SMTP_USER,
+              password: SMTP_PASSWORD,
+              from: SMTP_FROM,
+              fromName: SMTP_FROM_NAME,
             },
           }] : []),
         ]

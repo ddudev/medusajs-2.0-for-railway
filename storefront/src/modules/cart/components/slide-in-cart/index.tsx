@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment } from "react"
+import { Fragment, useEffect } from "react"
 import { Dialog, Transition } from "@headlessui/react"
 import { XMark } from "@medusajs/icons"
 import { useCartDrawer } from "@lib/store/ui-store"
@@ -13,7 +13,6 @@ import FreeShippingProgressWrapper from "../free-shipping-progress/free-shipping
 import { convertToLocale } from "@lib/util/money"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { useAnalytics } from "@lib/analytics/use-analytics"
-import { useEffect } from "react"
 
 type SlideInCartProps = {
   cart: HttpTypes.StoreCart | null

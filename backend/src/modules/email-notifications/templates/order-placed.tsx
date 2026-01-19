@@ -2,6 +2,7 @@ import { Text, Section, Hr, Heading, Img, Column, Row } from '@react-email/compo
 import * as React from 'react'
 import { Base } from './base'
 import { OrderDTO, OrderAddressDTO } from '@medusajs/framework/types'
+import { t, getEmailLocale, type Locale } from '../utils/translations'
 
 export const ORDER_PLACED = 'order-placed'
 
@@ -33,11 +34,16 @@ export interface OrderPlacedTemplateProps {
     officeAddress: string
     city: string
   }
+  locale?: Locale
+  countryCode?: string
   preview?: string
 }
 
 export const isOrderPlacedTemplateData = (data: any): data is OrderPlacedTemplateProps =>
-  typeof data.order === 'object' && typeof data.shippingAddress === 'object'
+  typeof data.order === 'object' && 
+  typeof data.shippingAddress === 'object' &&
+  (typeof data.locale === 'string' || !data.locale) &&
+  (typeof data.countryCode === 'string' || !data.countryCode)
 
 // Helper function to format currency
 const formatCurrency = (amount: number, currencyCode: string): string => {
@@ -70,9 +76,48 @@ const formatCurrency = (amount: number, currencyCode: string): string => {
 
 export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
   PreviewProps: OrderPlacedPreviewProps
-} = ({ order, shippingAddress, econtOfficeInfo, preview = 'Your order has been placed!' }) => {
+} = ({ order, shippingAddress, econtOfficeInfo, locale, countryCode, preview }) => {
+  // Determine locale
+  const emailLocale = locale || getEmailLocale(countryCode || shippingAddress.country_code)
+  
+  // Get translations
+  const translations = {
+    title: t(emailLocale, 'orderConfirmation.title'),
+    subtitle: t(emailLocale, 'orderConfirmation.subtitle'),
+    greeting: t(emailLocale, 'orderConfirmation.greeting', {
+      customerName: `${shippingAddress.first_name} ${shippingAddress.last_name}`
+    }),
+    orderSummary: t(emailLocale, 'orderConfirmation.orderSummary'),
+    orderNumber: t(emailLocale, 'orderConfirmation.orderNumber'),
+    orderDate: t(emailLocale, 'orderConfirmation.orderDate'),
+    orderTotal: t(emailLocale, 'orderConfirmation.orderTotal'),
+    orderItems: t(emailLocale, 'orderConfirmation.orderItems'),
+    quantity: t(emailLocale, 'orderConfirmation.quantity'),
+    shippingInfo: t(emailLocale, 'orderConfirmation.shippingInfo'),
+    pickupOffice: t(emailLocale, 'orderConfirmation.pickupOffice'),
+    office: t(emailLocale, 'orderConfirmation.office'),
+    address: t(emailLocale, 'orderConfirmation.address'),
+    city: t(emailLocale, 'orderConfirmation.city'),
+    deliveryAddress: t(emailLocale, 'orderConfirmation.deliveryAddress'),
+    phone: t(emailLocale, 'orderConfirmation.phone'),
+    help: t(emailLocale, 'orderConfirmation.help'),
+    helpText: t(emailLocale, 'orderConfirmation.helpText'),
+  }
+  
+  const previewText = preview || translations.title
+  
+  // Format date based on locale
+  const orderDate = new Date(order.created_at).toLocaleDateString(
+    emailLocale === 'bg' ? 'bg-BG' : 'en-US',
+    { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }
+  )
+
   return (
-    <Base preview={preview}>
+    <Base preview={previewText} locale={emailLocale} countryCode={countryCode || shippingAddress.country_code}>
       <Section>
         {/* Success Banner */}
         <Section style={{
@@ -89,7 +134,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
             textAlign: 'center',
             margin: '0 0 8px'
           }}>
-            ✓ Order Confirmed!
+            ✓ {translations.title}
           </Heading>
           <Text style={{ 
             color: '#065F46', 
@@ -97,7 +142,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
             margin: '0',
             fontSize: '14px'
           }}>
-            Thank you for your order. We'll send you a shipping confirmation email as soon as your order ships.
+            {translations.subtitle}
           </Text>
         </Section>
 
@@ -106,7 +151,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
           fontSize: '16px',
           margin: '0 0 24px'
         }}>
-          Hi {shippingAddress.first_name} {shippingAddress.last_name},
+          {translations.greeting}
         </Text>
 
         {/* Order Summary Card */}
@@ -122,29 +167,25 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
             fontWeight: 'bold', 
             margin: '0 0 16px'
           }}>
-            Order Summary
+            {translations.orderSummary}
           </Heading>
           
           <table style={{ width: '100%' }}>
             <tbody>
               <tr>
-                <td style={{ padding: '8px 0', color: '#6B7280', fontSize: '14px' }}>Order Number:</td>
+                <td style={{ padding: '8px 0', color: '#6B7280', fontSize: '14px' }}>{translations.orderNumber}</td>
                 <td style={{ padding: '8px 0', color: '#1F2937', fontSize: '14px', fontWeight: '600', textAlign: 'right' }}>
                   #{order.display_id}
                 </td>
               </tr>
               <tr>
-                <td style={{ padding: '8px 0', color: '#6B7280', fontSize: '14px' }}>Order Date:</td>
+                <td style={{ padding: '8px 0', color: '#6B7280', fontSize: '14px' }}>{translations.orderDate}</td>
                 <td style={{ padding: '8px 0', color: '#1F2937', fontSize: '14px', textAlign: 'right' }}>
-                  {new Date(order.created_at).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
+                  {orderDate}
                 </td>
               </tr>
               <tr>
-                <td style={{ padding: '8px 0', color: '#6B7280', fontSize: '14px' }}>Order Total:</td>
+                <td style={{ padding: '8px 0', color: '#6B7280', fontSize: '14px' }}>{translations.orderTotal}</td>
                 <td style={{ padding: '8px 0', color: '#FF6B35', fontSize: '18px', fontWeight: 'bold', textAlign: 'right' }}>
                   {formatCurrency(order.summary.raw_current_order_total.value, order.currency_code)}
                 </td>
@@ -166,7 +207,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
           fontWeight: 'bold', 
           margin: '0 0 16px'
         }}>
-          Order Items
+          {translations.orderItems}
         </Heading>
 
         {order.items.map((item) => (
@@ -200,7 +241,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
                       fontSize: '14px',
                       margin: '0'
                     }}>
-                      Qty: {item.quantity}
+                      {translations.quantity} {item.quantity}
                     </Text>
                   </td>
                   <td style={{ width: '15%', textAlign: 'right', verticalAlign: 'top' }}>
@@ -232,7 +273,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
           fontWeight: 'bold', 
           margin: '0 0 16px'
         }}>
-          Shipping Information
+          {translations.shippingInfo}
         </Heading>
 
         {econtOfficeInfo ? (
@@ -250,28 +291,28 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
               fontWeight: '600',
               margin: '0 0 8px'
             }}>
-              📦 Pickup from Econt Office
+              📦 {translations.pickupOffice}
             </Text>
             <Text style={{ 
               color: '#92400E',
               fontSize: '14px',
               margin: '0 0 4px'
             }}>
-              <strong>Office:</strong> {econtOfficeInfo.officeName}
+              <strong>{translations.office}</strong> {econtOfficeInfo.officeName}
             </Text>
             <Text style={{ 
               color: '#92400E',
               fontSize: '14px',
               margin: '0 0 4px'
             }}>
-              <strong>Address:</strong> {econtOfficeInfo.officeAddress}
+              <strong>{translations.address}</strong> {econtOfficeInfo.officeAddress}
             </Text>
             <Text style={{ 
               color: '#92400E',
               fontSize: '14px',
               margin: '0'
             }}>
-              <strong>City:</strong> {econtOfficeInfo.city}
+              <strong>{translations.city}</strong> {econtOfficeInfo.city}
             </Text>
           </Section>
         ) : (
@@ -288,7 +329,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
               margin: '0 0 8px',
               fontWeight: '600'
             }}>
-              Delivery Address:
+              {translations.deliveryAddress}
             </Text>
             <Text style={{ 
               color: '#4B5563',
@@ -333,7 +374,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
                 fontSize: '14px',
                 margin: '8px 0 0'
               }}>
-                Phone: {shippingAddress.phone}
+                {translations.phone} {shippingAddress.phone}
               </Text>
             )}
           </Section>
@@ -353,7 +394,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
             fontWeight: '600',
             margin: '0 0 8px'
           }}>
-            Need Help?
+            {translations.help}
           </Text>
           <Text style={{ 
             color: '#1E3A8A',
@@ -361,7 +402,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
             margin: '0',
             lineHeight: '20px'
           }}>
-            If you have any questions about your order, please don't hesitate to contact our support team. We're here to help!
+            {translations.helpText}
           </Text>
         </Section>
       </Section>

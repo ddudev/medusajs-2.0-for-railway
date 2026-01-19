@@ -8,6 +8,7 @@ const SlideInCart = dynamic(
   () => import('@modules/cart/components/slide-in-cart'),
   {
     ssr: false,
+    loading: () => null, // Don't show loading state for cart drawer
   }
 )
 

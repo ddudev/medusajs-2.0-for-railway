@@ -96,6 +96,17 @@ export const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 export const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || process.env.SENDGRID_FROM;
 
 /**
+ * (optional) SMTP configuration for direct email sending (free alternative to SendGrid/Resend)
+ */
+export const SMTP_HOST = process.env.SMTP_HOST;
+export const SMTP_PORT = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : undefined;
+export const SMTP_SECURE = process.env.SMTP_SECURE === 'true';
+export const SMTP_USER = process.env.SMTP_USER;
+export const SMTP_PASSWORD = process.env.SMTP_PASSWORD;
+export const SMTP_FROM = process.env.SMTP_FROM;
+export const SMTP_FROM_NAME = process.env.SMTP_FROM_NAME;
+
+/**
  * (optional) Stripe API key and webhook secret
  */
 export const STRIPE_API_KEY = process.env.STRIPE_API_KEY;

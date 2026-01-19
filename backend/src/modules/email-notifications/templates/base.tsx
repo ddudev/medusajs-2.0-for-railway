@@ -1,9 +1,12 @@
 import { Html, Body, Container, Preview, Tailwind, Head, Section, Img, Text, Hr, Link } from '@react-email/components'
 import * as React from 'react'
+import { t, getEmailLocale, type Locale } from '../utils/translations'
 
 interface BaseProps {
   preview?: string
   children: React.ReactNode
+  locale?: Locale
+  countryCode?: string
 }
 
 const LOGO_URL = process.env.LOGO_URL || 'https://via.placeholder.com/150x50/FF6B35/FFFFFF?text=Store+Logo'
@@ -11,7 +14,21 @@ const COMPANY_NAME = process.env.COMPANY_NAME || 'Your Store'
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@yourstore.com'
 const STOREFRONT_URL = process.env.STOREFRONT_URL || 'https://yourstore.com'
 
-export const Base: React.FC<BaseProps> = ({ preview, children }) => {
+export const Base: React.FC<BaseProps> = ({ preview, children, locale, countryCode }) => {
+  // Determine locale (default to 'bg' for Bulgarian store)
+  const emailLocale = locale || getEmailLocale(countryCode)
+  
+  // Get footer translations
+  const footerTranslations = {
+    needHelp: t(emailLocale, 'common.footer.needHelp'),
+    visitStore: t(emailLocale, 'common.footer.visitStore'),
+    myAccount: t(emailLocale, 'common.footer.myAccount'),
+    copyright: t(emailLocale, 'common.footer.copyright', {
+      year: String(new Date().getFullYear()),
+      companyName: COMPANY_NAME
+    }),
+  }
+  
   return (
     <Html>
       <Head />
@@ -81,7 +98,7 @@ export const Base: React.FC<BaseProps> = ({ preview, children }) => {
                 textAlign: 'center',
                 margin: '0 0 12px'
               }}>
-                Need help? Contact us at{' '}
+                {footerTranslations.needHelp}{' '}
                 <Link 
                   href={`mailto:${SUPPORT_EMAIL}`}
                   style={{ color: '#FF6B35', textDecoration: 'none' }}
@@ -101,14 +118,14 @@ export const Base: React.FC<BaseProps> = ({ preview, children }) => {
                   href={STOREFRONT_URL}
                   style={{ color: '#9CA3AF', textDecoration: 'underline' }}
                 >
-                  Visit our store
+                  {footerTranslations.visitStore}
                 </Link>
                 {' | '}
                 <Link 
                   href={`${STOREFRONT_URL}/account`}
                   style={{ color: '#9CA3AF', textDecoration: 'underline' }}
                 >
-                  My Account
+                  {footerTranslations.myAccount}
                 </Link>
               </Text>
               
@@ -119,7 +136,7 @@ export const Base: React.FC<BaseProps> = ({ preview, children }) => {
                 textAlign: 'center',
                 margin: '0'
               }}>
-                © {new Date().getFullYear()} {COMPANY_NAME}. All rights reserved.
+                {footerTranslations.copyright}
               </Text>
             </Section>
           </Container>

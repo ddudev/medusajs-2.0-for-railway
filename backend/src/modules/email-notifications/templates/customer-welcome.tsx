@@ -1,6 +1,7 @@
 import { Button, Heading, Section, Text } from '@react-email/components'
 import * as React from 'react'
 import { Base } from './base'
+import { t, getEmailLocale, type Locale } from '../utils/translations'
 
 /**
  * The key for the CustomerWelcomeTemplate, used to identify it
@@ -24,6 +25,14 @@ export interface CustomerWelcomeProps {
    */
   storefrontUrl: string
   /**
+   * Locale for translations ('en' or 'bg')
+   */
+  locale?: Locale
+  /**
+   * Country code to determine locale (if locale not provided)
+   */
+  countryCode?: string
+  /**
    * The preview text for the email, appears next to the subject
    * in mail providers like Gmail
    */
@@ -38,7 +47,9 @@ export const isCustomerWelcomeData = (data: any): data is CustomerWelcomeProps =
   typeof data.customerName === 'string' &&
   typeof data.customerEmail === 'string' &&
   typeof data.storefrontUrl === 'string' &&
-  (typeof data.preview === 'string' || !data.preview)
+  (typeof data.preview === 'string' || !data.preview) &&
+  (typeof data.locale === 'string' || !data.locale) &&
+  (typeof data.countryCode === 'string' || !data.countryCode)
 
 /**
  * The CustomerWelcomeTemplate component built with react-email
@@ -49,10 +60,28 @@ export const CustomerWelcomeTemplate: React.FC<CustomerWelcomeProps> & {
   customerName,
   customerEmail,
   storefrontUrl,
-  preview = 'Welcome to Our Store!'
+  locale,
+  countryCode,
+  preview
 }) => {
+  // Determine locale
+  const emailLocale = locale || getEmailLocale(countryCode)
+  
+  // Get translations
+  const translations = {
+    title: t(emailLocale, 'welcome.title', { customerName }),
+    greeting: t(emailLocale, 'welcome.greeting'),
+    accountActive: t(emailLocale, 'welcome.accountActive', { customerEmail }),
+    cta: t(emailLocale, 'welcome.cta'),
+    tip: t(emailLocale, 'welcome.tip'),
+    tipText: t(emailLocale, 'welcome.tipText'),
+    questions: t(emailLocale, 'welcome.questions'),
+  }
+  
+  const previewText = preview || translations.title
+
   return (
-    <Base preview={preview}>
+    <Base preview={previewText} locale={emailLocale} countryCode={countryCode}>
       <Heading style={{ 
         color: '#1F2937', 
         fontSize: '28px', 
@@ -61,7 +90,7 @@ export const CustomerWelcomeTemplate: React.FC<CustomerWelcomeProps> & {
         margin: '0 0 24px',
         lineHeight: '1.3'
       }}>
-        Welcome, {customerName}!
+        {translations.title}
       </Heading>
       
       <Text style={{ 
@@ -70,7 +99,7 @@ export const CustomerWelcomeTemplate: React.FC<CustomerWelcomeProps> & {
         lineHeight: '24px',
         margin: '0 0 16px'
       }}>
-        Thank you for creating an account with us. We're excited to have you as part of our community!
+        {translations.greeting}
       </Text>
       
       <Text style={{ 
@@ -79,7 +108,7 @@ export const CustomerWelcomeTemplate: React.FC<CustomerWelcomeProps> & {
         lineHeight: '24px',
         margin: '0 0 32px'
       }}>
-        Your account (<strong>{customerEmail}</strong>) is now active and ready to use. You can now enjoy a faster checkout experience, track your orders, and manage your account preferences.
+        {translations.accountActive}
       </Text>
       
       <Section style={{ textAlign: 'center', margin: '32px 0' }}>
@@ -97,7 +126,7 @@ export const CustomerWelcomeTemplate: React.FC<CustomerWelcomeProps> & {
             border: 'none'
           }}
         >
-          Start Shopping
+          {translations.cta}
         </Button>
       </Section>
       
@@ -111,7 +140,7 @@ export const CustomerWelcomeTemplate: React.FC<CustomerWelcomeProps> & {
         borderRadius: '8px',
         borderLeft: '4px solid #FF6B35'
       }}>
-        <strong style={{ color: '#1F2937' }}>Tip:</strong> Save this email for your records. If you ever need to reset your password or have questions about your account, you can always reach out to our support team.
+        <strong style={{ color: '#1F2937' }}>{translations.tip}</strong> {translations.tipText}
       </Text>
       
       <Text style={{ 
@@ -121,7 +150,7 @@ export const CustomerWelcomeTemplate: React.FC<CustomerWelcomeProps> & {
         margin: '24px 0 0',
         textAlign: 'center'
       }}>
-        If you have any questions, feel free to reply to this email or contact our support team.
+        {translations.questions}
       </Text>
     </Base>
   )
@@ -130,7 +159,9 @@ export const CustomerWelcomeTemplate: React.FC<CustomerWelcomeProps> & {
 CustomerWelcomeTemplate.PreviewProps = {
   customerName: 'John Doe',
   customerEmail: 'john.doe@example.com',
-  storefrontUrl: 'https://yourstore.com'
+  storefrontUrl: 'https://yourstore.com',
+  locale: 'bg',
+  countryCode: 'bg'
 } as CustomerWelcomeProps
 
 export default CustomerWelcomeTemplate

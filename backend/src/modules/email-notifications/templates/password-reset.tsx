@@ -1,6 +1,7 @@
 import { Button, Heading, Hr, Link, Section, Text } from '@react-email/components'
 import * as React from 'react'
 import { Base } from './base'
+import { t, getEmailLocale, type Locale } from '../utils/translations'
 
 /**
  * The key for the PasswordResetTemplate, used to identify it
@@ -24,6 +25,14 @@ export interface PasswordResetProps {
    */
   expirationHours?: number
   /**
+   * Locale for translations ('en' or 'bg')
+   */
+  locale?: Locale
+  /**
+   * Country code to determine locale (if locale not provided)
+   */
+  countryCode?: string
+  /**
    * The preview text for the email, appears next to the subject
    * in mail providers like Gmail
    */
@@ -38,7 +47,9 @@ export const isPasswordResetData = (data: any): data is PasswordResetProps =>
   typeof data.customerName === 'string' &&
   typeof data.resetLink === 'string' &&
   (typeof data.expirationHours === 'number' || !data.expirationHours) &&
-  (typeof data.preview === 'string' || !data.preview)
+  (typeof data.preview === 'string' || !data.preview) &&
+  (typeof data.locale === 'string' || !data.locale) &&
+  (typeof data.countryCode === 'string' || !data.countryCode)
 
 /**
  * The PasswordResetTemplate component built with react-email
@@ -49,10 +60,30 @@ export const PasswordResetTemplate: React.FC<PasswordResetProps> & {
   customerName,
   resetLink,
   expirationHours = 24,
-  preview = 'Reset Your Password'
+  locale,
+  countryCode,
+  preview
 }) => {
+  // Determine locale
+  const emailLocale = locale || getEmailLocale(countryCode)
+  
+  // Get translations
+  const translations = {
+    title: t(emailLocale, 'passwordReset.title'),
+    greeting: t(emailLocale, 'passwordReset.greeting', { customerName }),
+    message: t(emailLocale, 'passwordReset.message'),
+    cta: t(emailLocale, 'passwordReset.cta'),
+    alternativeLink: t(emailLocale, 'passwordReset.alternativeLink'),
+    securityNotice: t(emailLocale, 'passwordReset.securityNotice'),
+    expiration: t(emailLocale, 'passwordReset.expiration', { expirationHours: String(expirationHours) }),
+    ignore: t(emailLocale, 'passwordReset.ignore'),
+    trouble: t(emailLocale, 'passwordReset.trouble'),
+  }
+  
+  const previewText = preview || translations.title
+
   return (
-    <Base preview={preview}>
+    <Base preview={previewText} locale={emailLocale} countryCode={countryCode}>
       <Heading style={{ 
         color: '#1F2937', 
         fontSize: '28px', 
@@ -61,7 +92,7 @@ export const PasswordResetTemplate: React.FC<PasswordResetProps> & {
         margin: '0 0 24px',
         lineHeight: '1.3'
       }}>
-        Reset Your Password
+        {translations.title}
       </Heading>
       
       <Text style={{ 
@@ -70,7 +101,7 @@ export const PasswordResetTemplate: React.FC<PasswordResetProps> & {
         lineHeight: '24px',
         margin: '0 0 16px'
       }}>
-        Hi {customerName},
+        {translations.greeting}
       </Text>
       
       <Text style={{ 
@@ -79,7 +110,7 @@ export const PasswordResetTemplate: React.FC<PasswordResetProps> & {
         lineHeight: '24px',
         margin: '0 0 24px'
       }}>
-        We received a request to reset your password. Click the button below to create a new password:
+        {translations.message}
       </Text>
       
       <Section style={{ textAlign: 'center', margin: '32px 0' }}>
@@ -97,7 +128,7 @@ export const PasswordResetTemplate: React.FC<PasswordResetProps> & {
             border: 'none'
           }}
         >
-          Reset Password
+          {translations.cta}
         </Button>
       </Section>
       
@@ -109,7 +140,7 @@ export const PasswordResetTemplate: React.FC<PasswordResetProps> & {
         textAlign: 'center',
         wordBreak: 'break-all'
       }}>
-        Or copy and paste this link into your browser:{' '}
+        {translations.alternativeLink}{' '}
         <Link
           href={resetLink}
           style={{ color: '#FF6B35', textDecoration: 'underline' }}
@@ -135,7 +166,7 @@ export const PasswordResetTemplate: React.FC<PasswordResetProps> & {
         borderRadius: '8px',
         borderLeft: '4px solid #DC2626'
       }}>
-        <strong>Security Notice:</strong> This password reset link will expire in {expirationHours} hours for your security.
+        <strong>{translations.securityNotice}</strong> {translations.expiration}
       </Text>
       
       <Text style={{ 
@@ -144,7 +175,7 @@ export const PasswordResetTemplate: React.FC<PasswordResetProps> & {
         lineHeight: '20px',
         margin: '16px 0 0'
       }}>
-        If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged, and no action is required.
+        {translations.ignore}
       </Text>
       
       <Text style={{ 
@@ -154,7 +185,7 @@ export const PasswordResetTemplate: React.FC<PasswordResetProps> & {
         margin: '24px 0 0',
         textAlign: 'center'
       }}>
-        If you're having trouble with the button above, you can also reset your password by logging in and using the "Forgot Password" link.
+        {translations.trouble}
       </Text>
     </Base>
   )
@@ -163,7 +194,9 @@ export const PasswordResetTemplate: React.FC<PasswordResetProps> & {
 PasswordResetTemplate.PreviewProps = {
   customerName: 'John Doe',
   resetLink: 'https://yourstore.com/account/reset-password?token=abc123xyz789longtokenstring',
-  expirationHours: 24
+  expirationHours: 24,
+  locale: 'bg',
+  countryCode: 'bg'
 } as PasswordResetProps
 
 export default PasswordResetTemplate

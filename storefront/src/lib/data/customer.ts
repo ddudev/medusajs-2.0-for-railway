@@ -361,16 +361,41 @@ export async function requestPasswordReset(_currentState: unknown, formData: For
 
   try {
     // MedusaJS 2.0 auth module endpoint for password reset
-    await sdk.client.fetch('/auth/customer/emailpass/reset-password', {
+    // Use direct fetch to handle non-JSON responses
+    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+    const response = await fetch(`${backendUrl}/auth/customer/emailpass/reset-password`, {
       method: "POST",
-      body: {
-        identifier: email,
+      headers: {
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        identifier: email,
+      }),
     })
+
+    // Check if response is OK (status 200-299)
+    if (!response.ok) {
+      // Don't reveal specific error for security
+      console.warn("Password reset request failed with status:", response.status)
+    } else {
+      // Response is OK - try to read as text (might be "Created" or similar)
+      const text = await response.text()
+      if (text && text.trim()) {
+        console.log("Password reset request succeeded:", text.substring(0, 50))
+      }
+    }
 
     // Always return success to prevent email enumeration
     return null
   } catch (error: any) {
+    // Handle JSON parse errors (API might return plain text)
+    if (error.message?.includes('JSON') || error.message?.includes('Unexpected token')) {
+      // API returned non-JSON response (likely "Created" or similar)
+      // This is actually OK - the request succeeded
+      console.log("Password reset request succeeded (non-JSON response)")
+      return null
+    }
+    
     console.error("Password reset request error:", error)
     // Don't reveal if email exists or not for security
     return null

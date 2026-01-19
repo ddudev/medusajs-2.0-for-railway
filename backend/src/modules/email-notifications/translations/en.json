@@ -1,0 +1,50 @@
+{
+  "welcome": {
+    "title": "Welcome, {customerName}!",
+    "greeting": "Thank you for creating an account with us. We're excited to have you as part of our community!",
+    "accountActive": "Your account ({customerEmail}) is now active and ready to use. You can now enjoy a faster checkout experience, track your orders, and manage your account preferences.",
+    "cta": "Start Shopping",
+    "tip": "Tip:",
+    "tipText": "Save this email for your records. If you ever need to reset your password or have questions about your account, you can always reach out to our support team.",
+    "questions": "If you have any questions, feel free to reply to this email or contact our support team."
+  },
+  "passwordReset": {
+    "title": "Reset Your Password",
+    "greeting": "Hi {customerName},",
+    "message": "We received a request to reset your password. Click the button below to create a new password:",
+    "cta": "Reset Password",
+    "alternativeLink": "Or copy and paste this link into your browser:",
+    "securityNotice": "Security Notice:",
+    "expiration": "This password reset link will expire in {expirationHours} hours for your security.",
+    "ignore": "If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged, and no action is required.",
+    "trouble": "If you're having trouble with the button above, you can also reset your password by logging in and using the \"Forgot Password\" link."
+  },
+  "orderConfirmation": {
+    "title": "Order Confirmed!",
+    "subtitle": "Thank you for your order. We'll send you a shipping confirmation email as soon as your order ships.",
+    "greeting": "Hi {customerName},",
+    "orderSummary": "Order Summary",
+    "orderNumber": "Order Number:",
+    "orderDate": "Order Date:",
+    "orderTotal": "Order Total:",
+    "orderItems": "Order Items",
+    "quantity": "Qty:",
+    "shippingInfo": "Shipping Information",
+    "pickupOffice": "Pickup from Econt Office",
+    "office": "Office:",
+    "address": "Address:",
+    "city": "City:",
+    "deliveryAddress": "Delivery Address:",
+    "phone": "Phone:",
+    "help": "Need Help?",
+    "helpText": "If you have any questions about your order, please don't hesitate to contact our support team. We're here to help!"
+  },
+  "common": {
+    "footer": {
+      "needHelp": "Need help? Contact us at",
+      "visitStore": "Visit our store",
+      "myAccount": "My Account",
+      "copyright": "© {year} {companyName}. All rights reserved."
+    }
+  }
+}

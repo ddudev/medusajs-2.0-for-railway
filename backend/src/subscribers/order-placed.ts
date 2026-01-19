@@ -4,6 +4,7 @@ import { SubscriberArgs, SubscriberConfig } from '@medusajs/medusa'
 import { EmailTemplates } from '../modules/email-notifications/templates'
 import { PLACEHOLDER_TEMPLATE_ID } from '../lib/notification-templates'
 import { SUPPORT_EMAIL } from '../lib/constants'
+import { getEmailLocale } from '../modules/email-notifications/utils/translations'
 
 export default async function orderPlacedHandler({
   event: { data },
@@ -17,6 +18,12 @@ export default async function orderPlacedHandler({
   
   const order = await orderModuleService.retrieveOrder(data.id, { relations: ['items', 'summary', 'shipping_address'] })
   const shippingAddress = await (orderModuleService as any).orderAddressService_.retrieve(order.shipping_address.id)
+
+  // Determine locale from shipping address country code (default to 'bg' for Bulgarian store)
+  const countryCode = shippingAddress.country_code || 'bg'
+  const locale = getEmailLocale(countryCode)
+  console.log('🌍 Order country code:', countryCode)
+  console.log('🌐 Email locale:', locale)
 
   // Extract Econt office info from order metadata or cart metadata if available
   // Note: In MedusaJS 2.0, cart_id is not directly on OrderDTO, so we check order metadata first
@@ -64,19 +71,40 @@ export default async function orderPlacedHandler({
         template: EmailTemplates.ORDER_PLACED,
         emailOptions: {
           replyTo: SUPPORT_EMAIL,
-          subject: `Order Confirmation - #${order.display_id}`
+          subject: locale === 'bg' 
+            ? `Потвърждение на поръчка - #${order.display_id}`
+            : `Order Confirmation - #${order.display_id}`
         },
         order,
         shippingAddress,
         econtOfficeInfo,
-        preview: 'Thank you for your order!'
+        locale,
+        countryCode,
+        preview: locale === 'bg' ? 'Благодарим ви за поръчката!' : 'Thank you for your order!'
       }
     })
     
     console.log('✅ Order confirmation email queued for order:', order.display_id)
-  } catch (error) {
-    console.error('❌ Error sending order confirmation notification:', error)
-    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2))
+  } catch (error: any) {
+    const errorMessage = error?.message || String(error)
+    
+    // Check for SendGrid-specific errors
+    if (errorMessage.includes('Maximum credits exceeded') || errorMessage.includes('credits')) {
+      console.warn('⚠️  SendGrid credit limit exceeded. Order confirmation email not sent.')
+      console.warn('💡 To fix: Upgrade your SendGrid plan or wait for credit reset.')
+      console.warn('📦 Order:', order.display_id, '| Email:', order.email)
+    } else if (errorMessage.includes('SendGrid')) {
+      console.error('❌ SendGrid error sending order confirmation:', errorMessage)
+      console.error('📦 Order:', order.display_id, '| Email:', order.email)
+    } else {
+      console.error('❌ Error sending order confirmation notification:', errorMessage)
+      console.error('📦 Order:', order.display_id, '| Email:', order.email)
+    }
+    
+    // Only log full error details in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2))
+    }
   }
 }
 

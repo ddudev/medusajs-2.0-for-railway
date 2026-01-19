@@ -4,6 +4,7 @@ import { SubscriberArgs, SubscriberConfig } from '@medusajs/medusa'
 import { EmailTemplates } from '../modules/email-notifications/templates'
 import { PLACEHOLDER_TEMPLATE_ID } from '../lib/notification-templates'
 import { STOREFRONT_URL, SUPPORT_EMAIL } from '../lib/constants'
+import { getEmailLocale } from '../modules/email-notifications/utils/translations'
 
 export default async function customerCreatedHandler({
   event: { data },
@@ -28,6 +29,12 @@ export default async function customerCreatedHandler({
       return
     }
     
+    // Get country code from customer's shipping address or default to 'bg'
+    const countryCode = (customer as any).shipping_addresses?.[0]?.country_code || 'bg'
+    const locale = getEmailLocale(countryCode)
+    console.log('🌍 Customer country code:', countryCode)
+    console.log('🌐 Email locale:', locale)
+    
     await notificationModuleService.createNotifications({
       to: customer.email,
       channel: 'email',
@@ -36,19 +43,38 @@ export default async function customerCreatedHandler({
         template: EmailTemplates.CUSTOMER_WELCOME,
         emailOptions: {
           replyTo: SUPPORT_EMAIL,
-          subject: 'Welcome to Our Store!'
+          subject: locale === 'bg' ? 'Добре дошли в нашия магазин!' : 'Welcome to Our Store!'
         },
         customerName: customer.first_name || 'Valued Customer',
         customerEmail: customer.email,
         storefrontUrl: STOREFRONT_URL,
-        preview: 'Welcome! Your account has been created.'
+        locale,
+        countryCode,
+        preview: locale === 'bg' ? 'Добре дошли! Вашият акаунт е създаден.' : 'Welcome! Your account has been created.'
       }
     })
     
     console.log('✅ Welcome email queued for customer:', customer.email)
-  } catch (error) {
-    console.error('❌ Error sending welcome email:', error)
-    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2))
+  } catch (error: any) {
+    const errorMessage = error?.message || String(error)
+    
+    // Check for SendGrid-specific errors
+    if (errorMessage.includes('Maximum credits exceeded') || errorMessage.includes('credits')) {
+      console.warn('⚠️  SendGrid credit limit exceeded. Welcome email not sent.')
+      console.warn('💡 To fix: Upgrade your SendGrid plan or wait for credit reset.')
+      console.warn('📧 Customer registration succeeded, but welcome email was skipped:', customer?.email || 'unknown')
+    } else if (errorMessage.includes('SendGrid')) {
+      console.error('❌ SendGrid error sending welcome email:', errorMessage)
+      console.error('📧 Customer:', customer?.email || 'unknown')
+    } else {
+      console.error('❌ Error sending welcome email:', errorMessage)
+      console.error('📧 Customer:', customer?.email || 'unknown')
+    }
+    
+    // Only log full error details in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2))
+    }
   }
 }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
+import { useActionState, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { resetPassword } from "@lib/data/customer"
 import Input from "@modules/common/components/input"
@@ -9,32 +9,41 @@ import { SubmitButton } from "@modules/checkout/components/submit-button"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
 const ResetPassword = () => {
-  const [message, formAction] = useActionState(resetPassword, null)
+  const [message, formAction, isPending] = useActionState(resetPassword, null)
   const { t } = useTranslation()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const hasSubmittedRef = useRef(false)
   const token = searchParams.get("token")
 
+  // Redirect to login if no token provided
   useEffect(() => {
-    // Redirect to login if no token provided
     if (!token) {
       router.push("/account")
     }
   }, [token, router])
 
+  // Don't render if no token
   if (!token) {
     return null
   }
 
-  // If reset was successful (message is null), redirect to login
+  // Track when form is submitted
   useEffect(() => {
-    if (message === null) {
+    if (isPending) {
+      hasSubmittedRef.current = true
+    }
+  }, [isPending])
+
+  // If reset was successful (message is null after submission), redirect to login
+  useEffect(() => {
+    if (hasSubmittedRef.current && message === null && !isPending) {
       // Show success message briefly, then redirect
       setTimeout(() => {
         router.push("/account?reset=success")
       }, 2000)
     }
-  }, [message, router])
+  }, [message, isPending, router])
 
   return (
     <div className="w-full min-h-[60vh] flex flex-col justify-center items-center px-4 py-8 md:py-16">
