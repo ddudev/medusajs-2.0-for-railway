@@ -408,6 +408,46 @@ export const useDeleteProduct = (
   })
 }
 
+export const useEnhanceProductWithAI = (
+  id: string,
+  options?: UseMutationOptions<
+    HttpTypes.AdminProductResponse,
+    FetchError,
+    { isComplex: boolean }
+  >
+) => {
+  return useMutation({
+    mutationFn: async (payload: { isComplex: boolean }) => {
+      const response = await fetch(`${backendUrl}/admin/products/${id}/ai-enhance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to enhance product')
+      }
+
+      return response.json()
+    },
+    onSuccess: async (data, variables, context) => {
+      await queryClient.invalidateQueries({
+        queryKey: productsQueryKeys.lists(),
+      })
+      await queryClient.invalidateQueries({
+        queryKey: productsQueryKeys.detail(id),
+      })
+
+      options?.onSuccess?.(data, variables, context)
+    },
+    ...options,
+  })
+}
+
 export const useExportProducts = (
   query?: HttpTypes.AdminProductListParams,
   options?: UseMutationOptions<
