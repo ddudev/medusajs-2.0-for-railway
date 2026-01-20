@@ -1811,7 +1811,7 @@ export const innproXmlImportWorkflow = createWorkflow<
     products: productsWithImages,
     shippingProfileId: resolvedShippingProfileId,
     defaultSalesChannelId,
-    variantToInventoryItem: inventoryItemsResult.variantToInventoryItem,
+    variantToInventoryItem: inventoryItemsResult.variantToInventoryItem as any,
   })
 
   // Step 9.5: Set inventory levels for variants
