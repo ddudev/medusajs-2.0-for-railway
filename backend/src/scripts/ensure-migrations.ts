@@ -564,17 +564,11 @@ export default async function ensureMigrations() {
     } else {
       console.warn("⚠️  No migrations were executed")
     }
-  } catch (error: any) {
-    console.error("❌ Error running XML Importer migrations:", error.message)
-    // Don't throw - allow server to start even if migrations fail
-    // They can be run manually if needed
-  } finally {
-    await pool.end()
-  }
-  
+
     // Check and create InnPro Importer tables (fallback only)
     // Note: Primary migration is handled by Medusa's migration system via Migration20250108000000-CreateInnProImporterTables.ts
     // This is a safety net in case migrations haven't run yet
+    console.log("🔍 Checking for InnPro Importer tables...")
     const innproTables = ['innpro_import_session', 'innpro_import_config']
     
     for (const table of innproTables) {
@@ -594,6 +588,7 @@ export default async function ensureMigrations() {
             CREATE TABLE IF NOT EXISTS innpro_import_session (
               id VARCHAR(255) PRIMARY KEY,
               xml_url VARCHAR(500) NOT NULL,
+              xml_file_path VARCHAR(500) NULL,
               parsed_data JSONB,
               selected_categories JSONB,
               selected_brands JSONB,
@@ -609,6 +604,7 @@ export default async function ensureMigrations() {
             CREATE INDEX IF NOT EXISTS idx_innpro_import_session_status 
             ON innpro_import_session(status);
           `)
+          console.log(`✅ ${table} table created with xml_file_path column`)
         } else if (table === 'innpro_import_config') {
           await pool.query(`
             CREATE TABLE IF NOT EXISTS innpro_import_config (
@@ -626,15 +622,15 @@ export default async function ensureMigrations() {
             CREATE INDEX IF NOT EXISTS idx_innpro_import_config_enabled 
             ON innpro_import_config(enabled);
           `)
+          console.log(`✅ ${table} table created`)
         }
-        
-        console.log(`✅ ${table} table created`)
       } else {
         console.log(`✅ ${table} table already exists`)
       }
     }
 
     // Check and add xml_file_path column to innpro_import_session if it doesn't exist
+    // (for tables created before the xml_file_path column was added)
     const innproSessionExists = await pool.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -671,6 +667,13 @@ export default async function ensureMigrations() {
         console.log("✅ xml_file_path column already exists in innpro_import_session")
       }
     }
+  } catch (error: any) {
+    console.error("❌ Error running migrations:", error.message)
+    // Don't throw - allow server to start even if migrations fail
+    // They can be run manually if needed
+  } finally {
+    await pool.end()
+  }
 
     // Note: MedusaJS link tables are created by 'medusa db:sync-links' or 'medusa db:migrate'
     // These should be run by 'init-backend', but if links are missing, run:
