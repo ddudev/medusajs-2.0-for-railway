@@ -51,21 +51,29 @@ export async function POST(
         },
       })
       .then(async ({ result }) => {
-        logger.info(`Import ${id} workflow completed. Result: ${JSON.stringify(result, null, 2)}`)
+        logger.info(`✅ Import ${id} workflow completed successfully`)
+        logger.info(`Import result: ${JSON.stringify(result, null, 2)}`)
 
         // Update session with final status
         try {
+          const finalStatus = result?.status === 'failed' ? 'failed' : 'completed'
           await importerService.updateSession(id, {
-            status: result?.status === 'failed' ? 'failed' : 'completed',
+            status: finalStatus,
           })
-          logger.info(`Import ${id} status updated successfully`)
+          logger.info(`✅ Import ${id} status updated to: ${finalStatus}`)
         } catch (updateError) {
-          logger.error(`Failed to update session ${id}: ${updateError instanceof Error ? updateError.message : 'Unknown error'}`)
+          const updateErrorMessage = updateError instanceof Error ? updateError.message : 'Unknown error'
+          const updateErrorStack = updateError instanceof Error ? updateError.stack : String(updateError)
+          logger.error(`❌ Failed to update session ${id}: ${updateErrorMessage}`)
+          logger.error(`Update error stack: ${updateErrorStack}`)
         }
       })
       .catch(async (error) => {
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
+        const errorStack = error instanceof Error ? error.stack : String(error)
         logger.error(`Import ${id} workflow failed: ${errorMessage}`)
+        logger.error(`Workflow error details: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`)
+        logger.error(`Workflow error stack: ${errorStack}`)
 
         try {
           await importerService.updateSession(id, {
