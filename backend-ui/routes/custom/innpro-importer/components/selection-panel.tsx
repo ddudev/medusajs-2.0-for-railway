@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { getApiUrl, authenticatedFetch } from "../utils"
 
 type SelectionPanelProps = {
@@ -17,10 +17,13 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
   const categories = sessionData.categories || []
   const allBrands = sessionData.brands || []
   const brandToCategories = sessionData.brandToCategories || {} // Map: brandId -> [categoryIds]
-  const allProducts = sessionData.products || [] // Full product list for counting
+  const allProducts = sessionData.products || [] // Full product list for counting (may be empty with streaming approach)
 
   // Calculate brand counts for selected categories
-  const brandCountsByCategory = React.useMemo(() => {
+  // Note: With streaming approach, allProducts may be empty, so we'll use global brand counts
+  const brandCountsByCategory = useMemo(() => {
+    // If no products array available (streaming approach), return empty object
+    // The component will fall back to using global brand counts
     if (selectedCategories.length === 0 || !allProducts || allProducts.length === 0) {
       return {} // No counts if no categories selected or no products
     }
@@ -43,7 +46,7 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
   }, [selectedCategories, allProducts])
 
   // Filter brands based on selected categories using the pre-computed mapping
-  const filteredBrands = React.useMemo(() => {
+  const filteredBrands = useMemo(() => {
     if (selectedCategories.length === 0) {
       // If no categories selected, show all brands with their global counts
       return allBrands
@@ -89,7 +92,7 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
 
   const handleSelectAll = () => {
     setSelectedCategories(categories.map((c: any) => c.id))
-    setSelectedBrands(brands.map((b: any) => b.id))
+    setSelectedBrands(filteredBrands.map((b: any) => b.id))
   }
 
   const handleDeselectAll = () => {
@@ -262,7 +265,7 @@ export const SelectionPanel = ({ sessionId, sessionData, onComplete, onReset }: 
             borderRadius: '6px',
             padding: '8px',
           }}>
-            {brands.map((brand: any) => (
+            {filteredBrands.map((brand: any) => (
               <label
                 key={brand.id}
                 style={{

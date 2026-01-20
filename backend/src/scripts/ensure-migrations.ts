@@ -634,6 +634,44 @@ export default async function ensureMigrations() {
       }
     }
 
+    // Check and add xml_file_path column to innpro_import_session if it doesn't exist
+    const innproSessionExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'innpro_import_session'
+      );
+    `)
+    
+    if (innproSessionExists.rows[0]?.exists) {
+      const xmlFilePathColumnExists = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'innpro_import_session'
+        AND column_name = 'xml_file_path';
+      `)
+      
+      if (xmlFilePathColumnExists.rows.length === 0) {
+        console.log("📦 Adding xml_file_path column to innpro_import_session table...")
+        try {
+          await pool.query(`
+            ALTER TABLE innpro_import_session 
+            ADD COLUMN xml_file_path VARCHAR(500) NULL;
+          `)
+          console.log("✅ xml_file_path column added to innpro_import_session")
+        } catch (error: any) {
+          if (error.message?.includes("already exists") || error.code === "42701") {
+            console.log("✅ xml_file_path column already exists")
+          } else {
+            console.error(`❌ Error adding xml_file_path column: ${error.message}`)
+          }
+        }
+      } else {
+        console.log("✅ xml_file_path column already exists in innpro_import_session")
+      }
+    }
+
     // Note: MedusaJS link tables are created by 'medusa db:sync-links' or 'medusa db:migrate'
     // These should be run by 'init-backend', but if links are missing, run:
     // npx medusa db:sync-links

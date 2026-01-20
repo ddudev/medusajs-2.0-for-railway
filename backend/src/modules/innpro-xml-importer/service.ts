@@ -13,6 +13,9 @@ import {
   PriceUpdateData,
 } from "./types"
 import { DAL } from "@medusajs/framework/types"
+import * as fs from "fs/promises"
+import * as path from "path"
+import * as os from "os"
 
 type InjectedDependencies = {
   logger: Logger
@@ -929,7 +932,149 @@ class InnProXmlImporterService extends MedusaService({
   }
 
   /**
+   * File Management Methods for Streaming Import
+   */
+
+  /**
+   * Save XML content to disk and return file path
+   * Downloads XML and saves to temp directory
+   */
+  async saveXmlToDisk(xmlUrl: string, sessionId: string): Promise<string> {
+    try {
+      this.logger_.info(`Downloading and saving XML from: ${xmlUrl}`)
+      
+      // Download XML content
+      const xmlContent = await this.downloadXml(xmlUrl)
+      
+      // Create temp directory if it doesn't exist
+      const tempDir = path.join(os.tmpdir(), 'innpro-imports')
+      await fs.mkdir(tempDir, { recursive: true })
+      
+      // Generate file path
+      const filePath = path.join(tempDir, `innpro-import-${sessionId}.xml`)
+      
+      // Save XML to disk
+      await fs.writeFile(filePath, xmlContent, 'utf-8')
+      
+      this.logger_.info(`XML saved to disk: ${filePath} (${xmlContent.length} bytes)`)
+      
+      return filePath
+    } catch (error) {
+      this.logger_.error(`Failed to save XML to disk: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        `Failed to save XML to disk: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    }
+  }
+
+  /**
+   * Get XML file path from session
+   */
+  async getXmlFilePath(sessionId: string): Promise<string | null> {
+    const session = await this.getSession(sessionId)
+    return session?.xml_file_path || null
+  }
+
+  /**
+   * Clean up XML file from disk
+   */
+  async cleanupXmlFile(filePath: string): Promise<void> {
+    try {
+      await fs.unlink(filePath)
+      this.logger_.info(`Cleaned up XML file: ${filePath}`)
+    } catch (error) {
+      this.logger_.warn(`Failed to clean up XML file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      // Don't throw - cleanup failure shouldn't break the import
+    }
+  }
+
+  /**
+   * Extract metadata only (categories, brands, counts) without storing products
+   * Iterates through products to extract metadata but doesn't store product objects
+   */
+  extractMetadataOnly(xmlData: any): CategoryBrandSummary {
+    this.logger_.info('Extracting metadata only (no products stored)')
+    
+    // Extract products temporarily to get metadata
+    const products = this.extractProducts(xmlData)
+    
+    // Use existing method to get categories and brands
+    const summary = this.getCategoriesAndBrands(products)
+    
+    this.logger_.info(`Extracted metadata: ${summary.categories.length} categories, ${summary.brands.length} brands, ${summary.total_products} total products`)
+    
+    return summary
+  }
+
+  /**
+   * Stream products from XML file and process one-by-one
+   * Reads XML from disk, parses it, and processes products individually
+   */
+  async streamProductsAndImport(
+    xmlFilePath: string,
+    filters: SelectionFilters,
+    callback: (product: any) => Promise<void>
+  ): Promise<{ imported: number; skipped: number }> {
+    try {
+      this.logger_.info(`Streaming products from: ${xmlFilePath}`)
+      
+      // Read XML file from disk
+      const xmlContent = await fs.readFile(xmlFilePath, 'utf-8')
+      
+      // Parse XML
+      const xmlData = this.parseXml(xmlContent)
+      
+      // Extract products
+      const products = this.extractProducts(xmlData)
+      
+      this.logger_.info(`Streaming ${products.length} products for import`)
+      
+      // Filter products based on selection
+      const filteredProducts = this.filterProducts(products, filters)
+      
+      this.logger_.info(`After filtering: ${filteredProducts.length} products will be imported`)
+      
+      let imported = 0
+      let skipped = 0
+      
+      // Process products one by one
+      for (let i = 0; i < filteredProducts.length; i++) {
+        const product = filteredProducts[i]
+        
+        try {
+          // Call callback to import product
+          await callback(product)
+          imported++
+          
+          // Log progress every 10 products
+          if ((i + 1) % 10 === 0) {
+            this.logger_.info(`Progress: ${i + 1}/${filteredProducts.length} products processed`)
+          }
+        } catch (error) {
+          this.logger_.error(`Failed to import product ${product['@_id'] || product.id}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          skipped++
+        }
+      }
+      
+      this.logger_.info(`Streaming complete: ${imported} imported, ${skipped} skipped`)
+      
+      return { imported, skipped }
+    } catch (error) {
+      this.logger_.error(`Failed to stream products: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw error
+    }
+  }
+
+  /**
    * Extract price data from price XML
+   * Extracts both cost price (price.net) and SRP (srp.net) from price XML
+   * Price XML structure:
+   * <product id="52210">
+   *   <price net="6.18"/>      // Cost price (what we pay)
+   *   <srp net="11.79"/>        // SRP (price to consumer)
+   *   <sizes><size><stock quantity="3"/></size></sizes>
+   * </product>
    */
   extractPriceData(priceXmlData: any): Map<string, PriceUpdateData> {
     const priceDataMap = new Map<string, PriceUpdateData>()
@@ -954,14 +1099,22 @@ class InnProXmlImporterService extends MedusaService({
       // Use first size for price/stock (most products have single size)
       const firstSize = sizeArray[0]
 
-      const priceNet = firstSize.price?.net || firstSize.price?.['#text']
-      const priceGross = firstSize.price?.gross
+      // Extract cost price (what we pay) - can be at product or size level
+      const priceNet = priceProduct.price?.net || firstSize.price?.net || firstSize.price?.['#text']
+      const priceGross = priceProduct.price?.gross || firstSize.price?.gross
+      
+      // Extract SRP (recommended selling price / price to consumer)
+      const srpNet = priceProduct.srp?.net || firstSize.srp?.net
+      const srpGross = priceProduct.srp?.gross || firstSize.srp?.gross
+      
       const stockQuantity = firstSize.stock?.quantity || firstSize.stock?.['#text'] || '0'
 
       const priceData: PriceUpdateData = {
         productId: String(productId),
         priceNet: priceNet ? parseFloat(priceNet) : undefined,
         priceGross: priceGross ? parseFloat(priceGross) : undefined,
+        srpNet: srpNet ? parseFloat(srpNet) : undefined,
+        srpGross: srpGross ? parseFloat(srpGross) : undefined,
         stockQuantity: parseInt(stockQuantity, 10),
       }
 
@@ -976,6 +1129,7 @@ class InnProXmlImporterService extends MedusaService({
    */
   async createSession(data: {
     xml_url: string
+    xml_file_path?: string
     parsed_data?: any
     status?: string
   }): Promise<InnProImportSessionType> {
@@ -983,6 +1137,7 @@ class InnProXmlImporterService extends MedusaService({
       const sessionData = {
         id: ulid(),
         xml_url: data.xml_url,
+        xml_file_path: data.xml_file_path,
         parsed_data: data.parsed_data,
         status: data.status || 'parsing',
       }
@@ -1012,6 +1167,14 @@ class InnProXmlImporterService extends MedusaService({
       
       if (!session) {
         return null
+      }
+      
+      // Debug: Log xml_file_path if it exists
+      const xmlFilePath = (session as any).xml_file_path
+      if (xmlFilePath) {
+        this.logger_.debug(`Session ${id} has xml_file_path: ${xmlFilePath}`)
+      } else {
+        this.logger_.debug(`Session ${id} does not have xml_file_path`)
       }
       
       if (!session.parsed_data) {
@@ -1054,6 +1217,12 @@ class InnProXmlImporterService extends MedusaService({
       }
       if (data.status !== undefined) {
         updatePayload.status = data.status
+      }
+      if ('xml_file_path' in data) {
+        updatePayload.xml_file_path = data.xml_file_path ?? null
+      }
+      if ('parsed_data' in data) {
+        updatePayload.parsed_data = data.parsed_data ?? null
       }
       
       // Use MedusaService's auto-generated updateInnProImportSessions method

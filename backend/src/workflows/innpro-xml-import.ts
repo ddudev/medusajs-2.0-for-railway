@@ -143,8 +143,37 @@ const getSessionProductsStep = createStep(
       throw new Error(`Session ${input.sessionId} not found or not parsed`)
     }
 
-    let products = session.parsed_data.products || []
-    const totalProducts = products.length
+    let products: any[] = []
+    let totalProducts = 0
+
+    // STREAMING APPROACH: Read products from XML file if available
+    const xmlFilePath = (session as any).xml_file_path || session.xml_file_path
+    if (xmlFilePath) {
+      logger.info(`Loading products from XML file: ${xmlFilePath}`)
+      
+      try {
+        // Read and parse XML file
+        const fs = await import('fs/promises')
+        const xmlContent = await fs.readFile(xmlFilePath, 'utf-8')
+        const xmlData = importerService.parseXml(xmlContent)
+        products = importerService.extractProducts(xmlData)
+        totalProducts = products.length
+        
+        logger.info(`Loaded ${totalProducts} products from XML file`)
+      } catch (fileError) {
+        logger.error(`Failed to read XML file ${xmlFilePath}: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`)
+        // Fallback to parsed_data if file read fails
+        products = session.parsed_data.products || []
+        totalProducts = products.length
+        logger.warn(`Falling back to parsed_data: ${totalProducts} products`)
+      }
+    } else {
+      // Fallback: Use products from parsed_data (old approach or if xml_file_path not set)
+      products = session.parsed_data.products || []
+      totalProducts = products.length
+      logger.info(`No xml_file_path found, using products from session parsed_data: ${totalProducts} products`)
+      logger.warn(`Session ${input.sessionId} does not have xml_file_path - this may indicate the migration hasn't run or the session was created before the streaming update`)
+    }
 
     logger.info(`Session ${input.sessionId} has ${totalProducts} total products`)
     logger.info(`Session filters - categories: ${JSON.stringify(session.selected_categories)}, brands: ${JSON.stringify(session.selected_brands)}, productIds: ${JSON.stringify(session.selected_product_ids)}`)
@@ -1335,6 +1364,41 @@ const calculateImportStatusStep = createStep(
 )
 
 /**
+ * Step: Clean up XML file from disk
+ */
+const cleanupXmlFileStep = createStep(
+  'cleanup-xml-file',
+  async (
+    input: { sessionId: string },
+    { container }: { container: MedusaContainer }
+  ) => {
+    const importerService: InnProXmlImporterService = container.resolve(
+      INNPRO_XML_IMPORTER_MODULE
+    )
+    const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
+
+    try {
+      // Get XML file path from session
+      const xmlFilePath = await importerService.getXmlFilePath(input.sessionId)
+      
+      if (xmlFilePath) {
+        // Clean up XML file
+        await importerService.cleanupXmlFile(xmlFilePath)
+        logger.info(`Cleaned up XML file for session ${input.sessionId}`)
+      } else {
+        logger.debug(`No XML file path found for session ${input.sessionId}, skipping cleanup`)
+      }
+
+      return new StepResponse({ cleaned: !!xmlFilePath })
+    } catch (error) {
+      logger.warn(`Failed to clean up XML file for session ${input.sessionId}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      // Don't fail the workflow if cleanup fails
+      return new StepResponse({ cleaned: false })
+    }
+  }
+)
+
+/**
  * Main InnPro XML Import Workflow
  */
 export const innproXmlImportWorkflow = createWorkflow<
@@ -1401,6 +1465,9 @@ export const innproXmlImportWorkflow = createWorkflow<
     successful: importResult.successful,
     failed: importResult.failed,
   })
+
+  // Step 11: Clean up XML file from disk
+  cleanupXmlFileStep({ sessionId })
 
   return new WorkflowResponse(finalResult)
 })

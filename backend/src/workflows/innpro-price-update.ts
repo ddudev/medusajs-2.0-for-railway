@@ -122,30 +122,52 @@ const updateProductsStep = createStep(
           continue
         }
 
-        // Update prices for all variants
+        // Update customer price to SRP (if available), otherwise use cost price
+        const customerPrice = priceData.srpNet || priceData.srpGross || priceData.priceNet || priceData.priceGross || 0
+
+        if (customerPrice > 0) {
+          // Update each variant's price to SRP
+          const variantUpdates = fullProduct.variants.map((variant: any) => {
+            const existingPrices = (variant.prices || []) as any[]
+            const priceId = existingPrices.length > 0 ? existingPrices[0].id : undefined
+
+            return {
+              id: variant.id,
+              prices: priceId
+                ? [{ id: priceId, amount: customerPrice, currency_code: defaultCurrency }]
+                : [{ amount: customerPrice, currency_code: defaultCurrency }],
+            }
+          })
+
+          await productService.updateProducts(product.id, {
+            variants: variantUpdates,
+          })
+
+          logger.debug(`Updated price for product ${product.id}: ${customerPrice} ${defaultCurrency} (${priceData.srpNet ? 'SRP' : 'cost price'})`)
+        }
+
+        // Store cost price in variant metadata for revenue tracking
         if (priceData.priceNet !== undefined || priceData.priceGross !== undefined) {
-          const priceAmount = priceData.priceNet || priceData.priceGross || 0
+          const costPrice = priceData.priceNet || priceData.priceGross
+          
+          // Update variant metadata with cost price
+          const variantMetadataUpdates = fullProduct.variants.map((variant: any) => ({
+            id: variant.id,
+            metadata: {
+              ...(variant.metadata || {}),
+              cost_price: costPrice,
+              cost_price_net: priceData.priceNet,
+              cost_price_gross: priceData.priceGross,
+              srp_net: priceData.srpNet,
+              srp_gross: priceData.srpGross,
+            },
+          }))
 
-          if (priceAmount > 0) {
-            // Update each variant's price
-            const variantUpdates = fullProduct.variants.map((variant: any) => {
-              const existingPrices = (variant.prices || []) as any[]
-              const priceId = existingPrices.length > 0 ? existingPrices[0].id : undefined
+          await productService.updateProducts(product.id, {
+            variants: variantMetadataUpdates,
+          })
 
-              return {
-                id: variant.id,
-                prices: priceId
-                  ? [{ id: priceId, amount: priceAmount, currency_code: defaultCurrency }]
-                  : [{ amount: priceAmount, currency_code: defaultCurrency }],
-              }
-            })
-
-            await productService.updateProducts(product.id, {
-              variants: variantUpdates,
-            })
-
-            logger.debug(`Updated price for product ${product.id}: ${priceAmount} ${defaultCurrency}`)
-          }
+          logger.debug(`Updated cost price metadata for product ${product.id}: ${costPrice} ${defaultCurrency}`)
         }
 
         // Update inventory if enabled

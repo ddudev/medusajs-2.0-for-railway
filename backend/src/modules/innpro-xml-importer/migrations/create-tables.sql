@@ -5,6 +5,7 @@
 CREATE TABLE IF NOT EXISTS innpro_import_session (
   id VARCHAR(255) PRIMARY KEY,
   xml_url VARCHAR(500) NOT NULL,
+  xml_file_path VARCHAR(500) NULL,
   parsed_data JSONB,
   selected_categories JSONB,
   selected_brands JSONB,

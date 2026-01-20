@@ -6,8 +6,11 @@ type ParseXmlFormProps = {
   onError: (error: string) => void
 }
 
+// Hardcoded XML URL - change this if you need to use a different URL
+const DEFAULT_XML_URL = "https://b2b.innpro.eu/edi/export-offer.php?client=deyan@merchsolution.net&language=eng&token=fbbff9d23fbddaf9e8d4e33&shop=7&type=full&format=xml&iof_3_0"
+
 export const ParseXmlForm = ({ onSuccess, onError }: ParseXmlFormProps) => {
-  const [xmlUrl, setXmlUrl] = useState("")
+  const [xmlUrl, setXmlUrl] = useState(DEFAULT_XML_URL)
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {

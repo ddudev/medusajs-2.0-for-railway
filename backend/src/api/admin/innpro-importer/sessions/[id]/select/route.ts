@@ -35,7 +35,7 @@ export async function POST(
       return
     }
 
-    logger.info(`Session ${id} found with ${session.parsed_data.products?.length || 0} products`)
+    logger.info(`Session ${id} found with ${session.parsed_data.products?.length || 0} products in parsed_data`)
     logger.info(`Received filters - categories: ${JSON.stringify(categories)}, brands: ${JSON.stringify(brands)}, productIds: ${JSON.stringify(productIds)}`)
 
     // Update session with selections
@@ -61,6 +61,46 @@ export async function POST(
     
     logger.info(`Session ${id} updated. Verifying stored values - selected_categories: ${JSON.stringify(updatedSession.selected_categories)}, selected_brands: ${JSON.stringify(updatedSession.selected_brands)}, selected_product_ids: ${JSON.stringify(updatedSession.selected_product_ids)}`)
 
+    // STREAMING APPROACH: Read products from XML file if available
+    let allProducts: any[] = []
+    // Try to get xml_file_path from session or updated session
+    let xmlFilePath = (session as any).xml_file_path || (updatedSession as any).xml_file_path
+    
+    // If not found in session object, try to get it directly from database
+    if (!xmlFilePath) {
+      try {
+        const xmlFilePathFromDb = await importerService.getXmlFilePath(id)
+        if (xmlFilePathFromDb) {
+          xmlFilePath = xmlFilePathFromDb
+          logger.info(`Retrieved xml_file_path from database: ${xmlFilePath}`)
+        }
+      } catch (dbError) {
+        logger.warn(`Could not retrieve xml_file_path from database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`)
+      }
+    }
+    
+    logger.info(`Session ${id} xml_file_path: ${xmlFilePath || 'NOT FOUND'}`)
+    
+    if (xmlFilePath) {
+      logger.info(`Loading products from XML file for filtering: ${xmlFilePath}`)
+      try {
+        const fs = await import('fs/promises')
+        const xmlContent = await fs.readFile(xmlFilePath, 'utf-8')
+        const xmlData = importerService.parseXml(xmlContent)
+        allProducts = importerService.extractProducts(xmlData)
+        logger.info(`Loaded ${allProducts.length} products from XML file for filtering`)
+      } catch (fileError) {
+        logger.error(`Failed to read XML file ${xmlFilePath}: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`)
+        // Fallback to parsed_data if file read fails
+        allProducts = session.parsed_data.products || []
+        logger.warn(`Falling back to parsed_data: ${allProducts.length} products`)
+      }
+    } else {
+      // Fallback: Use products from parsed_data (old approach or if xml_file_path not set)
+      allProducts = session.parsed_data.products || []
+      logger.info(`No xml_file_path found, using products from session parsed_data: ${allProducts.length} products`)
+    }
+
     // Filter products based on selection
     const filters: SelectionFilters = {
       categories,
@@ -68,7 +108,6 @@ export async function POST(
       productIds,
     }
 
-    const allProducts = session.parsed_data.products || []
     const filteredProducts = importerService.filterProducts(allProducts, filters)
 
     logger.info(`Filtered ${filteredProducts.length} products from ${allProducts.length} total`)

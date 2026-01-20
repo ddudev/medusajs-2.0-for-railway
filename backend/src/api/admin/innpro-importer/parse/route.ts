@@ -25,35 +25,42 @@ export async function POST(
 
     logger.info(`Starting XML parse for URL: ${xmlUrl}`)
 
-    // Download and parse XML
+    // PHASE 1: Parse XML to extract metadata only (no products stored)
     const xmlData = await importerService.downloadAndParseXml(xmlUrl)
-    const products = importerService.extractProducts(xmlData)
+    const summary = importerService.extractMetadataOnly(xmlData)
 
-    logger.info(`Extracted ${products.length} products from XML`)
+    logger.info(`Extracted metadata: ${summary.total_products} products, ${summary.categories.length} categories, ${summary.brands.length} brands`)
 
-    // Extract categories and brands
-    const summary = importerService.getCategoriesAndBrands(products)
-
-    // Create import session
+    // Create import session first to get session ID
     const session = await importerService.createSession({
       xml_url: xmlUrl,
       parsed_data: {
-        products,
+        // NO products array - will be streamed later during import
         categories: summary.categories,
         brands: summary.brands,
         total_products: summary.total_products,
         brandToCategories: summary.brandToCategories,
       },
-      status: 'ready',
+      status: 'parsing',
     })
 
-    // Get sample products (first 5)
-    const sampleProducts = products.slice(0, 5).map((p: any) => ({
-      id: p['@_id'] || p.id,
-      title: p.description?.name?.[0]?.['@text'] || 'N/A',
-      category: p.category?.name || 'N/A',
-      producer: p.producer?.name || 'N/A',
-    }))
+    logger.info(`Created session: ${session.id}`)
+
+    // PHASE 2: Download XML and save to disk using session ID
+    const xmlFilePath = await importerService.saveXmlToDisk(xmlUrl, session.id)
+    logger.info(`XML saved to disk: ${xmlFilePath}`)
+
+    // Update session with XML file path and mark as ready
+    // @ts-ignore - Auto-generated method
+    await importerService.updateInnProImportSessions([{
+      id: session.id,
+      xml_file_path: xmlFilePath,
+      status: 'ready',
+    }])
+
+    // Update session object with file path for response
+    session.xml_file_path = xmlFilePath
+    session.status = 'ready'
 
     res.json({
       sessionId: session.id,
@@ -61,8 +68,7 @@ export async function POST(
       categories: summary.categories,
       brands: summary.brands,
       brandToCategories: summary.brandToCategories,
-      products: products, // Include full product list for frontend counting
-      sampleProducts,
+      // NO products array sent to frontend - saves memory
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'

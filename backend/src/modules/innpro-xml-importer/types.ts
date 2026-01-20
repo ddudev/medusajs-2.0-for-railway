@@ -7,11 +7,13 @@ export type ImportSessionStatus = 'parsing' | 'ready' | 'selecting' | 'importing
 export interface InnProImportSession {
   id: string
   xml_url: string
+  xml_file_path?: string // Path to saved XML file on disk
   parsed_data?: {
-    products: any[]
+    products?: any[] // Optional - will be empty for streaming approach
     categories: Array<{ id: string; name: string; count: number }>
     brands: Array<{ id: string; name: string; count: number }>
     total_products: number
+    brandToCategories?: Record<string, string[]>
   }
   selected_categories?: string[]
   selected_brands?: string[]
@@ -93,7 +95,9 @@ export interface MedusaProductData {
 
 export interface PriceUpdateData {
   productId: string
-  priceNet?: number
-  priceGross?: number
+  priceNet?: number      // Cost price (what we pay)
+  priceGross?: number    // Cost price (gross)
+  srpNet?: number        // SRP (price to consumer)
+  srpGross?: number      // SRP (gross)
   stockQuantity?: number
 }
