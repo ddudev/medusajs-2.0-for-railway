@@ -14,6 +14,8 @@ import { KeyboundForm } from "../../../../../components/utilities/keybound-form"
 import { FormExtensionZone } from "../../../../../dashboard-app"
 import { useExtension } from "../../../../../providers/extension-provider"
 import { useDocumentDirection } from "../../../../../hooks/use-document-direction"
+import { AIEnhanceButton } from "../ai-enhance-button"
+import { useProduct } from "../../../../../hooks/api/products"
 
 type EditProductFormProps = {
   product: HttpTypes.AdminProduct
@@ -37,6 +39,11 @@ export const EditProductForm = ({ product }: EditProductFormProps) => {
   const fields = getFormFields("product", "edit")
   const configs = getFormConfigs("product", "edit")
 
+  // Hook to refetch product data after AI enhancement
+  const { refetch: refetchProduct } = useProduct(product.id, {
+    fields: "-type,-collection,-options,-tags,-images,-variants,-sales_channels",
+  })
+
   const form = useExtendableForm({
     defaultValues: {
       status: product.status,
@@ -53,6 +60,24 @@ export const EditProductForm = ({ product }: EditProductFormProps) => {
   })
 
   const { mutateAsync, isPending } = useUpdateProduct(product.id)
+
+  const handleAIEnhanceSuccess = async () => {
+    // Refetch product data to get updated content
+    const { data: updatedProduct } = await refetchProduct()
+    
+    if (updatedProduct) {
+      // Update form with new values
+      form.reset({
+        status: updatedProduct.status,
+        title: updatedProduct.title,
+        material: updatedProduct.material || "",
+        subtitle: updatedProduct.subtitle || "",
+        handle: updatedProduct.handle || "",
+        description: updatedProduct.description || "",
+        discountable: updatedProduct.discountable,
+      })
+    }
+  }
 
   const handleSubmit = form.handleSubmit(async (data) => {
     const { title, discountable, handle, status, ...optional } = data
@@ -88,6 +113,12 @@ export const EditProductForm = ({ product }: EditProductFormProps) => {
         className="flex flex-1 flex-col overflow-hidden"
       >
         <RouteDrawer.Body className="flex flex-1 flex-col gap-y-8 overflow-y-auto">
+          {/* AI Enhancement Button */}
+          <AIEnhanceButton 
+            productId={product.id} 
+            onSuccess={handleAIEnhanceSuccess}
+          />
+          
           <div className="flex flex-col gap-y-8">
             <div className="flex flex-col gap-y-4">
               <Form.Field

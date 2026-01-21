@@ -16,39 +16,18 @@ export default async function productRestockPushNotificationHandler({
   container,
 }: SubscriberArgs<any>) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-  const manager = container.resolve(ContainerRegistrationKeys.MANAGER)
-  const productModuleService: IProductModuleService = container.resolve(Modules.PRODUCT)
 
-  try {
-    // Get product details
-    const product = await productModuleService.retrieveProduct(data.id, {
-      relations: ['variants', 'variants.inventory_items'],
-    })
-
-    // Check if product is now in stock (was out of stock before)
-    // This would require tracking previous inventory state
-    // For now, this is a placeholder implementation
-
-    const vapidKeysService = new VapidKeysService({ logger, manager })
-    const pushNotificationService = new PushNotificationService({
-      logger,
-      manager,
-      vapidKeysService,
-    })
-    const notificationSchedulerService = new NotificationSchedulerService({
-      logger,
-      manager,
-      pushNotificationService,
-    })
-
-    // TODO: Get users subscribed to this product's restock alerts
-    // This would require a new table: product_alert_subscriptions
-    // For now, skip implementation
-
-    logger.info(`Product restock notification handler called for product ${product.id}`)
-  } catch (error) {
-    logger.error('Error in product restock push notification handler:', error)
-  }
+  // This subscriber is disabled because:
+  // 1. Push notification services require 'manager' which doesn't exist in MedusaJS 2.x
+  // 2. Product restock tracking requires additional infrastructure
+  // 3. Need to create product_alert_subscriptions table
+  
+  logger.debug(`Product restock notification handler called for product ${data.id} (disabled - not implemented)`)
+  
+  // TODO: Implement product restock notifications when:
+  // - Push notification services are updated for MedusaJS 2.x
+  // - Product alert subscriptions table is created
+  // - Inventory tracking logic is implemented
 }
 
 export const config: SubscriberConfig = {

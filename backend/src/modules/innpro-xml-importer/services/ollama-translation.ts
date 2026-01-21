@@ -10,8 +10,8 @@ export interface OllamaTranslationService {
 
 export class OllamaTranslationServiceImpl implements OllamaTranslationService {
   public readonly baseUrl: string
-  private model: string
-  private timeout: number
+  protected model: string
+  protected timeout: number
 
   constructor(
     baseUrl: string = 'http://localhost:11434', 
