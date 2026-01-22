@@ -7,6 +7,7 @@ import {
 import { MedusaContainer, ISalesChannelModuleService, IProductModuleService } from '@medusajs/framework/types'
 import { createProductsWorkflow, createShippingProfilesWorkflow } from '@medusajs/medusa/core-flows'
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils'
+import { ulid } from 'ulid'
 import { INNPRO_XML_IMPORTER_MODULE } from '../modules/innpro-xml-importer'
 import InnProXmlImporterService from '../modules/innpro-xml-importer/service'
 import { BRAND_MODULE } from '../modules/brand'
@@ -131,37 +132,10 @@ const mapProductsStep = createStep(
     const mappedProducts: MedusaProductData[] = []
     const errors: Array<{ index: number; error: string }> = []
 
-    // Helper function to recursively remove '@_' prefix from all keys
-    const cleanXmlKeys = (obj: any): any => {
-      if (obj === null || obj === undefined) return obj
-      
-      // Handle arrays
-      if (Array.isArray(obj)) {
-        return obj.map(item => cleanXmlKeys(item))
-      }
-      
-      // Handle objects
-      if (typeof obj === 'object') {
-        const cleaned: any = {}
-        for (const key of Object.keys(obj)) {
-          // Remove '@_' prefix from key
-          const cleanKey = key.startsWith('@_') ? key.substring(2) : key
-          // Recursively clean nested objects
-          cleaned[cleanKey] = cleanXmlKeys(obj[key])
-        }
-        return cleaned
-      }
-      
-      // Return primitive values as-is
-      return obj
-    }
-    
     for (let i = 0; i < input.products.length; i++) {
       try {
-        const xmlProductRaw = input.products[i]
-        // Clean '@_' prefixes from all keys
-        const xmlProduct = cleanXmlKeys(xmlProductRaw)
-        const productId = xmlProduct.id || `unknown-${i}`
+        const xmlProduct = input.products[i]
+        const productId = xmlProduct['@_id'] || xmlProduct.id || `unknown-${i}`
         
         // Debug title extraction for first few products or if title extraction fails
         const nameArray = xmlProduct.description?.name
@@ -171,12 +145,33 @@ const mapProductsStep = createStep(
           logger.debug(`Product ${i + 1} (ID: ${productId}) title extraction debug: hasDescription=${!!xmlProduct.description}, hasName=${!!nameArray}, nameType=${typeof nameArray}, nameIsArray=${Array.isArray(nameArray)}, nameValue=${JSON.stringify(nameArray).substring(0, 500)}, extractedTitle=${extractedTitle}, extractedTitleEn=${importerService.extractByLang(nameArray, 'en')}`)
         }
         
-        const mapped = importerService.mapToMedusaProduct(xmlProduct)
-        
-        // Debug: Check category and producer metadata
-        if (i < 3) {
-          logger.info(`🔍 Product ${i + 1} metadata: category=${JSON.stringify(mapped.metadata?.category)}, producer=${JSON.stringify(mapped.metadata?.producer)}`)
+        // Recursively remove '@_' prefix from all keys in the XML object
+        const cleanXmlKeys = (obj: any): any => {
+          if (obj === null || obj === undefined) return obj
+          
+          // Handle arrays
+          if (Array.isArray(obj)) {
+            return obj.map(item => cleanXmlKeys(item))
+          }
+          
+          // Handle objects
+          if (typeof obj === 'object') {
+            const cleaned: any = {}
+            for (const key of Object.keys(obj)) {
+              // Remove '@_' prefix from key
+              const cleanKey = key.startsWith('@_') ? key.substring(2) : key
+              // Recursively clean nested objects
+              cleaned[cleanKey] = cleanXmlKeys(obj[key])
+            }
+            return cleaned
+          }
+          
+          // Return primitive values as-is
+          return obj
         }
+        
+        const cleanedXmlProduct = cleanXmlKeys(xmlProduct)
+        const mapped = importerService.mapToMedusaProduct(cleanedXmlProduct)
         
         // Log if title is still "Untitled Product" with full structure
         if (mapped.title === 'Untitled Product') {
@@ -252,9 +247,28 @@ const translateProductsStep = createStep(
           // SKIP description translation - SEO optimization step will handle translation + optimization in one call
           // This saves significant time as we avoid redundant translation
           
-          // Skip translating variants and options for default values
-          // They need to stay as "Default" to avoid mismatch errors
-          // Variants and options are only used for simple products without real variations
+          // Translate variants
+          if (product.variants) {
+            product.variants.forEach((variant, vIndex) => {
+              if (variant.title) {
+                textsToTranslate.push({ field: `variant_${vIndex}_title`, value: variant.title })
+              }
+            })
+          }
+
+          // Translate options
+          if (product.options) {
+            product.options.forEach((option, oIndex) => {
+              if (option.title) {
+                textsToTranslate.push({ field: `option_${oIndex}_title`, value: option.title })
+              }
+              if (option.values) {
+                option.values.forEach((value, vIndex) => {
+                  textsToTranslate.push({ field: `option_${oIndex}_value_${vIndex}`, value })
+                })
+              }
+            })
+          }
 
           // Translate metadata fields
           if (product.metadata) {
@@ -314,6 +328,38 @@ const translateProductsStep = createStep(
               // Skip description - it will be handled in SEO step
               if (item.field === 'description') {
                 return // Skip
+              } else if (item.field.startsWith('variant_')) {
+                const match = item.field.match(/variant_(\d+)_title/)
+                if (match) {
+                  const vIndex = parseInt(match[1])
+                  if (translatedProduct.variants && translatedProduct.variants[vIndex]) {
+                    // Clean translation to remove any leaked prompt text
+                    let cleanedTranslation = translation
+                      .replace(/Обикновено ВАЖНО.*?обяснения\./gi, '')
+                      .replace(/IMPORTANT.*?explanations\./gi, '')
+                      .replace(/Return ONLY.*?explanations\./gi, '')
+                      .replace(/Върнете САМО.*?обяснения\./gi, '')
+                      .trim()
+                    
+                    // If cleaning removed everything, use original
+                    translatedProduct.variants[vIndex].title = cleanedTranslation || translatedProduct.variants[vIndex].title
+                  }
+                }
+              } else if (item.field.startsWith('option_')) {
+                const match = item.field.match(/option_(\d+)_title/) || item.field.match(/option_(\d+)_value_(\d+)/)
+                if (match) {
+                  const oIndex = parseInt(match[1])
+                  if (translatedProduct.options && translatedProduct.options[oIndex]) {
+                    if (item.field.includes('_title')) {
+                      translatedProduct.options[oIndex].title = translation
+                    } else if (item.field.includes('_value_')) {
+                      const vIndex = parseInt(match[2])
+                      if (translatedProduct.options[oIndex].values) {
+                        translatedProduct.options[oIndex].values[vIndex] = translation
+                      }
+                    }
+                  }
+                }
               } else if (item.field === 'unit_name' && translatedProduct.metadata) {
                 (translatedProduct.metadata as any).unit_name = translation
               } else if (item.field === 'warranty_name' && translatedProduct.metadata) {
@@ -523,7 +569,7 @@ async function getOrCreateCategoryHierarchy(
     if (ollamaService) {
       try {
         logger.debug(`Translating category name: "${originalCategoryName}"`)
-        categoryName = await ollamaService.translate(originalCategoryName, 'bg')
+        categoryName = originalCategoryName //await ollamaService.translate(originalCategoryName, 'bg')
         logger.debug(`Translated category name: "${originalCategoryName}" → "${categoryName}"`)
       } catch (error) {
         logger.warn(`Failed to translate category name "${originalCategoryName}": ${error instanceof Error ? error.message : 'Unknown'}. Using original name.`)
@@ -648,11 +694,6 @@ const processCategoriesAndBrandsStep = createStep(
     for (const product of input.products) {
       const categoryName = product.metadata?.category?.name
       const brandName = product.metadata?.producer?.name
-      
-      // Debug first 3 products
-      if (uniqueCategories.size + uniqueBrands.size < 6) {
-        logger.info(`🔍 Product category/brand check: title="${product.title}", categoryName="${categoryName}", brandName="${brandName}", hasMetadata=${!!product.metadata}`)
-      }
       
       if (categoryName) {
         uniqueCategories.add(categoryName)

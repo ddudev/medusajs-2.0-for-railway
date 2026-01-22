@@ -1,0 +1,40 @@
+Generate SEO meta title and meta description for this product in Bulgarian.
+
+PRODUCT INFORMATION:
+Product Name: {{productName}}
+Primary Keyword: {{primaryKeyword}}
+Secondary Keywords: {{secondaryKeywords}}
+Original Description (English): {{originalDescription}}
+
+REQUIREMENTS:
+
+Meta Title (50-60 characters):
+- MUST include Primary Keyword "{{primaryKeyword}}" at the beginning or early in the title
+- Include brand name if relevant
+- Keep it natural and readable
+- Format: "[Primary Keyword] - [Benefit/Feature] | [Brand/Store]"
+- Example: "xTool Apparel Printer - Печат на Дрехи | Nez.bg"
+- Count characters carefully - must be 50-60 characters
+
+Meta Description (150-180 characters):
+- MUST include Primary Keyword "{{primaryKeyword}}" in the first 120 characters
+- Include 1-2 secondary keywords naturally: {{secondaryKeywords}}
+- Summarize main value proposition
+- Include a benefit or use case
+- End with a subtle call-to-action if space allows
+- Format: "[Primary Keyword] - [Value proposition]. [Benefits]. [CTA]"
+- Example: "xTool Apparel Printer - професионален печат на дрехи и текстил. Висококачествени отпечатъци върху всички тъкани. Поръчайте онлайн!"
+- Count characters carefully - must be 150-180 characters
+
+OUTPUT FORMAT (STRICT):
+Return ONLY this JSON object:
+{
+  "metaTitle": "...",
+  "metaDescription": "..."
+}
+
+CRITICAL:
+- Return ONLY valid JSON, no explanations
+- No text before or after the JSON
+- No markdown code blocks
+- Count characters accurately
