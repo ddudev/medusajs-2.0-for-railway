@@ -626,8 +626,16 @@ class InnProXmlImporterService extends MedusaService({
    * Map InnPro XML product to Medusa product format
    */
   mapToMedusaProduct(xmlProduct: any): MedusaProductData {
-    const productId = xmlProduct['@_id'] || xmlProduct.id
-    const productAttrs = xmlProduct['@attributes'] || {}
+    const productId = xmlProduct.id
+    // After cleaning '@_' prefixes, attributes are directly on xmlProduct
+    const productAttrs = {
+      currency: xmlProduct.currency,
+      code_on_card: xmlProduct.code_on_card,
+      producer_code_standard: xmlProduct.producer_code_standard,
+      type: xmlProduct.type,
+      vat: xmlProduct.vat,
+      site: xmlProduct.site,
+    }
 
     // Extract title and description (multilingual)
     const nameArray = xmlProduct.description?.name
@@ -650,17 +658,15 @@ class InnProXmlImporterService extends MedusaService({
     
     if (sizeArray.length > 0) {
       const firstSize = sizeArray[0]
-      const sizeAttrs = firstSize['@attributes'] || {}
-      sku = sizeAttrs.code_producer || sizeAttrs.code || undefined
-      barcode = sizeAttrs['{http://www.iai-shop.com/developers/iof/extensions.phtml}code_external'] || 
-                sizeAttrs.code_external
+      sku = firstSize.code_producer || firstSize.code || undefined
+      barcode = firstSize['iaiext:code_external'] || firstSize.code_external
     }
 
     // Extract product-level weight (try multiple sources)
     let productWeight: number | undefined = undefined
     
     // Try from size attributes first
-    const sizeWeight = sizeArray[0]?.['@attributes']?.weight
+    const sizeWeight = sizeArray[0]?.weight
     if (sizeWeight) {
       const parsed = parseFloat(sizeWeight)
       if (!isNaN(parsed)) {
@@ -744,7 +750,7 @@ class InnProXmlImporterService extends MedusaService({
     const producerData = responsibleEntity?.producer
     const responsibleProducer = producerData
       ? {
-          id: producerData['@attributes']?.id || producerData.id,
+          id: producerData.id,
           code: producerData.code,
           name: producerData.name,
           mail: producerData.mail,
@@ -756,6 +762,18 @@ class InnProXmlImporterService extends MedusaService({
         }
       : undefined
 
+    // Debug: Log category and producer extraction
+    console.log('🔍 Category extraction:', {
+      categoryId: xmlProduct.category?.id,
+      categoryName: xmlProduct.category?.name,
+      hasCategory: !!xmlProduct.category
+    })
+    console.log('🔍 Producer extraction:', {
+      producerId: xmlProduct.producer?.id,
+      producerName: xmlProduct.producer?.name,
+      hasProducer: !!xmlProduct.producer
+    })
+
     // Build metadata with all non-core fields (comprehensive)
     const metadata: Record<string, any> = {
       external_id: productId,
@@ -766,11 +784,11 @@ class InnProXmlImporterService extends MedusaService({
       vat_rate: productAttrs.vat,
       site_id: productAttrs.site,
       producer: {
-        id: xmlProduct.producer?.id || xmlProduct.producer?.['@_id'],
+        id: xmlProduct.producer?.id,
         name: xmlProduct.producer?.name,
       },
       category: {
-        id: xmlProduct.category?.id || xmlProduct.category?.['@_id'],
+        id: xmlProduct.category?.id,
         name: xmlProduct.category?.name,
       },
       // Unit fields (separate)

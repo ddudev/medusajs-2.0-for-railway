@@ -3,6 +3,7 @@
  * Handles translation, vision analysis, and SEO optimization using Ollama API
  */
 
+import { info } from 'console'
 import { loadPrompt } from '../utils/prompt-loader'
 
 export interface OllamaConfig {
@@ -76,14 +77,37 @@ export class OllamaService {
       cleaned = cleaned.replace(prefix, '')
     }
 
+    // Remove markdown code blocks
+    cleaned = cleaned.replace(/```[\w]*\n?/g, '').replace(/```/g, '')
+
+    // Extract JSON if there's extra content after it
+    // Find the last closing brace that matches the opening brace
+    if (cleaned.includes('{') && cleaned.includes('}')) {
+      const firstBrace = cleaned.indexOf('{')
+      let depth = 0
+      let lastBrace = firstBrace
+      
+      for (let i = firstBrace; i < cleaned.length; i++) {
+        if (cleaned[i] === '{') depth++
+        if (cleaned[i] === '}') {
+          depth--
+          if (depth === 0) {
+            lastBrace = i
+            break
+          }
+        }
+      }
+      
+      if (lastBrace > firstBrace) {
+        cleaned = cleaned.substring(firstBrace, lastBrace + 1)
+      }
+    }
+
     // Remove quotes if entire response is wrapped
     if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || 
         (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
       cleaned = cleaned.slice(1, -1)
     }
-
-    // Remove markdown code blocks
-    cleaned = cleaned.replace(/```[\w]*\n?/g, '').replace(/```/g, '')
 
     return cleaned.trim()
   }
@@ -132,10 +156,19 @@ export class OllamaService {
       return text
     }
 
-    const prompt = `Translate this text to Bulgarian. Return ONLY the Bulgarian translation, nothing else.
+    const prompt = `Translate this text to Bulgarian using NATURAL, COMMONLY USED Bulgarian terminology.
+
+IMPORTANT RULES:
+- Use terms that native Bulgarians would actually use in everyday speech
+- Avoid literal word-by-word translations
+- Use commonly spoken Bulgarian, not overly formal or archaic terms
+- Technical terms should be translated to what Bulgarian consumers search for and understand
+- Keep brand names, model numbers, and specifications exactly as is
 
 Text to translate:
 ${text}
+
+Return ONLY the natural Bulgarian translation.
 
 Bulgarian translation:`
 
@@ -179,12 +212,24 @@ Bulgarian translation:`
       ? `IMPORTANT: Keep the brand name "${brandName}" EXACTLY as is. Do not translate it.`
       : ''
 
-    const prompt = `Translate this product title to Bulgarian. ${brandInstruction}
+    const prompt = `Translate this product title to Bulgarian using NATURAL, COMMONLY USED Bulgarian terminology.
+
+${brandInstruction}
+
+TERMINOLOGY GUIDELINES:
+- Use commonly spoken Bulgarian terms, not literal translations
+- "CNC cutting machine" → "ЦНЦ машина" (not "фрезописец" or "рязачка")
+- "laser welder" → "лазерна заварка" or "лазерен заваръчен апарат"
+- "3D printer" → "3D принтер"
+- "power tool" → "електроинструмент"
+- Keep technical specifications as numbers/units (1200W, 24V, etc.)
+- Keep model numbers exactly as is
+- Use terms that Bulgarian consumers would actually search for and understand
 
 Product title:
 ${title}
 
-Return ONLY the translated title, nothing else.
+Return ONLY the natural Bulgarian title that Bulgarians would use in everyday language.
 
 Bulgarian title:`
 
@@ -373,9 +418,16 @@ Return as JSON:
       targetWordCountMax: productInfo.targetWordCountMax
     })
 
+    // Calculate required tokens based on target word count
+    // Roughly 1.3 tokens per word, plus overhead for HTML and JSON structure
+    const estimatedTokens = Math.ceil(productInfo.targetWordCount * 1.3 * 2.5) // 2.5x for safety
+    const numPredict = Math.max(32000, estimatedTokens)
+    
+    console.log(`[OLLAMA] Generating description with target ${productInfo.targetWordCount} words, num_predict: ${numPredict}`)
+    
     const response = await this.callOllama(prompt, {
       num_ctx: 124000,
-      num_predict: 32000,
+      num_predict: numPredict,
       temperature: 0.7,
       timeout: 600000 // 10 minutes
     })
@@ -391,6 +443,10 @@ Return as JSON:
       }
     } catch (error) {
       console.error('[OLLAMA] Failed to parse description response:', error)
+      console.error('[OLLAMA] Response length:', response.length)
+      console.error('[OLLAMA] Cleaned response length:', this.cleanResponse(response).length)
+      console.error('[OLLAMA] First 500 chars of cleaned response:', this.cleanResponse(response).substring(0, 500))
+      console.error('[OLLAMA] Last 500 chars of cleaned response:', this.cleanResponse(response).substring(this.cleanResponse(response).length - 500))
       return {
         technicalSafeDescription: productInfo.originalDescription,
         seoEnhancedDescription: productInfo.originalDescription,
@@ -483,12 +539,12 @@ Return as JSON:
       const originalDesc = originalDescriptionEn || product.description || ''
       const originalWordCount = originalDesc.split(/\s+/).filter(word => word.length > 0).length
       
-      // Target word count: same as original ±50 words, with min 150 and max 400
-      const targetWordCount = Math.max(150, Math.min(400, originalWordCount))
+      // Target word count: same as original ±50 words, with min 150 (no max limit)
+      const targetWordCount = Math.max(150, originalWordCount)
       const targetWordCountMin = Math.max(150, targetWordCount - 50)
-      const targetWordCountMax = Math.min(400, targetWordCount + 50)
+      const targetWordCountMax = targetWordCount + 50
 
-      console.log(`[Ollama] Original description: ${originalWordCount} words → Target: ${targetWordCount} words (${targetWordCountMin}-${targetWordCountMax})`)
+      info(`[Ollama] Original description: ${originalWordCount} words → Target: ${targetWordCount} words (${targetWordCountMin}-${targetWordCountMax})`)
 
       const productInfo = {
         productName: product.title || 'Unknown',
@@ -505,7 +561,16 @@ Return as JSON:
         targetWordCountMax
       }
 
-      return await this.generateProductDescription(productInfo)
+      const result = await this.generateProductDescription(productInfo)
+
+      const generatedLength = result.seoEnhancedDescription.split(/\s+/).filter(word => word.length > 0).length
+      info(`generatedLength: ${generatedLength}`)
+      info(`originalWordCount: ${originalWordCount}`)
+      info(`targetWordCount: ${targetWordCount}`)
+      info(`targetWordCountMin: ${targetWordCountMin}`)
+      info(`targetWordCountMax: ${targetWordCountMax}`)
+
+      return result
     } catch (error) {
       console.error('[OLLAMA] optimizeDescription failed:', error)
       return null

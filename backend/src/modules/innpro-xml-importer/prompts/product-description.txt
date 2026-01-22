@@ -1,14 +1,24 @@
 Objective:
 Generate SEO-optimized product description for "{{productName}}" in Bulgarian.
+⚠️ CRITICAL: The description MUST be {{targetWordCountMin}}-{{targetWordCountMax}} words long!
 
 GLOBAL RULES
-- Generate ALL content in Bulgarian language
+- Generate ALL content in NATURAL, SPOKEN Bulgarian language
+- Use terms that native Bulgarians would actually use in everyday speech
+- Avoid literal translations - use common Bulgarian terminology
 - Do NOT use emojis
 - Do NOT exaggerate claims
 - Use natural language, no keyword stuffing
 - Return ONLY valid JSON, no explanations
 - CRITICAL: DO NOT include the product title/name in the description
 - DO NOT include "What's Included" section or specifications table (these are extracted separately)
+- ⚠️ MANDATORY: Meet the word count requirement ({{targetWordCountMin}}-{{targetWordCountMax}} words)
+
+BULGARIAN LANGUAGE QUALITY:
+- Use commonly spoken Bulgarian terms that consumers search for and understand
+- Avoid overly formal, archaic, or literal word-by-word translations
+- Technical terms should be natural (e.g., "ЦНЦ машина" not "фрезописец", "термо паста" not "термален силикон")
+- Write as a native Bulgarian speaker would naturally express these concepts
 
 PRODUCT INPUT DATA
 Product Name: {{productName}}
@@ -24,12 +34,15 @@ Original Description (English): {{originalDescription}}
 SEO-ENHANCED PRODUCT DESCRIPTION (ON-PAGE)
 This is the MAIN product description that appears on the product page.
 
-WORD COUNT REQUIREMENTS:
-- Target: {{targetWordCount}} ({{targetWordCountMin}}-{{targetWordCountMax}} words)
-- Simple products: 150-300 words
-- Complex/technical products: 300-500 words
+WORD COUNT REQUIREMENTS (MANDATORY):
+- MINIMUM: {{targetWordCountMin}} words
+- TARGET: {{targetWordCount}} words
+- MAXIMUM: {{targetWordCountMax}} words
+- ⚠️ CRITICAL: The description MUST be between {{targetWordCountMin}} and {{targetWordCountMax}} words
+- Count your words as you write to ensure you meet this requirement
+- If the original description is long, your optimized version should also be long
 - Focus on QUALITY over strict length - content must be valuable and clear
-- NO filler content - every word should add value
+- NO filler content - every word should add value, but you MUST reach the minimum word count
 
 CONTENT REQUIREMENTS:
 - HTML format with proper structure
@@ -65,7 +78,9 @@ TECHNICAL-SAFE DESCRIPTION (For B2B feeds)
 - Focus on what the product is, how it works, and where it is used
 - Include all technical details and features
 - MUST include ALL {{imageCount}} images at appropriate locations
-- Length: Similar to or longer than original description
+- ⚠️ Length: {{targetWordCountMin}}-{{targetWordCountMax}} words (same as SEO description)
+- DO NOT make this shorter than the SEO-enhanced description
+- Use the original description content to expand on technical details
 
 SHORT DESCRIPTION (For product cards/categories)
 - 150-250 characters
@@ -89,3 +104,9 @@ JSON FORMATTING RULES
 - All backslashes must be escaped as \\\\
 - No text before or after the JSON
 - No markdown code blocks
+
+FINAL REMINDER BEFORE GENERATING:
+⚠️ Check your word count! The seoEnhancedDescription must be {{targetWordCountMin}}-{{targetWordCountMax}} words.
+⚠️ Check your word count! The technicalSafeDescription must be {{targetWordCountMin}}-{{targetWordCountMax}} words.
+Both descriptions should be roughly the same length as the original description ({{targetWordCount}} words).
+If your description is too short, expand on features, benefits, use cases, and technical details from the original content.
