@@ -4,111 +4,16 @@ import {
   StepResponse,
   WorkflowResponse,
 } from '@medusajs/framework/workflows-sdk'
-import { MedusaContainer, ISalesChannelModuleService, IProductModuleService, CreateInventoryLevelInput, IInventoryService } from '@medusajs/framework/types'
-import { createProductsWorkflow, createShippingProfilesWorkflow, createInventoryLevelsWorkflow } from '@medusajs/medusa/core-flows'
+import { MedusaContainer, ISalesChannelModuleService, IProductModuleService } from '@medusajs/framework/types'
+import { createProductsWorkflow, createShippingProfilesWorkflow } from '@medusajs/medusa/core-flows'
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils'
-import { ulid } from 'ulid'
 import { INNPRO_XML_IMPORTER_MODULE } from '../modules/innpro-xml-importer'
 import InnProXmlImporterService from '../modules/innpro-xml-importer/service'
 import { BRAND_MODULE } from '../modules/brand'
 import { IS_DEV, MINIO_ENDPOINT } from '../lib/constants'
 import { MedusaProductData, SelectionFilters } from '../modules/innpro-xml-importer/types'
-import OllamaTranslationServiceImpl from '../modules/innpro-xml-importer/services/ollama-translation'
-import SEOOptimizationService from '../modules/innpro-xml-importer/services/seo-optimization'
-
-/**
- * Extract specifications table from HTML description
- * Handles both HTML tables and text-based specifications with > prefix
- */
-function extractSpecificationsTable(description: string): string | null {
-  if (!description) return null
-  
-  // First, try to find HTML table wrapper or table element
-  const tablePatterns = [
-    /<div[^>]*class=["'][^"']*table-wrapper[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
-    /<table[^>]*>([\s\S]*?)<\/table>/i,
-  ]
-  
-  for (const pattern of tablePatterns) {
-    const match = description.match(pattern)
-    if (match && match[0]) {
-      return match[0]
-    }
-  }
-  
-  // Fallback: Look for text-based specifications with > prefix (like ">Производител\txTool")
-  const textSpecPattern = /(?:^|\n)(>[^\n]+(?:\n>[^\n]+)*)/m
-  const textSpecMatch = description.match(textSpecPattern)
-  if (textSpecMatch && textSpecMatch[1]) {
-    const specLines = textSpecMatch[1].split('\n').filter(line => line.trim().startsWith('>'))
-    if (specLines.length > 0) {
-      let tableHtml = '<table>\n<tbody>\n'
-      for (const line of specLines) {
-        const cleaned = line.replace(/^>\s*/, '').trim()
-        const parts = cleaned.split(/\t+| {2,}/) // Split on tab or multiple spaces
-        if (parts.length >= 2) {
-          const label = parts[0].trim()
-          const value = parts.slice(1).join(' ').trim()
-          tableHtml += `  <tr>\n    <th>${label}</th>\n    <td>${value}</td>\n  </tr>\n`
-        } else if (parts.length === 1 && cleaned.includes(' ')) {
-          const spaceIndex = cleaned.indexOf(' ')
-          if (spaceIndex > 0) {
-            const label = cleaned.substring(0, spaceIndex).trim()
-            const value = cleaned.substring(spaceIndex + 1).trim()
-            tableHtml += `  <tr>\n    <th>${label}</th>\n    <td>${value}</td>\n  </tr>\n`
-          }
-        }
-      }
-      tableHtml += '</tbody>\n</table>'
-      return tableHtml
-    }
-  }
-  
-  return null
-}
-
-/**
- * Extract "Included" section from HTML description
- * Handles both HTML format and plain text format
- */
-function extractIncludedSection(description: string): string | null {
-  if (!description) return null
-  
-  // Look for "Included" heading followed by a list
-  const includedPatterns = [
-    /<h3[^>]*>.*?[Вв]ключено[^<]*<\/h3>[\s\S]*?(<ul[^>]*>[\s\S]*?<\/ul>)/i,
-    /<h3[^>]*>Included<\/h3>[\s\S]*?(<ul[^>]*>[\s\S]*?<\/ul>)/i,
-    /<h3[^>]*>What'?s?\s*Included<\/h3>[\s\S]*?(<ul[^>]*>[\s\S]*?<\/ul>)/i,
-  ]
-  
-  for (const pattern of includedPatterns) {
-    const match = description.match(pattern)
-    if (match && match[1]) {
-      const headingMatch = description.match(/(<h3[^>]*>.*?[Вв]ключено[^<]*<\/h3>)/i) || 
-                          description.match(/(<h3[^>]*>.*?Included.*?<\/h3>)/i)
-      const heading = headingMatch ? headingMatch[1] : '<h3>Включено</h3>'
-      return `${heading}\n${match[1]}`
-    }
-  }
-  
-  // Fallback: Look for plain text "Включено:" or "Included:" followed by list items
-  const textIncludedPattern = /(?:^|\n)([Вв]ключено:|Included:)\s*\n((?:[-•*]\s*[^\n]+\n?)+)/i
-  const textMatch = description.match(textIncludedPattern)
-  if (textMatch && textMatch[2]) {
-    const listItems = textMatch[2].split('\n')
-      .filter(line => line.trim().match(/^[-•*]/))
-      .map(line => line.replace(/^[-•*]\s*/, '').trim())
-      .filter(item => item.length > 0)
-    
-    if (listItems.length > 0) {
-      const heading = '<h3>Включено</h3>'
-      const listHtml = '<ul>\n' + listItems.map(item => `  <li>${item}</li>`).join('\n') + '\n</ul>'
-      return `${heading}\n${listHtml}`
-    }
-  }
-  
-  return null
-}
+import { OllamaService } from '../modules/innpro-xml-importer/services/ollama'
+import { extractSpecificationsTable, extractIncludedSection } from '../modules/innpro-xml-importer/utils/html-parser'
 
 type WorkflowInput = {
   sessionId: string
@@ -281,7 +186,7 @@ const translateProductsStep = createStep(
     logger.info(`Translating ${input.products.length} products to Bulgarian using Ollama at ${ollamaUrl} with model ${ollamaModel}`)
 
     try {
-      const translationService = new OllamaTranslationServiceImpl(ollamaUrl, ollamaModel)
+      const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
       
       // Process products sequentially (one at a time) to avoid timeouts and overwhelming Ollama
       const translatedProducts: MedusaProductData[] = []
@@ -315,28 +220,9 @@ const translateProductsStep = createStep(
           // SKIP description translation - SEO optimization step will handle translation + optimization in one call
           // This saves significant time as we avoid redundant translation
           
-          // Translate variants
-          if (product.variants) {
-            product.variants.forEach((variant, vIndex) => {
-              if (variant.title) {
-                textsToTranslate.push({ field: `variant_${vIndex}_title`, value: variant.title })
-              }
-            })
-          }
-
-          // Translate options
-          if (product.options) {
-            product.options.forEach((option, oIndex) => {
-              if (option.title) {
-                textsToTranslate.push({ field: `option_${oIndex}_title`, value: option.title })
-              }
-              if (option.values) {
-                option.values.forEach((value, vIndex) => {
-                  textsToTranslate.push({ field: `option_${oIndex}_value_${vIndex}`, value })
-                })
-              }
-            })
-          }
+          // Skip translating variants and options for default values
+          // They need to stay as "Default" to avoid mismatch errors
+          // Variants and options are only used for simple products without real variations
 
           // Translate metadata fields
           if (product.metadata) {
@@ -361,14 +247,14 @@ const translateProductsStep = createStep(
           let translatedTitle = product.title
           if (product.title && brandName) {
             try {
-              translatedTitle = await translationService.translateTitle(product.title, brandName, 'bg')
+              translatedTitle = await ollamaService.translateTitle(product.title, brandName, 'bg')
             } catch (error) {
               logger.warn(`Failed to translate title for product ${index + 1}, using original`)
             }
           } else if (product.title) {
             // Fallback to regular translation if no brand
             try {
-              translatedTitle = await translationService.translate(product.title, 'bg')
+              translatedTitle = await ollamaService.translate(product.title, 'bg')
             } catch (error) {
               logger.warn(`Failed to translate title for product ${index + 1}, using original`)
             }
@@ -387,7 +273,7 @@ const translateProductsStep = createStep(
           
           if (texts.length > 0) {
             logger.info(`Product ${index + 1}: Translating ${texts.length} fields (variants, options, metadata - description will be handled in SEO step)`)
-            const translations = await translationService.translateBatch(texts, 'bg')
+            const translations = await ollamaService.translateBatch(texts, 'bg')
             
             // Apply translations (excluding description)
             textsToTranslateWithoutTitle.forEach((item, i) => {
@@ -396,38 +282,6 @@ const translateProductsStep = createStep(
               // Skip description - it will be handled in SEO step
               if (item.field === 'description') {
                 return // Skip
-              } else if (item.field.startsWith('variant_')) {
-                const match = item.field.match(/variant_(\d+)_title/)
-                if (match) {
-                  const vIndex = parseInt(match[1])
-                  if (translatedProduct.variants && translatedProduct.variants[vIndex]) {
-                    // Clean translation to remove any leaked prompt text
-                    let cleanedTranslation = translation
-                      .replace(/Обикновено ВАЖНО.*?обяснения\./gi, '')
-                      .replace(/IMPORTANT.*?explanations\./gi, '')
-                      .replace(/Return ONLY.*?explanations\./gi, '')
-                      .replace(/Върнете САМО.*?обяснения\./gi, '')
-                      .trim()
-                    
-                    // If cleaning removed everything, use original
-                    translatedProduct.variants[vIndex].title = cleanedTranslation || translatedProduct.variants[vIndex].title
-                  }
-                }
-              } else if (item.field.startsWith('option_')) {
-                const match = item.field.match(/option_(\d+)_title/) || item.field.match(/option_(\d+)_value_(\d+)/)
-                if (match) {
-                  const oIndex = parseInt(match[1])
-                  if (translatedProduct.options && translatedProduct.options[oIndex]) {
-                    if (item.field.includes('_title')) {
-                      translatedProduct.options[oIndex].title = translation
-                    } else if (item.field.includes('_value_')) {
-                      const vIndex = parseInt(match[2])
-                      if (translatedProduct.options[oIndex].values) {
-                        translatedProduct.options[oIndex].values[vIndex] = translation
-                      }
-                    }
-                  }
-                }
               } else if (item.field === 'unit_name' && translatedProduct.metadata) {
                 (translatedProduct.metadata as any).unit_name = translation
               } else if (item.field === 'warranty_name' && translatedProduct.metadata) {
@@ -488,8 +342,7 @@ const optimizeDescriptionsStep = createStep(
     logger.info(`Optimizing descriptions for ${input.products.length} products using Ollama at ${ollamaUrl} with model ${ollamaModel}`)
 
     try {
-      const translationService = new OllamaTranslationServiceImpl(ollamaUrl, ollamaModel)
-      const seoService = new SEOOptimizationService(translationService, ollamaModel)
+      const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
 
       // Process products sequentially (one at a time) to avoid timeouts and overwhelming Ollama
       const optimizedProducts: MedusaProductData[] = []
@@ -510,11 +363,11 @@ const optimizeDescriptionsStep = createStep(
 
           // Step 1a: Generate meta description (for search engine snippets)
           logger.info(`Product ${index + 1}: Step 1a/4 - Generating meta description`)
-          const metaContent = await seoService.generateMetaDescription(product, originalDescriptionEn)
+          const metaContent = await ollamaService.generateMetaDescription(product, originalDescriptionEn)
           
           // Step 1b: Optimize product description (150-400 words for on-page)
           logger.info(`Product ${index + 1}: Step 1b/4 - Optimizing product description (${originalDescriptionEn.length} chars)`)
-          const descriptionContent = await seoService.optimizeDescription(product, originalDescriptionEn)
+          const descriptionContent = await ollamaService.optimizeDescription(product, originalDescriptionEn)
 
           if (!descriptionContent || (!descriptionContent.seoEnhancedDescription && !descriptionContent.technicalSafeDescription)) {
             logger.warn(`Product ${index + 1}: Failed to generate description, keeping original`)
@@ -532,7 +385,7 @@ const optimizeDescriptionsStep = createStep(
           // Step 2: Extract "What's Included" from the ORIGINAL description (not optimized)
           // The optimized description might not have this section, so extract from original
           logger.info(`Product ${index + 1}: Step 2/4 - Extracting included items from original description`)
-          const includedItems = await seoService.extractIncludedItems(originalDescriptionEn) || 
+          const includedItems = await ollamaService.extractIncludedItems(originalDescriptionEn) || 
                                 extractIncludedSection(originalDescriptionEn) || 
                                 undefined
 
@@ -545,7 +398,7 @@ const optimizeDescriptionsStep = createStep(
 
           // Step 3: Extract technical data/specifications from original description
           logger.info(`Product ${index + 1}: Step 3/4 - Extracting technical data`)
-          const specificationsTable = await seoService.extractTechnicalData(originalDescriptionEn) ||
+          const specificationsTable = await ollamaService.extractTechnicalData(originalDescriptionEn) ||
                                      extractSpecificationsTable(originalDescriptionEn) ||
                                      undefined
 
@@ -594,60 +447,6 @@ const optimizeDescriptionsStep = createStep(
   }
 )
 
-/**
- * Step: Add options field for variants (MedusaJS requires options when variants exist)
- */
-const addOptionsStep = createStep(
-  'add-options',
-  async (
-    input: { products: MedusaProductData[] },
-    { container }: { container: MedusaContainer }
-  ) => {
-    const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-
-    logger.info(`Adding options for ${input.products.length} products`)
-
-    const productsWithOptions = input.products.map((product, productIndex) => {
-      const productWithOptions = { ...product }
-
-      // If product has variants, ensure it has an options field
-      // MedusaJS requires options when variants exist
-      if (productWithOptions.variants && productWithOptions.variants.length > 0) {
-        // Check if options already exist
-        if (!productWithOptions.options || !Array.isArray(productWithOptions.options) || productWithOptions.options.length === 0) {
-          // Extract unique size names from variants to create options
-          const sizeNames = new Set<string>()
-          productWithOptions.variants.forEach((variant: any) => {
-            if (variant.title) {
-              sizeNames.add(variant.title)
-            }
-          })
-
-          // Create options field with "Size" option
-          // The values will be the variant titles
-          productWithOptions.options = [
-            {
-              title: 'Size',
-              values: Array.from(sizeNames).length > 0 
-                ? Array.from(sizeNames) 
-                : productWithOptions.variants.map((v: any, i: number) => v.title || `Size ${i + 1}`),
-            },
-          ]
-
-          logger.debug(`Product ${productIndex + 1}: Added options field with ${productWithOptions.options[0].values.length} size values`)
-        }
-      }
-
-      return productWithOptions
-    })
-
-    logger.info(`Added options to ${productsWithOptions.length} products`)
-
-    return new StepResponse({
-      products: productsWithOptions,
-    })
-  }
-)
 
 /**
  * Helper: Get or create category hierarchy
@@ -659,7 +458,7 @@ async function getOrCreateCategoryHierarchy(
   container: MedusaContainer,
   categoryCache: Map<string, string>,
   logger: any,
-  translationService?: OllamaTranslationServiceImpl
+  ollamaService?: OllamaService
 ): Promise<string | null> {
   if (!categoryPath || categoryPath.trim().length === 0) {
     return null
@@ -689,10 +488,10 @@ async function getOrCreateCategoryHierarchy(
     
     // Translate category name to Bulgarian
     let categoryName = originalCategoryName
-    if (translationService) {
+    if (ollamaService) {
       try {
         logger.debug(`Translating category name: "${originalCategoryName}"`)
-        categoryName = await translationService.translate(originalCategoryName, 'bg')
+        categoryName = await ollamaService.translate(originalCategoryName, 'bg')
         logger.debug(`Translated category name: "${originalCategoryName}" → "${categoryName}"`)
       } catch (error) {
         logger.warn(`Failed to translate category name "${originalCategoryName}": ${error instanceof Error ? error.message : 'Unknown'}. Using original name.`)
@@ -801,10 +600,10 @@ const processCategoriesAndBrandsStep = createStep(
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
     const productService: IProductModuleService = container.resolve(Modules.PRODUCT)
 
-    // Initialize translation service for category translation
+    // Initialize Ollama service for category translation
     const ollamaUrl = input.ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434'
     const ollamaModel = input.ollamaModel || process.env.OLLAMA_MODEL || 'gemma3:latest'
-    const translationService = new OllamaTranslationServiceImpl(ollamaUrl, ollamaModel)
+    const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
 
     // Cache for category lookups (key: "categoryName|parentId" -> categoryId)
     const categoryCache = new Map<string, string>()
@@ -837,7 +636,7 @@ const processCategoriesAndBrandsStep = createStep(
           container,
           categoryCache,
           logger,
-          translationService // Pass translation service
+          ollamaService // Pass Ollama service
         )
         
         if (categoryId) {
@@ -1078,74 +877,7 @@ const getDefaultSalesChannelStep = createStep(
   }
 )
 
-/**
- * Step: Create inventory items for variants before product creation
- */
-const createInventoryItemsStep = createStep(
-  'create-inventory-items',
-  async (
-    input: {
-      products: MedusaProductData[]
-    },
-    { container }: { container: MedusaContainer }
-  ) => {
-    const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-    const inventoryService: IInventoryService = container.resolve(Modules.INVENTORY)
-    
-    // Map to store variant index -> inventory_item_id
-    // Format: "productIndex_variantIndex" -> inventory_item_id
-    const variantToInventoryItem = new Map<string, string>()
-    
-    logger.info(`Creating inventory items for variants before product creation`)
-    
-    try {
-      // Collect all variants that need inventory items
-      const inventoryItemsToCreate: Array<{ productIndex: number; variantIndex: number; variant: any }> = []
-      
-      input.products.forEach((product, productIndex) => {
-        if (product.variants && Array.isArray(product.variants)) {
-          product.variants.forEach((variant, variantIndex) => {
-            if (variant.manage_inventory !== false) {
-              inventoryItemsToCreate.push({ productIndex, variantIndex, variant })
-            }
-          })
-        }
-      })
-      
-      logger.info(`Creating ${inventoryItemsToCreate.length} inventory items`)
-      
-      // Create all inventory items
-      const inventoryItemInputs = inventoryItemsToCreate.map(({ variant }) => ({
-        sku: variant.sku || undefined,
-        requires_shipping: true,
-      }))
-      
-      const createdInventoryItems = await inventoryService.createInventoryItems(inventoryItemInputs)
-      const itemsArray = Array.isArray(createdInventoryItems) ? createdInventoryItems : [createdInventoryItems]
-      
-      // Map created inventory items back to variants
-      itemsArray.forEach((item, index) => {
-        if (item && item.id && index < inventoryItemsToCreate.length) {
-          const { productIndex, variantIndex } = inventoryItemsToCreate[index]
-          const key = `${productIndex}_${variantIndex}`
-          variantToInventoryItem.set(key, item.id)
-          logger.debug(`Created inventory item ${item.id} for product ${productIndex}, variant ${variantIndex}`)
-        }
-      })
-      
-      logger.info(`✅ Created ${variantToInventoryItem.size} inventory items`)
-      
-      // Convert Map to object for serialization
-      const variantToInventoryItemObj = Object.fromEntries(variantToInventoryItem)
-      
-      return new StepResponse({ variantToInventoryItem: variantToInventoryItemObj })
-    } catch (error) {
-      logger.error(`❌ Failed to create inventory items: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      // Return empty object - we'll create inventory items later if needed
-      return new StepResponse({ variantToInventoryItem: {} })
-    }
-  }
-)
+// Inventory management removed - variants will not have inventory tracking
 
 /**
  * Step: Import products
@@ -1157,7 +889,6 @@ const importProductsStep = createStep(
       products: MedusaProductData[]
       shippingProfileId: string
       defaultSalesChannelId?: string | null
-      variantToInventoryItem?: Record<string, string>
     },
     { container }: { container: MedusaContainer }
   ) => {
@@ -1168,8 +899,8 @@ const importProductsStep = createStep(
     let failed = 0
     const errors: string[] = []
 
-    // Prepare products for import - attach inventory items to variants
-    const productsToImport = input.products.map((product, productIndex) => {
+    // Prepare products for import
+    const productsToImport = input.products.map((product) => {
       const productData: any = {
         ...product,
         shipping_profile_id: input.shippingProfileId,
@@ -1181,25 +912,6 @@ const importProductsStep = createStep(
         productData.sales_channels = [{ id: input.defaultSalesChannelId }]
         logger.debug(`Adding product to sales channel: ${input.defaultSalesChannelId}`)
       }
-      
-      // Attach inventory items to variants if we have them
-      if (productData.variants && Array.isArray(productData.variants) && input.variantToInventoryItem) {
-        productData.variants = productData.variants.map((variant: any, variantIndex: number) => {
-          const key = `${productIndex}_${variantIndex}`
-          const inventoryItemId = input.variantToInventoryItem?.[key]
-          
-          if (inventoryItemId && variant.manage_inventory !== false) {
-            // Add inventory_items array to variant
-            variant.inventory_items = [{
-              inventory_item_id: inventoryItemId,
-              required_quantity: 1, // Each variant uses 1 unit of its inventory item
-            }]
-            logger.debug(`Attached inventory item ${inventoryItemId} to variant ${variant.sku || variant.title}`)
-          }
-          
-          return variant
-        })
-      }
 
       return productData
     })
@@ -1207,8 +919,6 @@ const importProductsStep = createStep(
     logger.info(`Importing ${productsToImport.length} products`)
 
     let handleToProductIdMap = new Map<string, string>()
-    // Initialize inventory data map outside try block so it's always available
-    const inventoryData = new Map<string, number>() // variant_id -> quantity
 
     try {
       // First, check which products already exist by handle
@@ -1248,14 +958,6 @@ const importProductsStep = createStep(
       // Create new products
       let createdProducts: any[] = []
       if (productsToCreate.length > 0) {
-        // Log variant inventory settings before creation
-        for (const product of productsToCreate) {
-          if (product.variants && product.variants.length > 0) {
-            for (const variant of product.variants) {
-              logger.debug(`Pre-creation: Variant ${variant.sku || variant.title} has manage_inventory: ${variant.manage_inventory}, inventory_quantity: ${variant.inventory_quantity}`)
-            }
-          }
-        }
         
         try {
           const { result } = await createProductsWorkflow(container).run({
@@ -1370,39 +1072,6 @@ const importProductsStep = createStep(
       
       logger.info(`Created handle-to-ID map with ${handleToProductIdMap.size} products`)
 
-      // Collect inventory quantities from original product data
-      for (const product of productsToImport) {
-        const productId = handleToProductIdMap.get(product.handle || '')
-        if (productId && product.variants) {
-          // Get the created product to get variant IDs
-          try {
-            const createdProduct = await productService.retrieveProduct(productId, {
-              relations: ['variants'],
-            })
-            
-            // Map variants by SKU or title to match with original data
-            for (const originalVariant of product.variants) {
-              if (originalVariant.inventory_quantity !== undefined && originalVariant.inventory_quantity >= 0) {
-                // Find matching variant in created product
-                const matchingVariant = createdProduct.variants?.find((v: any) => 
-                  v.sku === originalVariant.sku || 
-                  v.title === originalVariant.title
-                )
-                
-                if (matchingVariant && matchingVariant.id) {
-                  inventoryData.set(matchingVariant.id, originalVariant.inventory_quantity)
-                  logger.info(`📦 Stored inventory quantity ${originalVariant.inventory_quantity} for variant ${matchingVariant.id} (${matchingVariant.sku || matchingVariant.title})`)
-                } else {
-                  logger.warn(`Could not find matching variant for inventory: SKU=${originalVariant.sku}, Title=${originalVariant.title}`)
-                }
-              }
-            }
-          } catch (error) {
-            logger.warn(`Could not retrieve product ${productId} to set inventory: ${error instanceof Error ? error.message : 'Unknown'}`)
-          }
-        }
-      }
-
       // Assign categories to products after import (createProductsWorkflow doesn't always handle categories)
       const productsWithCategories = productsToImport.filter((p: any) => 
         p.categories && 
@@ -1473,219 +1142,15 @@ const importProductsStep = createStep(
       errors.push(errorMessage)
     }
 
-    const inventoryDataArray = Array.from(inventoryData.entries()).map(([variantId, quantity]) => ({
-      variantId,
-      quantity,
-    }))
-    
-    logger.info(`📦 Collected inventory data for ${inventoryDataArray.length} variants`)
-
     return new StepResponse({
       successful,
       failed,
       total: productsToImport.length,
       errors,
-      inventoryData: inventoryDataArray,
     })
   }
 )
 
-/**
- * Step: Set inventory levels for variants
- */
-const setInventoryLevelsStep = createStep(
-  'set-inventory-levels',
-  async (
-    input: {
-      inventoryData?: Array<{ variantId: string; quantity: number }>
-    },
-    { container }: { container: MedusaContainer }
-  ) => {
-    const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-    const query = container.resolve(ContainerRegistrationKeys.QUERY)
-
-    if (!input?.inventoryData || input.inventoryData.length === 0) {
-      logger.info('📦 No inventory data to set (inventoryData is empty or undefined)')
-      return new StepResponse({ set: 0 })
-    }
-
-    logger.info(`📦 Setting inventory for ${input.inventoryData.length} variants`)
-
-    try {
-      // Get default stock location
-      const { data: stockLocations } = await query.graph({
-        entity: 'stock_location',
-        fields: ['id', 'name'],
-      })
-
-      if (!stockLocations || stockLocations.length === 0) {
-        logger.warn('No stock locations found, skipping inventory setup')
-        return new StepResponse({ set: 0 })
-      }
-
-      const defaultLocation = stockLocations[0]
-      logger.info(`Using stock location: ${defaultLocation.name} (${defaultLocation.id})`)
-
-      // Get variant IDs we need inventory items for
-      const variantIds = input.inventoryData.map(d => d.variantId)
-      logger.info(`Looking for inventory items for ${variantIds.length} variants: ${variantIds.slice(0, 5).join(', ')}${variantIds.length > 5 ? '...' : ''}`)
-
-      // Query inventory items - try with a small delay first in case they're still being created
-      // Retry up to 5 times with increasing delays (inventory items might take time to be created)
-      let inventoryItems: any[] = []
-      let variantToInventoryItem = new Map<string, string>()
-      
-      for (let attempt = 0; attempt < 5; attempt++) {
-        if (attempt > 0) {
-          const delay = attempt * 1000 // 1s, 2s, 3s, 4s delays
-          logger.info(`⏳ Retrying inventory item query (attempt ${attempt + 1}/5) after ${delay}ms delay...`)
-          await new Promise(resolve => setTimeout(resolve, delay))
-        }
-
-        // Query all inventory items (we'll filter by variant_id manually)
-        logger.debug(`Querying inventory items (attempt ${attempt + 1}/5)...`)
-        const { data: allInventoryItems } = await query.graph({
-          entity: 'inventory_item',
-          fields: ['id', 'variant_id'],
-        })
-        
-        logger.debug(`Query returned ${allInventoryItems?.length || 0} total inventory items`)
-
-        if (!allInventoryItems || allInventoryItems.length === 0) {
-          logger.warn(`No inventory items found (attempt ${attempt + 1}/3)`)
-          continue
-        }
-
-        // Filter to only items for our variants and create map
-        variantToInventoryItem = new Map<string, string>()
-        for (const item of allInventoryItems) {
-          if (item.variant_id && variantIds.includes(item.variant_id)) {
-            variantToInventoryItem.set(item.variant_id, item.id)
-          }
-        }
-
-        logger.info(`Found ${variantToInventoryItem.size} inventory items for our ${variantIds.length} variants (attempt ${attempt + 1}/5)`)
-
-        // If we found all items, break early
-        if (variantToInventoryItem.size === variantIds.length) {
-          logger.info(`✅ Found all inventory items on attempt ${attempt + 1}`)
-          break
-        }
-
-        // If we found some but not all, log which ones are missing
-        if (variantToInventoryItem.size > 0 && variantToInventoryItem.size < variantIds.length) {
-          const missingVariants = variantIds.filter(id => !variantToInventoryItem.has(id))
-          logger.warn(`⚠️ Missing inventory items for ${missingVariants.length} variants: ${missingVariants.slice(0, 3).join(', ')}${missingVariants.length > 3 ? '...' : ''}`)
-        }
-        
-        // Log sample of what we found for debugging
-        if (variantToInventoryItem.size > 0) {
-          const sample = Array.from(variantToInventoryItem.entries()).slice(0, 3)
-          logger.debug(`Sample inventory items found: ${sample.map(([vid, iid]) => `variant ${vid} -> item ${iid}`).join(', ')}`)
-        }
-      }
-
-      // If inventory items don't exist, create them using the inventory service
-      const inventoryService: IInventoryService = container.resolve(Modules.INVENTORY)
-      const missingVariants = variantIds.filter(id => !variantToInventoryItem.has(id))
-      
-      if (missingVariants.length > 0) {
-        logger.info(`Creating ${missingVariants.length} inventory items for variants that don't have them`)
-        
-        for (const variantId of missingVariants) {
-          try {
-            // Create inventory item - SKU is optional
-            const inventoryItems = await inventoryService.createInventoryItems([{
-              requires_shipping: true,
-            }])
-            
-            const inventoryItem = Array.isArray(inventoryItems) ? inventoryItems[0] : inventoryItems
-            
-            if (!inventoryItem || !inventoryItem.id) {
-              throw new Error(`Failed to create inventory item for variant ${variantId}`)
-            }
-            
-            // Link variant to inventory item
-            const link = container.resolve(ContainerRegistrationKeys.LINK)
-            await link.create({
-              [Modules.PRODUCT]: {
-                variant_id: variantId,
-              },
-              [Modules.INVENTORY]: {
-                inventory_item_id: inventoryItem.id,
-              },
-            })
-            
-            variantToInventoryItem.set(variantId, inventoryItem.id)
-            logger.info(`✅ Created and linked inventory item ${inventoryItem.id} for variant ${variantId}`)
-          } catch (createError) {
-            logger.error(`❌ Failed to create inventory item for variant ${variantId}: ${createError instanceof Error ? createError.message : 'Unknown error'}`)
-            if (createError instanceof Error && createError.stack) {
-              logger.error(`Create inventory item error stack: ${createError.stack}`)
-            }
-          }
-        }
-        
-        // Small delay to ensure inventory items are persisted
-        if (missingVariants.length > 0) {
-          await new Promise(resolve => setTimeout(resolve, 500))
-          logger.info(`⏳ Waited 500ms after creating ${missingVariants.length} inventory items`)
-        }
-      }
-      
-      if (variantToInventoryItem.size === 0) {
-        logger.error(`❌ No inventory items found or created for any of the ${variantIds.length} variants`)
-        logger.error(`Variant IDs we're looking for: ${variantIds.join(', ')}`)
-        return new StepResponse({ set: 0 })
-      }
-      
-      if (variantToInventoryItem.size < variantIds.length) {
-        const missingCount = variantIds.length - variantToInventoryItem.size
-        logger.warn(`⚠️ Only found/created ${variantToInventoryItem.size}/${variantIds.length} inventory items. Will set inventory for available items only.`)
-      }
-
-      // Build inventory levels
-      const inventoryLevels: CreateInventoryLevelInput[] = []
-      for (const { variantId, quantity } of input.inventoryData) {
-        const inventoryItemId = variantToInventoryItem.get(variantId)
-        if (inventoryItemId) {
-          inventoryLevels.push({
-            location_id: defaultLocation.id,
-            stocked_quantity: quantity,
-            inventory_item_id: inventoryItemId,
-          })
-          logger.info(`📦 Prepared inventory level: variant ${variantId} -> quantity ${quantity} at location ${defaultLocation.id}`)
-        } else {
-          logger.warn(`⚠️ Could not find inventory item for variant ${variantId} (quantity: ${quantity})`)
-        }
-      }
-
-      if (inventoryLevels.length > 0) {
-        logger.info(`Setting inventory levels for ${inventoryLevels.length} variants`)
-        await createInventoryLevelsWorkflow(container).run({
-          input: {
-            inventory_levels: inventoryLevels,
-          },
-        })
-        logger.info(`✅ Set inventory levels for ${inventoryLevels.length} variants`)
-      } else {
-        logger.warn('No inventory levels to create (could not match variants to inventory items)')
-      }
-
-      return new StepResponse({ set: inventoryLevels.length })
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      const errorStack = error instanceof Error ? error.stack : String(error)
-      logger.error(`❌ Failed to set inventory levels: ${errorMessage}`)
-      if (errorStack) {
-        logger.error(`Inventory error stack: ${errorStack}`)
-      }
-      // Don't fail the workflow if inventory setup fails - inventory can be set manually later
-      // Return success with 0 set to allow workflow to continue
-      return new StepResponse({ set: 0 })
-    }
-  }
-)
 
 /**
  * Step: Calculate final import status
@@ -1778,14 +1243,9 @@ export const innproXmlImportWorkflow = createWorkflow<
     ollamaModel,
   })
 
-  // Step 5: Add options field for variants (MedusaJS requires options when variants exist)
-  const productsWithOptions = addOptionsStep({
-    products: optimizedData.products,
-  })
-
-  // Step 6: Process categories and brands (with translation)
+  // Step 5: Process categories and brands (with translation)
   const productsWithRelations = processCategoriesAndBrandsStep({
-    products: productsWithOptions.products,
+    products: optimizedData.products,
     ollamaUrl,
     ollamaModel,
   })
@@ -1801,22 +1261,11 @@ export const innproXmlImportWorkflow = createWorkflow<
   // Step 8.5: Get default sales channel
   const defaultSalesChannelId = getDefaultSalesChannelStep()
 
-  // Step 8.6: Create inventory items for variants before product creation
-  const inventoryItemsResult = createInventoryItemsStep({
-    products: productsWithImages,
-  })
-
-  // Step 9: Import products (with inventory items attached)
+  // Step 9: Import products (without inventory tracking)
   const importResult = importProductsStep({
     products: productsWithImages,
     shippingProfileId: resolvedShippingProfileId,
     defaultSalesChannelId,
-    variantToInventoryItem: inventoryItemsResult.variantToInventoryItem as any,
-  })
-
-  // Step 9.5: Set inventory levels for variants
-  setInventoryLevelsStep({
-    inventoryData: importResult.inventoryData || [],
   })
 
   // Step 10: Calculate final status

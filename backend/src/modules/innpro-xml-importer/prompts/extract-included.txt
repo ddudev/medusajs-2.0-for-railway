@@ -1,0 +1,40 @@
+Extract the "What's Included" / "Included" / "Package Contents" section from this product description and translate it to Bulgarian.
+
+Original Description (English):
+{{description}}
+
+INSTRUCTIONS:
+1. Look for sections with these titles:
+   - "What's Included"
+   - "Included"
+   - "Package Contents"
+   - "Contents"
+   - "Включено"
+   - "Комплектът включва"
+   - Or any heading followed by a list of items
+
+2. Extract the ENTIRE section including:
+   - The heading (e.g., <h3>Включено:</h3> or <h3>What's Included</h3>)
+   - ALL list items (<ul>, <li> or plain text list)
+   - Any additional text or formatting
+   - If it's a plain text list, convert it to HTML format
+
+3. Translate ALL content to Bulgarian:
+   - Translate the heading to "Включено:" or "Какво е включено:"
+   - Translate all item names to Bulgarian
+   - Preserve technical terms and brand names
+
+4. Preserve the EXACT HTML structure, or convert plain text to HTML if needed
+
+5. If no "Included" section exists, return exactly: null
+
+OUTPUT FORMAT:
+Return ONLY the extracted HTML section in Bulgarian, or exactly "null" if not found.
+
+Example output:
+<h3>Включено:</h3>
+<ul>
+  <li>Принтер за облекло</li>
+  <li>Автоматична станция за приложение</li>
+  <li>Въздушен филтър</li>
+</ul>

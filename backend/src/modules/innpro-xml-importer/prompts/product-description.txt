@@ -1,0 +1,91 @@
+Objective:
+Generate SEO-optimized product description for "{{productName}}" in Bulgarian.
+
+GLOBAL RULES
+- Generate ALL content in Bulgarian language
+- Do NOT use emojis
+- Do NOT exaggerate claims
+- Use natural language, no keyword stuffing
+- Return ONLY valid JSON, no explanations
+- CRITICAL: DO NOT include the product title/name in the description
+- DO NOT include "What's Included" section or specifications table (these are extracted separately)
+
+PRODUCT INPUT DATA
+Product Name: {{productName}}
+Product Features: {{features}}
+Primary Keyword: {{primaryKeyword}}
+Secondary Keywords: {{secondaryKeywords}}
+Target Audience: {{targetAudience}}
+USPs: {{usps}}
+Use Cases: {{useCases}}
+Original Description (English): {{originalDescription}}
+{{imageInstructions}}
+
+SEO-ENHANCED PRODUCT DESCRIPTION (ON-PAGE)
+This is the MAIN product description that appears on the product page.
+
+WORD COUNT REQUIREMENTS:
+- Target: {{targetWordCount}} ({{targetWordCountMin}}-{{targetWordCountMax}} words)
+- Simple products: 150-300 words
+- Complex/technical products: 300-500 words
+- Focus on QUALITY over strict length - content must be valuable and clear
+- NO filler content - every word should add value
+
+CONTENT REQUIREMENTS:
+- HTML format with proper structure
+- Use <h2> headings for major sections (Основни предимства, Как се използва, За кого е подходящ, Технически характеристики, etc.)
+- Use <p> for paragraphs, <ul>/<li> for lists
+- Benefits > features (focus on what the product does for the user)
+- Light emotional engagement (but keep it professional)
+- Include one soft CTA at the end (e.g., "Поръчайте сега" or "Открийте повече")
+- Scannable formatting: short paragraphs, bullet points, clear headings
+
+KEYWORD INTEGRATION (Natural, NOT stuffed):
+- Include Primary Keyword "{{primaryKeyword}}" 3-5 times naturally throughout
+- Include Secondary Keywords: {{secondaryKeywords}} where relevant
+- Keywords should appear in:
+  * First paragraph (at least once - this is critical for SEO)
+  * Section headings (where natural)
+  * Image alt text (include keywords in alt attributes)
+  * Throughout content naturally (not forced)
+- Maintain natural, readable Bulgarian - prioritize user experience
+
+IMAGE PLACEMENT (CRITICAL):
+- Include ALL {{imageCount}} images using HTML <img> tags
+- Place images CONTEXTUALLY - immediately after paragraphs that describe what they show
+- Each image should be relevant to the surrounding text
+- Use descriptive alt text with keywords: <img src="URL" alt="[Primary Keyword] [description]" />
+- Images are PART OF the content flow, not separate from it
+- DO NOT place all images at the end - distribute them throughout the description
+
+TECHNICAL-SAFE DESCRIPTION (For B2B feeds)
+- HTML format: <h3>, <p>, <ul>, <li>
+- Neutral, factual, technical tone
+- No CTA, no emotional language
+- Focus on what the product is, how it works, and where it is used
+- Include all technical details and features
+- MUST include ALL {{imageCount}} images at appropriate locations
+- Length: Similar to or longer than original description
+
+SHORT DESCRIPTION (For product cards/categories)
+- 150-250 characters
+- Include Primary Keyword naturally
+- Neutral but attractive tone
+- Summarize main value proposition
+
+OUTPUT FORMAT (STRICT)
+Return ONLY this JSON object:
+{
+  "technicalSafeDescription": "...",
+  "seoEnhancedDescription": "...",
+  "shortDescription": "..."
+}
+
+NOTE: Meta title and meta description are generated separately - do NOT include them here.
+
+JSON FORMATTING RULES
+- All new lines in string values must be escaped as \\n
+- All quotes in string values must be escaped as \\"
+- All backslashes must be escaped as \\\\
+- No text before or after the JSON
+- No markdown code blocks

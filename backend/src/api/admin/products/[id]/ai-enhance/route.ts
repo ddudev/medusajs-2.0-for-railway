@@ -1,6 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
-import OllamaVisionService from "../../../../../modules/innpro-xml-importer/services/ollama-vision"
+import { OllamaService } from "../../../../../modules/innpro-xml-importer/services/ollama"
 
 export const POST = async (
   req: MedusaRequest<{ isComplex: boolean }>,
@@ -48,13 +48,13 @@ export const POST = async (
       })
     }
 
-    // Initialize Ollama Vision Service
+    // Initialize Ollama Service
     const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434'
     const ollamaModel = process.env.OLLAMA_MODEL || 'gemma3:latest'
     
     logger.info(`[AI ENHANCE] Using Ollama at ${ollamaUrl} with model ${ollamaModel}`)
     
-    const visionService = new OllamaVisionService(ollamaUrl, ollamaModel)
+    const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
 
     // Check if Ollama service is available
     try {
@@ -88,8 +88,8 @@ export const POST = async (
 
     logger.info(`[AI ENHANCE] Enhancing product with ${images.length} images, isComplex: ${isComplex}`)
 
-    // Enhance product with vision
-    const enhancedContent = await visionService.enhanceProductWithVision({
+    // Enhance product with AI
+    const enhancedContent = await ollamaService.enhanceProduct({
       title: product.title,
       description: product.description || undefined,
       material: product.material || undefined,

@@ -1,0 +1,49 @@
+Extract the technical specifications/characteristics table from this product description and translate it to Bulgarian.
+
+Original Description (English):
+{{originalDescriptionEn}}
+
+INSTRUCTIONS:
+1. Find the specifications table or technical data section. Look for:
+   - HTML <table> elements with specifications
+   - Text-based specs with ">" prefix (e.g., ">Производитель\txTool" or ">Manufacturer\txTool")
+   - Structured lists of key-value pairs
+   - Sections labeled "Specifications", "Technical Data", "Characteristics", "Parameters"
+   - Tables showing product specs in two columns (name/value)
+
+2. Extract ALL specifications including:
+   - Manufacturer/Brand
+   - Model number
+   - Dimensions (length, width, height)
+   - Weight
+   - Technical parameters (resolution, speed, capacity, etc.)
+   - Operating conditions (temperature, humidity)
+   - Power consumption
+   - Any other technical details
+
+3. Translate ALL content to Bulgarian:
+   - Translate specification names (e.g., "Manufacturer" → "Производител")
+   - Translate values when appropriate (keep technical terms and numbers as-is)
+   - Preserve brand names and model numbers exactly
+
+4. Convert to HTML table format:
+   <table>
+   <tbody>
+   <tr><th>Specification Name (Bulgarian)</th><td>Value (translated if needed)</td></tr>
+   </tbody>
+   </table>
+
+5. If no specifications found, return exactly: null
+
+OUTPUT FORMAT:
+Return ONLY the HTML table in Bulgarian, or exactly "null" if not found.
+
+Example output:
+<table>
+<tbody>
+<tr><th>Производител</th><td>xTool</td></tr>
+<tr><th>Модел</th><td>XAP-AIO</td></tr>
+<tr><th>Размери</th><td>905 × 365 × 356.5 мм</td></tr>
+<tr><th>Тегло</th><td>34 кг</td></tr>
+</tbody>
+</table>

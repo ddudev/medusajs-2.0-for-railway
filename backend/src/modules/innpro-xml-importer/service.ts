@@ -176,21 +176,6 @@ class InnProXmlImporterService extends MedusaService({
       return Array.isArray(products) ? products : [products]
     }
 
-    // Fallback: try direct products path
-    if (xmlData.products?.product) {
-      const products = xmlData.products.product
-      return Array.isArray(products) ? products : [products]
-    }
-
-    // Fallback: try common structures
-    if (Array.isArray(xmlData.product)) {
-      return xmlData.product
-    }
-
-    if (Array.isArray(xmlData.products)) {
-      return xmlData.products
-    }
-
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
       'Could not find products in InnPro XML. Expected structure: { offer: { products: { product: [...] } } }'
@@ -659,89 +644,17 @@ class InnProXmlImporterService extends MedusaService({
     const sizes = xmlProduct.sizes?.size
     const sizeArray = Array.isArray(sizes) ? sizes : (sizes ? [sizes] : [])
 
-    if (sizeArray.length === 0) {
-      throw new MedusaError(
-        MedusaError.Types.INVALID_DATA,
-        `Product ${productId} has no sizes`
-      )
+    // Extract SKU and barcode from first size (if available)
+    let sku: string | undefined = undefined
+    let barcode: string | undefined = undefined
+    
+    if (sizeArray.length > 0) {
+      const firstSize = sizeArray[0]
+      const sizeAttrs = firstSize['@attributes'] || {}
+      sku = sizeAttrs.code_producer || sizeAttrs.code || undefined
+      barcode = sizeAttrs['{http://www.iai-shop.com/developers/iof/extensions.phtml}code_external'] || 
+                sizeAttrs.code_external
     }
-
-    // Create variants from sizes
-    const variants = sizeArray.map((size: any) => {
-      const sizeAttrs = size['@attributes'] || {}
-      const sizeId = sizeAttrs.id || 'default'
-      const sizeName = sizeAttrs.name || 'Default'
-
-      // Extract price (prefer net, fallback to gross)
-      const priceNet = size.price?.net || size.price?.['#text']
-      const priceGross = size.price?.gross
-      const priceAmount = priceNet ? parseFloat(priceNet) : (priceGross ? parseFloat(priceGross) : 0)
-
-      // Extract stock
-      const stockQuantity = size.stock?.quantity || size.stock?.['#text'] || '0'
-      const inventoryQty = parseInt(stockQuantity, 10)
-
-      // Extract SKU and barcode
-      const sku = sizeAttrs.code_producer || sizeAttrs.code || undefined
-      const barcode = sizeAttrs['{http://www.iai-shop.com/developers/iof/extensions.phtml}code_external'] || 
-                     sizeAttrs.code_external
-
-      // Extract variant weight (try size attributes first, then parameters as fallback)
-      let variantWeight: number | undefined = undefined
-      if (sizeAttrs.weight) {
-        const parsed = parseFloat(sizeAttrs.weight)
-        if (!isNaN(parsed)) {
-          variantWeight = parsed
-        }
-      }
-      
-      // Fallback to product-level weight from parameters if variant weight not found
-      if (!variantWeight && paramArray.length > 0) {
-        const weightStr = this.extractParameter(paramArray, 'net weight')
-        if (weightStr) {
-          const weightValue = typeof weightStr === 'number' ? weightStr : parseFloat(String(weightStr).replace(',', '.').replace(/\s/g, ''))
-          if (!isNaN(weightValue)) {
-            variantWeight = weightValue
-          }
-        }
-      }
-
-      // Extract stock details
-      const stockId = size.stock?.id
-      const availableStockQuantity = size.stock?.available_stock_quantity || size.stock?.['#text'] || stockQuantity
-      const availableStockQty = parseInt(availableStockQuantity, 10)
-
-      // Extract size code
-      const sizeCode = sizeAttrs.code
-
-      // Variant metadata (comprehensive)
-      const variantMetadata: Record<string, any> = {
-        size_id: sizeId,
-        size_code: sizeCode,
-        panel_name: sizeAttrs.panel_name,
-        priority: sizeAttrs['{http://www.iai-shop.com/developers/iof/extensions.phtml}priority'] || sizeAttrs.priority,
-        weight_net: sizeAttrs['{http://www.iai-shop.com/developers/iof/extensions.phtml}weight_net'] || sizeAttrs.weight_net,
-        srp_net: size.srp?.net,
-        srp_gross: size.srp?.gross,
-        stock_id: stockId,
-        available_stock_quantity: availableStockQty,
-      }
-
-      return {
-        title: sizeName,
-        sku: sku,
-        barcode: barcode,
-        prices: [{
-          amount: priceAmount,
-          currency_code: productAttrs.currency || 'EUR',
-        }],
-        inventory_quantity: inventoryQty,
-        weight: variantWeight,
-        manage_inventory: true, // Default to managing inventory
-        allow_backorder: false, // Default to no backorders
-        metadata: variantMetadata,
-      }
-    })
 
     // Extract product-level weight (try multiple sources)
     let productWeight: number | undefined = undefined
@@ -899,6 +812,25 @@ class InnProXmlImporterService extends MedusaService({
     // Sanitize handle from product ID
     const handle = this.sanitizeHandle(String(productId))
 
+    // MedusaJS 2.x requires products to have variants and options
+    // Create a simple default variant with a default option
+    // IMPORTANT: Use "Default" (not translated) to avoid mismatch errors
+    const defaultVariant = {
+      title: 'Default',
+      sku: sku,
+      barcode: barcode,
+      manage_inventory: false,
+      prices: [],
+      options: {
+        Default: 'Default' // Option title -> Option value mapping
+      }
+    }
+
+    const defaultOption = {
+      title: 'Default',
+      values: ['Default']
+    }
+
     return {
       title,
       description,
@@ -911,8 +843,14 @@ class InnProXmlImporterService extends MedusaService({
       mid_code: midCode,
       material: material,
       images,
-      variants,
-      metadata,
+      variants: [defaultVariant],
+      options: [defaultOption],
+      metadata: {
+        ...metadata,
+        // Store original SKU and barcode for reference
+        original_sku: sku,
+        original_barcode: barcode,
+      },
     }
   }
 
