@@ -1,6 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
-import { OllamaService } from "../../../../../modules/innpro-xml-importer/services/ollama"
+import { ChatGPTService } from "../../../../../modules/innpro-xml-importer/services/chatgpt"
 
 export const POST = async (
   req: MedusaRequest<{ isComplex: boolean }>,
@@ -48,29 +48,20 @@ export const POST = async (
       })
     }
 
-    // Initialize Ollama Service
-    const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434'
-    const ollamaModel = process.env.OLLAMA_MODEL || 'gemma3:latest'
+    // Initialize ChatGPT Service
+    const openaiApiKey = process.env.OPENAI_API_KEY
+    const openaiModel = process.env.OPENAI_MODEL || 'gpt-4o-mini'
     
-    logger.info(`[AI ENHANCE] Using Ollama at ${ollamaUrl} with model ${ollamaModel}`)
-    
-    const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
-
-    // Check if Ollama service is available
-    try {
-      const healthCheck = await fetch(`${ollamaUrl}/api/tags`, {
-        signal: AbortSignal.timeout(5000),
-      })
-      
-      if (!healthCheck.ok) {
-        throw new Error('Ollama service unavailable')
-      }
-    } catch (error) {
-      logger.error(`[AI ENHANCE] Ollama service unavailable at ${ollamaUrl}`, error)
-      return res.status(400).json({
-        message: "AI service is temporarily unavailable. Please try again later.",
+    if (!openaiApiKey) {
+      logger.error(`[AI ENHANCE] OPENAI_API_KEY not configured`)
+      return res.status(500).json({
+        message: "AI service is not configured. Please contact the administrator.",
       })
     }
+    
+    logger.info(`[AI ENHANCE] Using ChatGPT with model ${openaiModel}`)
+    
+    const chatgptService = new ChatGPTService({ apiKey: openaiApiKey, model: openaiModel })
 
     // Prepare images array
     const images = (product.images || []).map((img: any) => ({
@@ -89,7 +80,7 @@ export const POST = async (
     logger.info(`[AI ENHANCE] Enhancing product with ${images.length} images, isComplex: ${isComplex}`)
 
     // Enhance product with AI
-    const enhancedContent = await ollamaService.enhanceProduct({
+    const enhancedContent = await chatgptService.enhanceProduct({
       title: product.title,
       description: product.description || undefined,
       material: product.material || undefined,

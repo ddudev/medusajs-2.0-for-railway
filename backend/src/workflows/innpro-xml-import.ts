@@ -12,15 +12,15 @@ import InnProXmlImporterService from '../modules/innpro-xml-importer/service'
 import { BRAND_MODULE } from '../modules/brand'
 import { IS_DEV, MINIO_ENDPOINT } from '../lib/constants'
 import { MedusaProductData, SelectionFilters } from '../modules/innpro-xml-importer/types'
-import { OllamaService } from '../modules/innpro-xml-importer/services/ollama'
+import { ChatGPTService } from '../modules/innpro-xml-importer/services/chatgpt'
 import { extractSpecificationsTable, extractIncludedSection } from '../modules/innpro-xml-importer/utils/html-parser'
 
 type WorkflowInput = {
   sessionId: string
   shippingProfileId?: string
   filters?: SelectionFilters
-  ollamaUrl?: string
-  ollamaModel?: string
+  openaiApiKey?: string
+  openaiModel?: string
 }
 
 type WorkflowOutput = {
@@ -208,17 +208,17 @@ const mapProductsStep = createStep(
 const translateProductsStep = createStep(
   'translate-products',
   async (
-    input: { products: MedusaProductData[]; ollamaUrl?: string; ollamaModel?: string },
+    input: { products: MedusaProductData[]; openaiApiKey?: string; openaiModel?: string },
     { container }: { container: MedusaContainer }
   ) => {
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-    const ollamaUrl = input.ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434'
-    const ollamaModel = input.ollamaModel || process.env.OLLAMA_MODEL || 'gemma3:latest'
+    const openaiApiKey = input.openaiApiKey || process.env.OPENAI_API_KEY
+    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
-    logger.info(`Translating ${input.products.length} products to Bulgarian using Ollama at ${ollamaUrl} with model ${ollamaModel}`)
+    logger.info(`Translating ${input.products.length} products to Bulgarian using ChatGPT with model ${openaiModel}`)
 
     try {
-      const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
+      const chatgptService = new ChatGPTService({ apiKey: openaiApiKey, model: openaiModel })
       
       // Process products sequentially (one at a time) to avoid timeouts and overwhelming Ollama
       const translatedProducts: MedusaProductData[] = []
@@ -279,14 +279,14 @@ const translateProductsStep = createStep(
           let translatedTitle = product.title
           if (product.title && brandName) {
             try {
-              translatedTitle = await ollamaService.translateTitle(product.title, brandName, 'bg')
+              translatedTitle = await chatgptService.translateTitle(product.title, brandName, 'bg')
             } catch (error) {
               logger.warn(`Failed to translate title for product ${index + 1}, using original`)
             }
           } else if (product.title) {
             // Fallback to regular translation if no brand
             try {
-              translatedTitle = await ollamaService.translate(product.title, 'bg')
+              translatedTitle = await chatgptService.translate(product.title, 'bg')
             } catch (error) {
               logger.warn(`Failed to translate title for product ${index + 1}, using original`)
             }
@@ -305,7 +305,7 @@ const translateProductsStep = createStep(
           
           if (texts.length > 0) {
             logger.info(`Product ${index + 1}: Translating ${texts.length} fields (variants, options, metadata - description will be handled in SEO step)`)
-            const translations = await ollamaService.translateBatch(texts, 'bg')
+            const translations = await chatgptService.translateBatch(texts, 'bg')
             
             // Apply translations (excluding description)
             textsToTranslateWithoutTitle.forEach((item, i) => {
@@ -364,19 +364,19 @@ const translateProductsStep = createStep(
 const optimizeDescriptionsStep = createStep(
   'optimize-descriptions',
   async (
-    input: { products: MedusaProductData[]; ollamaUrl?: string; ollamaModel?: string },
+    input: { products: MedusaProductData[]; openaiApiKey?: string; openaiModel?: string },
     { container }: { container: MedusaContainer }
   ) => {
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-    const ollamaUrl = input.ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434'
-    const ollamaModel = input.ollamaModel || process.env.OLLAMA_MODEL || 'gemma3:latest'
+    const openaiApiKey = input.openaiApiKey || process.env.OPENAI_API_KEY
+    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
-    logger.info(`Optimizing descriptions for ${input.products.length} products using Ollama at ${ollamaUrl} with model ${ollamaModel}`)
+    logger.info(`Optimizing descriptions for ${input.products.length} products using ChatGPT with model ${openaiModel}`)
 
     try {
-      const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
-
-      // Process products sequentially (one at a time) to avoid timeouts and overwhelming Ollama
+      const chatgptService = new ChatGPTService({ apiKey: openaiApiKey, model: openaiModel })
+      
+      // Process products sequentially (one at a time) to avoid rate limits
       const optimizedProducts: MedusaProductData[] = []
       
       for (let index = 0; index < input.products.length; index++) {
@@ -395,11 +395,11 @@ const optimizeDescriptionsStep = createStep(
 
           // Step 1a: Generate meta description (for search engine snippets)
           logger.info(`Product ${index + 1}: Step 1a/4 - Generating meta description`)
-          const metaContent = await ollamaService.generateMetaDescription(product, originalDescriptionEn)
+          const metaContent = await chatgptService.generateMetaDescription(product, originalDescriptionEn)
           
           // Step 1b: Optimize product description (150-400 words for on-page)
           logger.info(`Product ${index + 1}: Step 1b/4 - Optimizing product description (${originalDescriptionEn.length} chars)`)
-          const descriptionContent = await ollamaService.optimizeDescription(product, originalDescriptionEn)
+          const descriptionContent = await chatgptService.optimizeDescription(product, originalDescriptionEn)
 
           if (!descriptionContent || (!descriptionContent.seoEnhancedDescription && !descriptionContent.technicalSafeDescription)) {
             logger.warn(`Product ${index + 1}: Failed to generate description, keeping original`)
@@ -417,7 +417,7 @@ const optimizeDescriptionsStep = createStep(
           // Step 2: Extract "What's Included" from the ORIGINAL description (not optimized)
           // The optimized description might not have this section, so extract from original
           logger.info(`Product ${index + 1}: Step 2/4 - Extracting included items from original description`)
-          const includedItems = await ollamaService.extractIncludedItems(originalDescriptionEn) || 
+          const includedItems = await chatgptService.extractIncludedItems(originalDescriptionEn) || 
                                 extractIncludedSection(originalDescriptionEn) || 
                                 undefined
 
@@ -430,7 +430,7 @@ const optimizeDescriptionsStep = createStep(
 
           // Step 3: Extract technical data/specifications from original description
           logger.info(`Product ${index + 1}: Step 3/4 - Extracting technical data`)
-          const specificationsTable = await ollamaService.extractTechnicalData(originalDescriptionEn) ||
+          const specificationsTable = await chatgptService.extractTechnicalData(originalDescriptionEn) ||
                                      extractSpecificationsTable(originalDescriptionEn) ||
                                      undefined
 
@@ -490,7 +490,7 @@ async function getOrCreateCategoryHierarchy(
   container: MedusaContainer,
   categoryCache: Map<string, string>,
   logger: any,
-  ollamaService?: OllamaService
+  chatgptService?: ChatGPTService
 ): Promise<string | null> {
   if (!categoryPath || categoryPath.trim().length === 0) {
     return null
@@ -520,10 +520,10 @@ async function getOrCreateCategoryHierarchy(
     
     // Translate category name to Bulgarian
     let categoryName = originalCategoryName
-    if (ollamaService) {
+    if (chatgptService) {
       try {
         logger.debug(`Translating category name: "${originalCategoryName}"`)
-        categoryName = await ollamaService.translate(originalCategoryName, 'bg')
+        categoryName = await chatgptService.translate(originalCategoryName, 'bg')
         logger.debug(`Translated category name: "${originalCategoryName}" → "${categoryName}"`)
       } catch (error) {
         logger.warn(`Failed to translate category name "${originalCategoryName}": ${error instanceof Error ? error.message : 'Unknown'}. Using original name.`)
@@ -626,16 +626,16 @@ async function getOrCreateCategoryHierarchy(
 const processCategoriesAndBrandsStep = createStep(
   'process-categories-brands',
   async (
-    input: { products: MedusaProductData[]; ollamaUrl?: string; ollamaModel?: string },
+    input: { products: MedusaProductData[]; openaiApiKey?: string; openaiModel?: string },
     { container }: { container: MedusaContainer }
   ) => {
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
     const productService: IProductModuleService = container.resolve(Modules.PRODUCT)
 
-    // Initialize Ollama service for category translation
-    const ollamaUrl = input.ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434'
-    const ollamaModel = input.ollamaModel || process.env.OLLAMA_MODEL || 'gemma3:latest'
-    const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
+    // Initialize ChatGPT service for category translation
+    const openaiApiKey = input.openaiApiKey || process.env.OPENAI_API_KEY
+    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    const chatgptService = new ChatGPTService({ apiKey: openaiApiKey, model: openaiModel })
 
     // Cache for category lookups (key: "categoryName|parentId" -> categoryId)
     const categoryCache = new Map<string, string>()
@@ -663,7 +663,7 @@ const processCategoriesAndBrandsStep = createStep(
     }
     
     logger.info(`Processing ${uniqueCategories.size} unique categories and ${uniqueBrands.size} unique brands`)
-    logger.info(`Translating categories to Bulgarian using Ollama at ${ollamaUrl} with model ${ollamaModel}`)
+    logger.info(`Translating categories to Bulgarian using ChatGPT with model ${openaiModel}`)
     
     // Process all categories (create hierarchy if needed, with translation)
     for (const categoryPath of uniqueCategories) {
@@ -673,7 +673,7 @@ const processCategoriesAndBrandsStep = createStep(
           container,
           categoryCache,
           logger,
-          ollamaService // Pass Ollama service
+          chatgptService // Pass ChatGPT service
         )
         
         if (categoryId) {
@@ -1258,7 +1258,7 @@ export const innproXmlImportWorkflow = createWorkflow<
   WorkflowOutput,
   []
 >('innpro-xml-import', function (input) {
-  const { sessionId, shippingProfileId, filters, ollamaUrl, ollamaModel } = input
+  const { sessionId, shippingProfileId, filters, openaiApiKey, openaiModel } = input
 
   // Step 1: Get session and extract products
   const sessionData = getSessionProductsStep({ sessionId })
@@ -1269,22 +1269,22 @@ export const innproXmlImportWorkflow = createWorkflow<
   // Step 3: Translate products to Bulgarian
   const translatedData = translateProductsStep({
     products: mappedData.products,
-    ollamaUrl,
-    ollamaModel,
+    openaiApiKey,
+    openaiModel,
   })
 
   // Step 4: Optimize descriptions for SEO
   const optimizedData = optimizeDescriptionsStep({
     products: translatedData.products,
-    ollamaUrl,
-    ollamaModel,
+    openaiApiKey,
+    openaiModel,
   })
 
   // Step 5: Process categories and brands (with translation)
   const productsWithRelations = processCategoriesAndBrandsStep({
     products: optimizedData.products,
-    ollamaUrl,
-    ollamaModel,
+    openaiApiKey,
+    openaiModel,
   })
 
   // Step 7: Process images

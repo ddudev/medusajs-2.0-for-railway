@@ -9,12 +9,12 @@ import InnProXmlImporterService from "../../../../../../modules/innpro-xml-impor
  * Trigger import workflow for selected products
  */
 export async function POST(
-  req: MedusaRequest<{ shippingProfileId?: string; ollamaUrl?: string; ollamaModel?: string }>,
+  req: MedusaRequest<{ shippingProfileId?: string; openaiApiKey?: string; openaiModel?: string }>,
   res: MedusaResponse
 ): Promise<void> {
   try {
     const { id } = req.params
-    const { shippingProfileId, ollamaUrl, ollamaModel } = (req.body as { shippingProfileId?: string; ollamaUrl?: string; ollamaModel?: string }) || {}
+    const { shippingProfileId, openaiApiKey, openaiModel } = (req.body as { shippingProfileId?: string; openaiApiKey?: string; openaiModel?: string }) || {}
 
     const importerService: InnProXmlImporterService = req.scope.resolve(
       INNPRO_XML_IMPORTER_MODULE
@@ -33,12 +33,12 @@ export async function POST(
       status: 'importing',
     })
 
-    // Use provided ollamaUrl or default to localhost
-    const resolvedOllamaUrl = ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434'
-    // Use provided ollamaModel or default from env or recommended model
-    const resolvedOllamaModel = ollamaModel || process.env.OLLAMA_MODEL || 'gemma3:latest'
+    // Use provided openaiApiKey or default from env
+    const resolvedOpenaiApiKey = openaiApiKey || process.env.OPENAI_API_KEY
+    // Use provided openaiModel or default from env or recommended model
+    const resolvedOpenaiModel = openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
     
-    logger.info(`Starting import for session ${id} with Ollama URL: ${resolvedOllamaUrl}, Model: ${resolvedOllamaModel}`)
+    logger.info(`Starting import for session ${id} with ChatGPT Model: ${resolvedOpenaiModel}`)
 
     // Trigger the import workflow asynchronously
     innproXmlImportWorkflow(req.scope)
@@ -46,8 +46,8 @@ export async function POST(
         input: {
           sessionId: id,
           shippingProfileId,
-          ollamaUrl: resolvedOllamaUrl,
-          ollamaModel: resolvedOllamaModel,
+          openaiApiKey: resolvedOpenaiApiKey,
+          openaiModel: resolvedOpenaiModel,
         },
       })
       .then(async ({ result }) => {
