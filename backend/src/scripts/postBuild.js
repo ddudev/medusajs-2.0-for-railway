@@ -46,6 +46,29 @@ if (fs.existsSync(migrationSqlPath)) {
   console.log('⚠️  XML Importer migration SQL file not found (will be checked at startup)');
 }
 
+// Copy InnPro XML Importer prompt files to build directory
+const promptsSourceDir = path.join(process.cwd(), 'src/modules/innpro-xml-importer/prompts');
+const promptsDestDir = path.join(MEDUSA_SERVER_PATH, 'src/modules/innpro-xml-importer/prompts');
+
+if (fs.existsSync(promptsSourceDir)) {
+  if (!fs.existsSync(promptsDestDir)) {
+    fs.mkdirSync(promptsDestDir, { recursive: true });
+  }
+  
+  const promptFiles = fs.readdirSync(promptsSourceDir).filter(file => file.endsWith('.txt'));
+  
+  promptFiles.forEach(file => {
+    const sourcePath = path.join(promptsSourceDir, file);
+    const destPath = path.join(promptsDestDir, file);
+    fs.copyFileSync(sourcePath, destPath);
+    console.log(`✅ Copied prompt file: ${file}`);
+  });
+  
+  console.log(`✅ Copied ${promptFiles.length} InnPro prompt files to build directory`);
+} else {
+  console.log('⚠️  InnPro prompt files directory not found');
+}
+
 // Note: Migrations run at startup via ensure-migrations.ts script
 // Railway's internal database hostnames (postgres.railway.internal) are only
 // available at runtime, not during build.
