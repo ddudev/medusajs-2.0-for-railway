@@ -114,6 +114,12 @@ export class ChatGPTService {
       cleaned = cleaned.slice(1, -1)
     }
 
+    // Remove literal \n characters (replace with space for clean text flow)
+    cleaned = cleaned.replace(/\\n/g, ' ')
+    
+    // Remove multiple spaces that might result from the above replacement
+    cleaned = cleaned.replace(/\s+/g, ' ')
+
     return cleaned.trim()
   }
 
