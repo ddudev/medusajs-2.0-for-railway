@@ -55,8 +55,8 @@ export default async function OrderConfirmedPage({ params }: Props) {
       order.id,
       orderTotal,
       itemsCount,
-      order.customer_id,
-      order.email
+      order.customer_id || undefined,
+      order.email || undefined
     )
     
     // Prepare items for GTM/Meta
@@ -71,21 +71,21 @@ export default async function OrderConfirmedPage({ params }: Props) {
       variant_id: item.variant_id || '',
     }))
     
-    // Get customer/shipping address data
+    // Get customer/shipping address data (convert null to undefined for TypeScript)
     const shippingAddress = order.shipping_address
     const billingAddress = order.billing_address
-    const email = order.email
-    const phone = shippingAddress?.phone || billingAddress?.phone
-    const firstName = shippingAddress?.first_name || billingAddress?.first_name
-    const lastName = shippingAddress?.last_name || billingAddress?.last_name
-    const city = shippingAddress?.city || billingAddress?.city
-    const state = shippingAddress?.province || billingAddress?.province
-    const postalCode = shippingAddress?.postal_code || billingAddress?.postal_code
-    const country = shippingAddress?.country_code || billingAddress?.country_code
+    const email = order.email || undefined
+    const phone = shippingAddress?.phone || billingAddress?.phone || undefined
+    const firstName = shippingAddress?.first_name || billingAddress?.first_name || undefined
+    const lastName = shippingAddress?.last_name || billingAddress?.last_name || undefined
+    const city = shippingAddress?.city || billingAddress?.city || undefined
+    const state = shippingAddress?.province || billingAddress?.province || undefined
+    const postalCode = shippingAddress?.postal_code || billingAddress?.postal_code || undefined
+    const country = shippingAddress?.country_code || billingAddress?.country_code || undefined
     
     // Track to GA4 (server-side)
     await trackGA4Purchase({
-      client_id: generateClientId(),
+      client_id: await generateClientId(),
       transaction_id: order.id,
       value: orderTotal,
       currency: order.currency_code || 'EUR',
@@ -102,7 +102,7 @@ export default async function OrderConfirmedPage({ params }: Props) {
         postal_code: postalCode,
         country,
       },
-      user_id: order.customer_id,
+      user_id: order.customer_id || undefined,
     })
     
     // Track to Meta Conversions API (server-side)

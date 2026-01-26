@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { trackGA4Purchase } from '@lib/analytics/server-gtm'
+import { trackGA4Purchase, generateClientId } from '@lib/analytics/server-gtm'
 import { trackMetaPurchaseServer, getClientIp, extractFacebookCookies } from '@lib/analytics/server-meta'
 
 export async function POST(request: NextRequest) {
@@ -42,16 +42,16 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Get client IP and user agent from headers
-    const clientIp = getClientIp(request.headers)
+    const clientIp = await getClientIp(request.headers)
     const userAgent = request.headers.get('user-agent') || undefined
     
     // Extract Facebook cookies
     const cookieHeader = request.headers.get('cookie')
-    const { fbc, fbp } = extractFacebookCookies(cookieHeader || '')
+    const { fbc, fbp } = await extractFacebookCookies(cookieHeader || '')
 
     // Track to GA4 (server-side)
     await trackGA4Purchase({
-      client_id: client_id || `server_${Date.now()}`,
+      client_id: client_id || (await generateClientId()),
       transaction_id,
       value,
       currency,

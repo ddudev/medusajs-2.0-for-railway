@@ -20,9 +20,19 @@ type GTMProviderProps = {
 }
 
 export function GTMProvider({ children }: GTMProviderProps) {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
   const [isInitialized, setIsInitialized] = useState(false)
+  
+  // These hooks need to be inside try-catch for static generation
+  let pathname: string | null = null
+  let searchParams: URLSearchParams | null = null
+  
+  try {
+    pathname = usePathname()
+    searchParams = useSearchParams()
+  } catch (e) {
+    // During static generation, these hooks might not be available
+    // This is fine - GTM will initialize on the client
+  }
 
   useEffect(() => {
     // Skip if no GTM ID or already initialized
@@ -74,7 +84,7 @@ export function GTMProvider({ children }: GTMProviderProps) {
 
   // Track page views on route change
   useEffect(() => {
-    if (!isInitialized || !GTM_ID) return
+    if (!isInitialized || !GTM_ID || !pathname) return
 
     const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '')
 

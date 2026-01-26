@@ -20,8 +20,15 @@ type MetaPixelProviderProps = {
 }
 
 export function MetaPixelProvider({ children }: MetaPixelProviderProps) {
-  const pathname = usePathname()
   const [isInitialized, setIsInitialized] = useState(false)
+  
+  // Handle pathname for static generation
+  let pathname: string | null = null
+  try {
+    pathname = usePathname()
+  } catch (e) {
+    // During static generation, this hook might not be available
+  }
 
   useEffect(() => {
     // Skip if no Pixel ID or already initialized
@@ -65,7 +72,7 @@ export function MetaPixelProvider({ children }: MetaPixelProviderProps) {
 
   // Track page views on route change
   useEffect(() => {
-    if (!isInitialized || !META_PIXEL_ID || !window.fbq) return
+    if (!isInitialized || !META_PIXEL_ID || !window.fbq || !pathname) return
 
     // Track page view
     window.fbq('track', 'PageView')

@@ -297,10 +297,10 @@ export async function trackMetaLeadServer(params: {
 /**
  * Extract Facebook cookies from request headers
  */
-export function extractFacebookCookies(cookieHeader?: string): {
+export async function extractFacebookCookies(cookieHeader?: string): Promise<{
   fbc?: string
   fbp?: string
-} {
+}> {
   if (!cookieHeader) return {}
 
   const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
@@ -318,7 +318,7 @@ export function extractFacebookCookies(cookieHeader?: string): {
 /**
  * Get client IP from request
  */
-export function getClientIp(headers: Headers): string | undefined {
+export async function getClientIp(headers: Headers): Promise<string | undefined> {
   // Check various headers for client IP
   return (
     headers.get('x-forwarded-for')?.split(',')[0] ||

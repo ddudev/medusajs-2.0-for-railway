@@ -168,7 +168,7 @@ export async function trackGA4CustomEvent(params: {
  * Generate or retrieve client ID
  * Uses a consistent format for tracking
  */
-export function generateClientId(): string {
+export async function generateClientId(): Promise<string> {
   // In a real implementation, you'd want to:
   // 1. Check for existing GA4 client ID in cookies
   // 2. Generate a new one if not found
