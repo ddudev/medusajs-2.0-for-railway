@@ -124,6 +124,29 @@ export class ChatGPTService {
   }
 
   /**
+   * Fix invalid JSON escape sequences
+   * ChatGPT sometimes returns JSON with invalid escapes like '\ ' (backslash + space)
+   */
+  private fixInvalidJsonEscapes(jsonString: string): string {
+    if (!jsonString) return jsonString
+
+    // Fix invalid escape sequences:
+    // 1. Backslash followed by space (should just be the space)
+    // 2. Other invalid escapes that are not: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+    
+    let fixed = jsonString
+    
+    // Replace backslash + space with just space
+    fixed = fixed.replace(/\\ /g, ' ')
+    
+    // Fix other invalid single-char escapes (keep valid ones: ", \, /, b, f, n, r, t, u)
+    // This regex finds backslash followed by a char that's NOT a valid escape char or digit (for \uXXXX)
+    fixed = fixed.replace(/\\([^"\\\/bfnrtu0-9])/g, '$1')
+    
+    return fixed
+  }
+
+  /**
    * Make a request to OpenAI ChatGPT API
    */
   private async callChatGPT(
@@ -187,8 +210,19 @@ IMPORTANT RULES:
 - Use terms that native Bulgarians would actually use in everyday speech
 - Avoid literal word-by-word translations
 - Use commonly spoken Bulgarian, not overly formal or archaic terms
-- Technical terms should be translated to what Bulgarian consumers search for and understand
-- Keep brand names, model numbers, and specifications exactly as is
+- Keep brand names, model numbers, and specifications EXACTLY as is
+
+COMMON TOOL TERMS:
+- Slotted/Flat screwdriver = Права/Плоска отвертка
+- Phillips = Кръстата отвертка
+- Hexagonal = Шестостенен
+- Torx = Torx отвертка
+- Allen key = Имбусов ключ
+- Drill = Бормашина
+- Saw = Трион
+- Pliers = Клещи
+- Wrench = Гаечен ключ
+- Hammer = Чук
 
 Text to translate:
 ${text}
@@ -241,20 +275,36 @@ Bulgarian translation:`
 
 ${brandInstruction}
 
-TERMINOLOGY GUIDELINES:
-- Use commonly spoken Bulgarian terms, not literal translations
-- "CNC cutting machine" → "ЦНЦ машина" (not "фрезописец" or "рязачка")
-- "laser welder" → "лазерна заварка" or "лазерен заваръчен апарат"
+CRITICAL TOOL TERMINOLOGY (do NOT confuse these):
+- "Slotted screwdriver" → "Права отвертка" or "Плоска отвертка" (flat blade, NOT hexagonal)
+- "Phillips screwdriver" → "Кръстата отвертка" (cross/star pattern)
+- "Hexagonal/Hex" → "Шестостенен" or "Шестоъгълен" (6-sided)
+- "Torx screwdriver" → "Torx отвертка" or "Звезда отвертка"
+- "Pozidriv" → "Pozidriv отвертка"
+- "Allen key/Hex key" → "Имбусов ключ" or "Шестостенен ключ"
+- "Socket wrench" → "Тресчотка" or "Ключ с вложка"
+- "Spanner/Wrench" → "Гаечен ключ"
+- "Pliers" → "Клещи"
+- "Wire cutters" → "Клещи за рязане"
+- "Drill" → "Бормашина"
+- "Drill bit" → "Свредло"
+- "Hammer" → "Чук"
+- "Saw" → "Трион"
+- "Measuring tape" → "Ролетка"
+
+GENERAL TERMINOLOGY:
+- "CNC cutting machine" → "ЦНЦ машина"
+- "laser welder" → "лазерна заварка"
 - "3D printer" → "3D принтер"
 - "power tool" → "електроинструмент"
-- Keep technical specifications as numbers/units (1200W, 24V, etc.)
-- Keep model numbers exactly as is
-- Use terms that Bulgarian consumers would actually search for and understand
+- Keep technical specs as numbers/units (1200W, 24V, 5x150mm, etc.)
+- Keep model numbers EXACTLY as is (EDL6251501, etc.)
+- Keep color names in parentheses: (black) → (черен), (white) → (бял), (red) → (червен)
 
 Product title:
 ${title}
 
-Return ONLY the natural Bulgarian title that Bulgarians would use in everyday language.
+Return ONLY the natural Bulgarian title that Bulgarian consumers would use.
 
 Bulgarian title:`
 
@@ -335,7 +385,10 @@ Bulgarian title:`
         }
       }
       
-      const parsed = JSON.parse(cleaned)
+      // Fix invalid JSON escapes before parsing
+      const fixedJson = this.fixInvalidJsonEscapes(cleaned)
+      
+      const parsed = JSON.parse(fixedJson)
       return {
         metaTitle: parsed.metaTitle || '',
         metaDescription: parsed.metaDescription || ''
@@ -416,7 +469,11 @@ Bulgarian title:`
         }
       }
       
-      const parsed = JSON.parse(cleaned)
+      // Fix invalid JSON escapes before parsing
+      const fixedJson = this.fixInvalidJsonEscapes(cleaned)
+      console.log(`[CHATGPT] Fixed JSON (first 500 chars):`, fixedJson.substring(0, 500))
+      
+      const parsed = JSON.parse(fixedJson)
       return {
         technicalSafeDescription: parsed.technicalSafeDescription || '',
         seoEnhancedDescription: parsed.seoEnhancedDescription || '',

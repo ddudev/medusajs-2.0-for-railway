@@ -21,6 +21,8 @@ interface BannerSliderProps {
 const BannerSlider = ({ slides }: BannerSliderProps) => {
   const { t } = useTranslation()
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
 
   // Default slides using translations
   const defaultSlides: BannerSlide[] = [
@@ -57,12 +59,44 @@ const BannerSlider = ({ slides }: BannerSliderProps) => {
     setCurrentSlide((prev) => (prev + 1) % displaySlides.length)
   }
 
+  // Swipe detection
+  const minSwipeDistance = 50
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+    
+    if (isLeftSwipe) {
+      goToNext()
+    }
+    if (isRightSwipe) {
+      goToPrevious()
+    }
+  }
+
   if (displaySlides.length === 0) return null
 
   const currentSlideData = displaySlides[currentSlide]
 
   return (
-    <div className="relative w-full h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary/10 via-background-base to-accent/5">
+    <div 
+      className="relative w-full h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary/10 via-background-base to-accent/5"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       {/* Slide Content */}
       <div className="absolute inset-0 z-10 flex flex-col justify-center items-center text-center px-6">
         <div className="max-w-4xl mx-auto">

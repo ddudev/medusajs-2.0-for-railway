@@ -15,6 +15,37 @@ type ImageGalleryProps = {
 const ImageGallery = ({ images, productName, categoryName, brandName }: ImageGalleryProps) => {
   const { t } = useTranslation()
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+  // Swipe detection
+  const minSwipeDistance = 50
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd || images.length <= 1) return
+    
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+    
+    if (isLeftSwipe) {
+      // Swipe left - next image
+      setSelectedImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
+    }
+    if (isRightSwipe) {
+      // Swipe right - previous image
+      setSelectedImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
+    }
+  }
 
   // Generate keyword-rich alt text with product name as main keyword
   const generateAltText = (imageType: 'main' | 'thumbnail', index?: number): string => {
@@ -57,7 +88,12 @@ const ImageGallery = ({ images, productName, categoryName, brandName }: ImageGal
   return (
     <div className="flex flex-col gap-4 w-full" style={{ flexDirection: 'column' }}>
       {/* Main Image - Optimized for LCP */}
-      <div className="relative w-full overflow-hidden bg-background-elevated rounded-3xl group">
+      <div 
+        className="relative w-full overflow-hidden bg-background-elevated rounded-3xl group"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         <div className="relative w-full aspect-square md:aspect-[4/5] lg:aspect-square">
           {selectedImage?.url && (
             <Image

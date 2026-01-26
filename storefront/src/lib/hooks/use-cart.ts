@@ -175,9 +175,19 @@ export function useRemoveLineItem() {
       // Optimistically remove item from cart
       queryClient.setQueryData<HttpTypes.StoreCart>(cartKeys.detail(), (old) => {
         if (!old) return old
+        
+        const updatedItems = old.items?.filter((item) => item.id !== lineId)
+        
+        // If cart becomes empty, clear shipping methods too
+        const shouldClearShipping = !updatedItems || updatedItems.length === 0
+        
         return {
           ...old,
-          items: old.items?.filter((item) => item.id !== lineId),
+          items: updatedItems,
+          // Clear shipping methods if cart is empty
+          shipping_methods: shouldClearShipping ? [] : old.shipping_methods,
+          // Reset shipping total if cart is empty
+          shipping_total: shouldClearShipping ? 0 : old.shipping_total,
         }
       })
 

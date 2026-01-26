@@ -230,6 +230,7 @@ const translateProductsStep = createStep(
             ...product,
             metadata: {
               ...product.metadata,
+              // Store temporarily for SEO step - will be removed after import
               original_description_en: originalDescriptionEn,
             },
           }
@@ -278,15 +279,17 @@ const translateProductsStep = createStep(
             if (product.metadata.warranty_name) {
               textsToTranslate.push({ field: 'warranty_name', value: product.metadata.warranty_name })
             }
-            if (product.metadata.producer?.name) {
-              textsToTranslate.push({ field: 'producer_name', value: product.metadata.producer.name })
-            }
+            // SKIP BRAND TRANSLATION - Keep producer/brand names as-is
+            // if (product.metadata.producer?.name) {
+            //   textsToTranslate.push({ field: 'producer_name', value: product.metadata.producer.name })
+            // }
             if (product.metadata.category?.name) {
               textsToTranslate.push({ field: 'category_name', value: product.metadata.category.name })
             }
-            if (product.metadata.responsible_producer?.name) {
-              textsToTranslate.push({ field: 'responsible_producer_name', value: product.metadata.responsible_producer.name })
-            }
+            // SKIP RESPONSIBLE PRODUCER - Usually same as brand, keep as-is
+            // if (product.metadata.responsible_producer?.name) {
+            //   textsToTranslate.push({ field: 'responsible_producer_name', value: product.metadata.responsible_producer.name })
+            // }
           }
 
           // Translate title separately (preserves brand/model)
@@ -364,12 +367,14 @@ const translateProductsStep = createStep(
                 (translatedProduct.metadata as any).unit_name = translation
               } else if (item.field === 'warranty_name' && translatedProduct.metadata) {
                 (translatedProduct.metadata as any).warranty_name = translation
-              } else if (item.field === 'producer_name' && translatedProduct.metadata && (translatedProduct.metadata as any).producer) {
-                (translatedProduct.metadata as any).producer.name = translation
+              // SKIP BRAND TRANSLATION - Keep original
+              // } else if (item.field === 'producer_name' && translatedProduct.metadata && (translatedProduct.metadata as any).producer) {
+              //   (translatedProduct.metadata as any).producer.name = translation
               } else if (item.field === 'category_name' && translatedProduct.metadata && (translatedProduct.metadata as any).category) {
                 (translatedProduct.metadata as any).category.name = translation
-              } else if (item.field === 'responsible_producer_name' && translatedProduct.metadata && (translatedProduct.metadata as any).responsible_producer) {
-                (translatedProduct.metadata as any).responsible_producer.name = translation
+              // SKIP RESPONSIBLE PRODUCER - Keep original
+              // } else if (item.field === 'responsible_producer_name' && translatedProduct.metadata && (translatedProduct.metadata as any).responsible_producer) {
+              //   (translatedProduct.metadata as any).responsible_producer.name = translation
               }
             })
           } else {
@@ -490,17 +495,24 @@ const optimizeDescriptionsStep = createStep(
           // Log description length for debugging
           logger.info(`Product ${index + 1}: Final description length: ${description.length} chars (original: ${originalDescriptionEn.length} chars)`)
           
+          // Remove temporary field before saving
+          const { original_description_en, ...cleanMetadata } = product.metadata || {}
+          
           optimizedProducts.push({
             ...product,
-            description, // This is the on-page product description (150-400 words)
+            description, // This is the on-page product description (150-400 words, Bulgarian, SEO-optimized)
             metadata: {
-              ...product.metadata,
-              seo_meta_title: metaTitle, // From separate meta description generation
-              seo_meta_description: metaDescription, // From separate meta description generation
-              seo_short_description: descriptionContent.shortDescription,
-              technical_safe_description: descriptionContent.technicalSafeDescription, // Store for B2B feeds
-              specifications_table: specificationsTable || undefined, // Store specifications table in metadata
-              included_items: includedItems || undefined, // Store "What's Included" section in metadata
+              ...cleanMetadata,
+              // SEO meta tags (for <head>)
+              seo_meta_title: metaTitle,
+              seo_meta_description: metaDescription,
+              // Additional structured content (for tabs/sections in product page)
+              specifications_table: specificationsTable || undefined,
+              included_items: includedItems || undefined,
+              // REMOVED redundant fields:
+              // - original_description_en (temporary, not needed in DB)
+              // - seo_short_description (can be generated from main description)
+              // - technical_safe_description (redundant with main description)
             },
           })
           

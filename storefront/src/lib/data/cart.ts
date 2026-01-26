@@ -188,9 +188,26 @@ export async function deleteLineItem(lineId: string) {
     const authHeaders = await getAuthHeaders()
     await sdk.store.cart
       .deleteLineItem(cartId, lineId, {}, authHeaders)
-      .then(() => {
+      .then(async () => {
         // Note: Removed revalidateTag to prevent page refresh
         // Cart state is managed client-side with TanStack Query
+        
+        // Check if cart is now empty and clear shipping if so
+        try {
+          const { cart } = await sdk.store.cart.retrieve(
+            cartId,
+            { fields: "+items.*,+shipping_methods.*" },
+            authHeaders
+          )
+          
+          // If cart is empty, remove shipping methods
+          if (!cart.items || cart.items.length === 0) {
+            await clearShippingMethods(cartId)
+          }
+        } catch (err) {
+          console.warn("Failed to check/clear shipping after item removal:", err)
+          // Don't fail the whole operation if cleanup fails
+        }
       })
       .catch(medusaError)
   } catch (error: any) {
@@ -266,6 +283,42 @@ export async function setShippingMethod({
       // Cart state is now managed client-side with TanStack Query in checkout flow
     })
     .catch(medusaError)
+}
+
+/**
+ * Remove all shipping methods from cart
+ * This is useful when cart becomes empty
+ */
+export async function clearShippingMethods(cartId: string) {
+  try {
+    const authHeaders = await getAuthHeaders()
+    const { cart } = await sdk.store.cart.retrieve(
+      cartId,
+      { fields: "+shipping_methods.*" },
+      authHeaders
+    )
+
+    // Delete each shipping method
+    if (cart.shipping_methods && cart.shipping_methods.length > 0) {
+      for (const method of cart.shipping_methods) {
+        if (method.id) {
+          try {
+            await sdk.store.cart.deleteShippingMethod(
+              cartId,
+              method.id,
+              {},
+              authHeaders
+            )
+          } catch (err) {
+            console.warn(`Failed to delete shipping method ${method.id}:`, err)
+          }
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error("Failed to clear shipping methods:", error)
+    // Don't throw - this is a cleanup operation
+  }
 }
 
 export async function initiatePaymentSession(

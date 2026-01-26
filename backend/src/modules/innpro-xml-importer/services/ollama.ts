@@ -162,8 +162,19 @@ IMPORTANT RULES:
 - Use terms that native Bulgarians would actually use in everyday speech
 - Avoid literal word-by-word translations
 - Use commonly spoken Bulgarian, not overly formal or archaic terms
-- Technical terms should be translated to what Bulgarian consumers search for and understand
-- Keep brand names, model numbers, and specifications exactly as is
+- Keep brand names, model numbers, and specifications EXACTLY as is
+
+COMMON TOOL TERMS:
+- Slotted/Flat screwdriver = Права/Плоска отвертка
+- Phillips = Кръстата отвертка
+- Hexagonal = Шестостенен
+- Torx = Torx отвертка
+- Allen key = Имбусов ключ
+- Drill = Бормашина
+- Saw = Трион
+- Pliers = Клещи
+- Wrench = Гаечен ключ
+- Hammer = Чук
 
 Text to translate:
 ${text}
@@ -216,20 +227,36 @@ Bulgarian translation:`
 
 ${brandInstruction}
 
-TERMINOLOGY GUIDELINES:
-- Use commonly spoken Bulgarian terms, not literal translations
-- "CNC cutting machine" → "ЦНЦ машина" (not "фрезописец" or "рязачка")
-- "laser welder" → "лазерна заварка" or "лазерен заваръчен апарат"
+CRITICAL TOOL TERMINOLOGY (do NOT confuse these):
+- "Slotted screwdriver" → "Права отвертка" or "Плоска отвертка" (flat blade, NOT hexagonal)
+- "Phillips screwdriver" → "Кръстата отвертка" (cross/star pattern)
+- "Hexagonal/Hex" → "Шестостенен" or "Шестоъгълен" (6-sided)
+- "Torx screwdriver" → "Torx отвертка" or "Звезда отвертка"
+- "Pozidriv" → "Pozidriv отвертка"
+- "Allen key/Hex key" → "Имбусов ключ" or "Шестостенен ключ"
+- "Socket wrench" → "Тресчотка" or "Ключ с вложка"
+- "Spanner/Wrench" → "Гаечен ключ"
+- "Pliers" → "Клещи"
+- "Wire cutters" → "Клещи за рязане"
+- "Drill" → "Бормашина"
+- "Drill bit" → "Свредло"
+- "Hammer" → "Чук"
+- "Saw" → "Трион"
+- "Measuring tape" → "Ролетка"
+
+GENERAL TERMINOLOGY:
+- "CNC cutting machine" → "ЦНЦ машина"
+- "laser welder" → "лазерна заварка"
 - "3D printer" → "3D принтер"
 - "power tool" → "електроинструмент"
-- Keep technical specifications as numbers/units (1200W, 24V, etc.)
-- Keep model numbers exactly as is
-- Use terms that Bulgarian consumers would actually search for and understand
+- Keep technical specs as numbers/units (1200W, 24V, 5x150mm, etc.)
+- Keep model numbers EXACTLY as is (EDL6251501, etc.)
+- Keep color names in parentheses: (black) → (черен), (white) → (бял), (red) → (червен)
 
 Product title:
 ${title}
 
-Return ONLY the natural Bulgarian title that Bulgarians would use in everyday language.
+Return ONLY the natural Bulgarian title that Bulgarian consumers would use.
 
 Bulgarian title:`
 
