@@ -41,47 +41,90 @@ const ProductCount = ({ currentPage, pageSize, totalCount, totalPages }: Product
   const resultsText = `${totalCount} ${t("filters.results") || "резултата"}`
 
   return (
-    <div className="flex items-center gap-4">
-      <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
-        {resultsText}
-      </Typography>
-      
-      {/* Compact Pagination: < 1 / 6 > */}
+    <div className="flex flex-col gap-2">
+      {/* Pagination on top - only show if multiple pages */}
       {totalPages > 1 && (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <IconButton
             size="small"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
             sx={{ 
-              padding: '4px',
+              padding: '8px',
+              borderRadius: '8px',
+              backgroundColor: 'white',
+              border: '1px solid #d1d5db',
+              minWidth: '36px',
+              height: '36px',
+              '&:hover': {
+                backgroundColor: '#f9fafb',
+                borderColor: '#9ca3af',
+              },
               '&.Mui-disabled': {
-                opacity: 0.5,
+                opacity: 0.3,
+                backgroundColor: '#f9fafb',
+                borderColor: '#e5e7eb',
               },
             }}
             aria-label="Previous page"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft sx={{ fontSize: '20px', color: '#374151' }} />
           </IconButton>
-          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem', minWidth: '40px', textAlign: 'center' }}>
-            {currentPage} / {totalPages}
+          
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: 'text.primary', 
+              fontSize: '1rem', 
+              fontWeight: 400,
+              minWidth: '60px',
+              textAlign: 'center',
+            }}
+          >
+            {currentPage} <span style={{ color: '#9ca3af' }}>/{totalPages}</span>
           </Typography>
+          
           <IconButton
             size="small"
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
             sx={{ 
-              padding: '4px',
+              padding: '8px',
+              borderRadius: '8px',
+              backgroundColor: 'white',
+              border: '1px solid #d1d5db',
+              minWidth: '36px',
+              height: '36px',
+              '&:hover': {
+                backgroundColor: '#f9fafb',
+                borderColor: '#9ca3af',
+              },
               '&.Mui-disabled': {
-                opacity: 0.5,
+                opacity: 0.3,
+                backgroundColor: '#f9fafb',
+                borderColor: '#e5e7eb',
               },
             }}
             aria-label="Next page"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight sx={{ fontSize: '20px', color: '#374151' }} />
           </IconButton>
         </div>
       )}
+      
+      {/* Total results - aligned with sort label when no pagination */}
+      <Typography 
+        variant="body2" 
+        sx={{ 
+          color: '#6b7280', 
+          fontSize: '0.875rem', 
+          fontWeight: 400,
+          // Add top margin when no pagination to align with sort label
+          marginTop: totalPages <= 1 ? '2px' : '0',
+        }}
+      >
+        {resultsText}
+      </Typography>
     </div>
   )
 }

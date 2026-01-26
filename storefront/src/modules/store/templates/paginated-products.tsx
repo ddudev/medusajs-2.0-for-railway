@@ -141,19 +141,26 @@ export default async function PaginatedProducts({
     queryParams["id"] = productsIds
   }
 
-  if (sortBy === "created_at") {
-    queryParams["order"] = "created_at"
+  // Pass sort parameter to backend for server-side sorting
+  // Only price sorts need client-side handling (after fetching priced products)
+  // Backend sorting applies to all fetches (even when price filtering)
+  if (sortBy && !["price_asc", "price_desc"].includes(sortBy)) {
+    queryParams["order"] = sortBy
   }
 
   // If we have price filtering, we need to fetch more products to filter client-side
   // Otherwise, use proper backend pagination with filters
   const needsPriceFiltering = !!priceRange
+  // Price sorting also requires fetching all products first to sort by calculated prices
+  const needsClientSideSorting = sortBy && ["price_asc", "price_desc"].includes(sortBy)
+  const needsClientSideProcessing = needsPriceFiltering || needsClientSideSorting
+  
   let products: any[] = []
   let count = 0
 
-  if (needsPriceFiltering) {
-    // Fetch all matching products (up to 100) for price filtering
-    // Use getProductsList to get backend-filtered products, then filter by price client-side
+  if (needsClientSideProcessing) {
+    // Fetch all matching products (up to 100) for client-side filtering/sorting
+    // Use getProductsList to get backend-filtered products, then filter/sort client-side
     const result = await getProductsList({
       pageParam: 1, // Fetch first page with limit 100
       queryParams: {
@@ -165,8 +172,8 @@ export default async function PaginatedProducts({
     products = result.response.products
     count = result.response.count
   } else {
-    // Use proper backend pagination when no price filter
-    // Backend handles collection_id and category_id filtering
+    // Use proper backend pagination when no price filter or price sort
+    // Backend handles collection_id, category_id filtering, and created_at sorting
     const result = await getProductsList({
       pageParam: page,
       queryParams: {
@@ -212,8 +219,8 @@ export default async function PaginatedProducts({
   let totalCount = count
   let totalPages = Math.ceil(count / PRODUCT_LIMIT)
 
-  if (needsPriceFiltering) {
-    // Client-side pagination for price-filtered results
+  if (needsClientSideProcessing) {
+    // Client-side pagination for price-filtered or price-sorted results
     const totalFiltered = filteredProducts.length
     totalCount = totalFiltered
     totalPages = Math.ceil(totalFiltered / PRODUCT_LIMIT)
@@ -221,7 +228,7 @@ export default async function PaginatedProducts({
     const endIndex = startIndex + PRODUCT_LIMIT
     paginatedProducts = filteredProducts.slice(startIndex, endIndex)
   }
-  // If no price filter, products are already paginated by backend
+  // If no price filter or price sort, products are already paginated and sorted by backend
 
   const productsList = (
     <>

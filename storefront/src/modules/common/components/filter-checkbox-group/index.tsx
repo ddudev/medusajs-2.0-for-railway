@@ -11,6 +11,7 @@ type FilterCheckboxGroupProps = {
   selectedValues: string[]
   handleChange: (value: string, checked: boolean) => void
   "data-testid"?: string
+  darkMode?: boolean
 }
 
 const FilterCheckboxGroup = ({
@@ -19,6 +20,7 @@ const FilterCheckboxGroup = ({
   selectedValues,
   handleChange,
   "data-testid": dataTestId,
+  darkMode = false,
 }: FilterCheckboxGroupProps) => {
   return (
     <div className="flex flex-col" data-testid={dataTestId}>
@@ -32,6 +34,12 @@ const FilterCheckboxGroup = ({
                 checked={isChecked}
                 onChange={(e) => handleChange(item.value, e.target.checked)}
                 size="small"
+                sx={{
+                  color: darkMode ? 'rgba(255, 255, 255, 0.5)' : undefined,
+                  '&.Mui-checked': {
+                    color: darkMode ? '#ff6b35' : undefined,
+                  },
+                }}
               />
             }
             label={
@@ -40,7 +48,9 @@ const FilterCheckboxGroup = ({
                 sx={{
                   fontSize: '0.875rem',
                   fontWeight: isChecked ? 500 : 400,
-                  color: isChecked ? 'text.primary' : 'text.secondary',
+                  color: darkMode 
+                    ? (isChecked ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.7)')
+                    : (isChecked ? 'text.primary' : 'text.secondary'),
                 }}
               >
                 {item.label}
@@ -48,7 +58,7 @@ const FilterCheckboxGroup = ({
             }
             sx={{
               margin: 0,
-              marginBottom: '4px',
+              marginBottom: '6px',
               '& .MuiFormControlLabel-label': {
                 marginLeft: '8px',
               },

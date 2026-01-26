@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef, useMemo, useCallback } from "react"
-import { Button, Menu, MenuItem, Paper, Divider, Badge } from '@mui/material'
-import { KeyboardArrowDown } from '@mui/icons-material'
+import { useState, useMemo, useCallback } from "react"
+import { Button, Divider, Badge, Fade, Grow } from '@mui/material'
+import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
 import { useSearchParams, usePathname, useRouter } from "next/navigation"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { HttpTypes } from "@medusajs/types"
@@ -31,9 +31,7 @@ const MobileFilterDropdown = ({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
-  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [open, setOpen] = useState(false)
 
   const createQueryString = useCallback(
     (name: string, value: string | string[]) => {
@@ -89,168 +87,160 @@ const MobileFilterDropdown = ({
     return count
   }, [searchParams])
 
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
-
-  const handleClose = () => {
-    setAnchorEl(null)
+  const handleToggle = () => {
+    setOpen(!open)
   }
 
   return (
     <>
-      <Button
-        ref={buttonRef}
-        onClick={handleClick}
-        endIcon={<KeyboardArrowDown sx={{ color: 'white', fontSize: '1.25rem' }} />}
-        fullWidth
-        className="flex items-center justify-between px-4 transition-colors relative"
-        sx={{
-          color: 'white',
-          fontWeight: 500,
-          fontSize: '0.9375rem',
-          textTransform: 'none',
-          borderRadius: '0 0 12px 12px',
-          backgroundColor: '#1A1A1A',
-          justifyContent: 'space-between',
-          minHeight: '48px',
-          '&:hover': {
-            backgroundColor: '#353535',
-          },
-          '& .MuiButton-endIcon': {
-            marginLeft: 'auto',
-          },
-        }}
-        data-testid={dataTestId}
-        aria-label="Отвори филтри"
-      >
-        <span className="text-[15px] font-medium text-white">
-          {(() => {
-            const translated = t("filters.openFilters")
-            return translated === "filters.openFilters" ? "Отвори филтри" : translated
-          })()}
-        </span>
-        {activeFilterCount > 0 && (
-          <Badge
-            badgeContent={activeFilterCount}
-            color="primary"
-            sx={{
-              position: 'absolute',
-              right: '40px',
-              '& .MuiBadge-badge': {
-                fontSize: '0.625rem',
-                minWidth: '16px',
-                height: '16px',
-                padding: '0 4px',
-                backgroundColor: '#519717',
-                color: 'white',
-              },
-            }}
-          />
-        )}
-      </Button>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        PaperProps={{
-          sx: {
-            mt: 1,
-            minWidth: 320,
-            maxWidth: '90vw',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            bgcolor: '#1a1a1a',
+      {/* Filter Button */}
+      <div className="w-full relative z-50">
+        <Button
+          onClick={handleToggle}
+          endIcon={open ? <KeyboardArrowUp sx={{ color: 'white', fontSize: '1.25rem' }} /> : <KeyboardArrowDown sx={{ color: 'white', fontSize: '1.25rem' }} />}
+          fullWidth
+          className="flex items-center justify-between px-4 transition-colors relative"
+          sx={{
             color: 'white',
-            borderRadius: '12px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-          },
-        }}
-        MenuListProps={{
-          sx: {
-            py: 2,
-            px: 2,
-          },
-        }}
-      >
-        <div className="flex flex-col gap-4">
-          <h3 className="text-lg font-semibold text-white mb-2">
-            {t("filters.title") || "Филтри"}
-          </h3>
-
-          <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)', my: 1 }} />
-
-          {/* Collections Filter */}
-          {collections && collections.length > 0 && (
-            <div>
-              <FilterCollection
-                collections={collections}
-                setQueryParamsArray={setQueryParamsArray}
-              />
-            </div>
+            fontWeight: 500,
+            fontSize: '0.9375rem',
+            textTransform: 'none',
+            borderRadius: open ? '0 0 0 0' : '0 0 12px 12px',
+            backgroundColor: '#1A1A1A',
+            justifyContent: 'space-between',
+            minHeight: '48px',
+            transition: 'background-color 0.2s ease, border-radius 0.4s ease',
+            '&:hover': {
+              backgroundColor: '#353535',
+            },
+            '& .MuiButton-endIcon': {
+              marginLeft: 'auto',
+            },
+          }}
+          data-testid={dataTestId}
+          aria-label="Отвори филтри"
+          aria-expanded={open}
+        >
+          <span className="text-[15px] font-medium text-white">
+            {(() => {
+              const translated = t("filters.openFilters")
+              return translated === "filters.openFilters" ? "Отвори филтри" : translated
+            })()}
+          </span>
+          {activeFilterCount > 0 && (
+            <Badge
+              badgeContent={activeFilterCount}
+              color="primary"
+              sx={{
+                position: 'absolute',
+                right: '40px',
+                '& .MuiBadge-badge': {
+                  fontSize: '0.625rem',
+                  minWidth: '16px',
+                  height: '16px',
+                  padding: '0 4px',
+                  backgroundColor: '#519717',
+                  color: 'white',
+                },
+              }}
+            />
           )}
+        </Button>
 
-          {/* Categories Filter */}
-          {categories && categories.length > 0 && (
-            <div>
-              <FilterCategory
-                categories={categories}
-                setQueryParamsArray={setQueryParamsArray}
-              />
-            </div>
-          )}
-
-          {/* Brands Filter */}
-          {brands && brands.length > 0 && (
-            <div>
-              <FilterBrand
-                brands={brands}
-                setQueryParamsArray={setQueryParamsArray}
-              />
-            </div>
-          )}
-
-          {/* Price Filter */}
-          {maxPrice && maxPrice > 0 && (
-            <div>
-              <FilterPrice
-                setQueryParams={setQueryParams}
-                maxPrice={maxPrice}
-              />
-            </div>
-          )}
-
-          <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)', my: 1 }} />
-
-          {/* Apply/Close Button */}
-          <Button
-            onClick={handleClose}
-            fullWidth
-            variant="contained"
-            sx={{
-              bgcolor: '#519717',
-              color: 'white',
-              fontWeight: 600,
-              py: 1.5,
-              borderRadius: '8px',
-              '&:hover': {
-                bgcolor: '#4a8514',
-              },
+        {/* Filter Panel - Positioned absolutely below button with animation */}
+        <Grow
+          in={open}
+          timeout={400}
+          style={{ transformOrigin: 'top center' }}
+          unmountOnExit
+        >
+          <div 
+            className="absolute top-full left-0 right-0 bg-[#2d2d2d] rounded-b-2xl overflow-hidden z-50"
+            style={{
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+              maxHeight: 'calc(100vh - 200px)',
             }}
           >
-            {t("filters.apply") || "Приложи"}
-          </Button>
-        </div>
-      </Menu>
+            <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+              <div className="flex flex-col gap-6">
+                <h3 className="text-lg font-semibold text-white">
+                  {t("filters.title") || "Филтри"}
+                </h3>
+
+                <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+
+                {/* Categories Filter */}
+                {categories && categories.length > 0 && (
+                  <FilterCategory
+                    categories={categories}
+                    setQueryParamsArray={setQueryParamsArray}
+                    darkMode={true}
+                  />
+                )}
+
+                {/* Brands Filter */}
+                {brands && brands.length > 0 && (
+                  <FilterBrand
+                    brands={brands}
+                    setQueryParamsArray={setQueryParamsArray}
+                    darkMode={true}
+                  />
+                )}
+
+                {/* Price Filter */}
+                {maxPrice && maxPrice > 0 && (
+                  <FilterPrice
+                    setQueryParams={setQueryParams}
+                    maxPrice={maxPrice}
+                    darkMode={true}
+                  />
+                )}
+
+                {/* Collections Filter */}
+                {collections && collections.length > 0 && (
+                  <FilterCollection
+                    collections={collections}
+                    setQueryParamsArray={setQueryParamsArray}
+                    darkMode={true}
+                  />
+                )}
+
+                <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+
+                {/* Apply/Close Button */}
+                <Button
+                  onClick={handleToggle}
+                  fullWidth
+                  variant="contained"
+                  sx={{
+                    bgcolor: '#519717',
+                    color: 'white',
+                    fontWeight: 600,
+                    py: 1.5,
+                    borderRadius: '12px',
+                    '&:hover': {
+                      bgcolor: '#4a8514',
+                    },
+                  }}
+                >
+                  {t("filters.apply") || "Затвори и приложи филтрите"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Grow>
+      </div>
+
+      {/* Backdrop overlay with fade animation */}
+      <Fade in={open} timeout={350} unmountOnExit>
+        <div
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={handleToggle}
+          style={{
+            backdropFilter: 'blur(2px)',
+          }}
+        />
+      </Fade>
     </>
   )
 }

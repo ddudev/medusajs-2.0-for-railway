@@ -10,12 +10,14 @@ type FilterCategoryProps = {
   categories: HttpTypes.StoreProductCategory[]
   setQueryParamsArray: (name: string, values: string[]) => void
   "data-testid"?: string
+  darkMode?: boolean
 }
 
 const FilterCategory = ({
   categories,
   setQueryParamsArray,
   "data-testid": dataTestId,
+  darkMode = false,
 }: FilterCategoryProps) => {
   const { t } = useTranslation()
   const searchParams = useSearchParams()
@@ -50,11 +52,13 @@ const FilterCategory = ({
       title={t("filters.category")}
       defaultExpanded={defaultExpanded}
       data-testid={dataTestId}
+      darkMode={darkMode}
     >
       <FilterCheckboxGroup
         items={items}
         selectedValues={selectedCategoryIds}
         handleChange={handleChange}
+        darkMode={darkMode}
       />
     </CollapsibleFilter>
   )

@@ -46,6 +46,7 @@ type FilterPriceProps = {
   setQueryParams: (name: string, value: string) => void
   maxPrice?: number
   "data-testid"?: string
+  darkMode?: boolean
 }
 
 // Default price range
@@ -57,6 +58,7 @@ const FilterPrice = ({
   setQueryParams,
   maxPrice: propMaxPrice,
   "data-testid": dataTestId,
+  darkMode = false,
 }: FilterPriceProps) => {
   const { t } = useTranslation()
   const searchParams = useSearchParams()
@@ -231,13 +233,15 @@ const FilterPrice = ({
       title={t("filters.price")}
       defaultExpanded={defaultExpanded}
       data-testid={dataTestId}
+      darkMode={darkMode}
     >
       <Box className="flex gap-x-3 flex-col">
         {hasActiveFilter && (
           <Box className="flex items-center justify-end mb-2">
             <button
               onClick={handleClear}
-              className="text-xs text-primary hover:underline"
+              className="text-xs hover:underline"
+              style={{ color: darkMode ? '#ff6b35' : undefined }}
               type="button"
             >
               {t("filters.clearFilters")}
@@ -256,6 +260,7 @@ const FilterPrice = ({
           valueLabelDisplay="auto"
           valueLabelFormat={(value) => `€${value}`}
           sx={{
+            color: darkMode ? '#ff6b35' : undefined,
             '& .MuiSlider-thumb': {
               width: 18,
               height: 18,
@@ -265,6 +270,7 @@ const FilterPrice = ({
             },
             '& .MuiSlider-rail': {
               height: 4,
+              backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.2)' : undefined,
             },
           }}
         />
@@ -288,10 +294,21 @@ const FilterPrice = ({
             flex: 1,
             '& .MuiOutlinedInput-root': {
               fontSize: '0.875rem',
+              backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : undefined,
+              color: darkMode ? 'rgba(255, 255, 255, 0.9)' : undefined,
+              '& fieldset': {
+                borderColor: darkMode ? 'rgba(255, 255, 255, 0.2)' : undefined,
+              },
+              '&:hover fieldset': {
+                borderColor: darkMode ? 'rgba(255, 255, 255, 0.3)' : undefined,
+              },
+            },
+            '& .MuiInputLabel-root': {
+              color: darkMode ? 'rgba(255, 255, 255, 0.6)' : undefined,
             },
           }}
         />
-        <Typography variant="body2" sx={{ color: 'text.secondary', px: 1 }}>
+        <Typography variant="body2" sx={{ color: darkMode ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary', px: 1 }}>
           -
         </Typography>
         <TextField
@@ -311,6 +328,17 @@ const FilterPrice = ({
             flex: 1,
             '& .MuiOutlinedInput-root': {
               fontSize: '0.875rem',
+              backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : undefined,
+              color: darkMode ? 'rgba(255, 255, 255, 0.9)' : undefined,
+              '& fieldset': {
+                borderColor: darkMode ? 'rgba(255, 255, 255, 0.2)' : undefined,
+              },
+              '&:hover fieldset': {
+                borderColor: darkMode ? 'rgba(255, 255, 255, 0.3)' : undefined,
+              },
+            },
+            '& .MuiInputLabel-root': {
+              color: darkMode ? 'rgba(255, 255, 255, 0.6)' : undefined,
             },
           }}
         />

@@ -10,12 +10,14 @@ type FilterBrandProps = {
   brands: Brand[]
   setQueryParamsArray: (name: string, values: string[]) => void
   "data-testid"?: string
+  darkMode?: boolean
 }
 
 const FilterBrand = ({
   brands,
   setQueryParamsArray,
   "data-testid": dataTestId,
+  darkMode = false,
 }: FilterBrandProps) => {
   const { t } = useTranslation()
   const searchParams = useSearchParams()
@@ -55,11 +57,13 @@ const FilterBrand = ({
       title={t("filters.brand")}
       defaultExpanded={defaultExpanded}
       data-testid={dataTestId}
+      darkMode={darkMode}
     >
       <FilterCheckboxGroup
         items={items}
         selectedValues={selectedBrandIds}
         handleChange={handleChange}
+        darkMode={darkMode}
       />
     </CollapsibleFilter>
   )

@@ -9,6 +9,7 @@ type CollapsibleFilterProps = {
   children: React.ReactNode
   defaultExpanded?: boolean
   "data-testid"?: string
+  darkMode?: boolean
 }
 
 const CollapsibleFilter = ({
@@ -16,6 +17,7 @@ const CollapsibleFilter = ({
   children,
   defaultExpanded = false,
   "data-testid": dataTestId,
+  darkMode = false,
 }: CollapsibleFilterProps) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
 
@@ -23,11 +25,11 @@ const CollapsibleFilter = ({
     <Box
       data-testid={dataTestId}
       sx={{
-        backgroundColor: 'background.paper',
-        borderRadius: '8px',
+        backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'background.paper',
+        borderRadius: '12px',
         overflow: 'hidden',
         border: '1px solid',
-        borderColor: 'divider',
+        borderColor: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'divider',
       }}
     >
       {/* Header - Clickable to toggle */}
@@ -37,28 +39,28 @@ const CollapsibleFilter = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '12px 16px',
+          padding: '14px 16px',
           cursor: 'pointer',
           userSelect: 'none',
           '&:hover': {
-            backgroundColor: 'background.default',
+            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.08)' : 'background.default',
           },
         }}
       >
         <Typography
           variant="body2"
           sx={{
-            color: 'text.secondary',
+            color: darkMode ? 'rgba(255, 255, 255, 0.9)' : 'text.secondary',
             fontWeight: 500,
-            fontSize: '0.875rem',
+            fontSize: '0.9375rem',
           }}
         >
           {title}
         </Typography>
         {isExpanded ? (
-          <KeyboardArrowUp sx={{ fontSize: '20px', color: 'text.secondary' }} />
+          <KeyboardArrowUp sx={{ fontSize: '20px', color: darkMode ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary' }} />
         ) : (
-          <KeyboardArrowDown sx={{ fontSize: '20px', color: 'text.secondary' }} />
+          <KeyboardArrowDown sx={{ fontSize: '20px', color: darkMode ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary' }} />
         )}
       </Box>
 
@@ -66,8 +68,8 @@ const CollapsibleFilter = ({
       {isExpanded && (
         <Box
           sx={{
-            padding: '12px 16px',
-            backgroundColor: 'background.elevated',
+            padding: '12px 16px 16px',
+            backgroundColor: darkMode ? 'rgba(0, 0, 0, 0.2)' : 'background.elevated',
           }}
         >
           {children}

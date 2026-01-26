@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation"
 import FilterCheckboxGroup from "@modules/common/components/filter-checkbox-group"
+import CollapsibleFilter from "@modules/common/components/collapsible-filter"
 import { HttpTypes } from "@medusajs/types"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
@@ -9,12 +10,14 @@ type FilterCollectionProps = {
   collections: HttpTypes.StoreCollection[]
   setQueryParamsArray: (name: string, values: string[]) => void
   "data-testid"?: string
+  darkMode?: boolean
 }
 
 const FilterCollection = ({
   collections,
   setQueryParamsArray,
   "data-testid": dataTestId,
+  darkMode = false,
 }: FilterCollectionProps) => {
   const { t } = useTranslation()
   const searchParams = useSearchParams()
@@ -47,14 +50,28 @@ const FilterCollection = ({
     })),
   ]
 
+  // Don't render if no collections
+  if (!items || items.length === 0) {
+    return null
+  }
+
+  // Default expanded if there are selected collections
+  const defaultExpanded = selectedCollectionIds.length > 0
+
   return (
-    <FilterCheckboxGroup
+    <CollapsibleFilter
       title={t("filters.collection")}
-      items={items}
-      selectedValues={selectedCollectionIds}
-      handleChange={handleChange}
+      defaultExpanded={defaultExpanded}
       data-testid={dataTestId}
-    />
+      darkMode={darkMode}
+    >
+      <FilterCheckboxGroup
+        items={items}
+        selectedValues={selectedCollectionIds}
+        handleChange={handleChange}
+        darkMode={darkMode}
+      />
+    </CollapsibleFilter>
   )
 }
 

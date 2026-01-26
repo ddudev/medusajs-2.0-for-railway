@@ -10,7 +10,7 @@ import {
 } from '@mui/material'
 import { HttpTypes } from '@medusajs/types'
 import { getProductsById } from '@lib/data/products'
-import ProductTileContent from './product-tile-content'
+import ProductTileWrapper from './product-tile-wrapper'
 
 type ProductTileProps = {
   product: HttpTypes.StoreProduct
@@ -52,7 +52,7 @@ export default async function ProductTile({
   }
 
   return (
-    <ProductTileContent
+    <ProductTileWrapper
       product={product}
       pricedProduct={pricedProduct}
       countryCode={countryCode}

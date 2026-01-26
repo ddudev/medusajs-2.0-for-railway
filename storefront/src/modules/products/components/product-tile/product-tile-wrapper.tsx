@@ -1,50 +1,38 @@
-import { Suspense } from 'react'
+'use client'
+
+import dynamic from 'next/dynamic'
 import { HttpTypes } from '@medusajs/types'
-import ProductTile, { ProductTileSkeleton } from './index'
-import ProductTileClientWrapper from './product-tile-client-wrapper'
+import { ProductTileSkeleton } from './index'
+
+// Dynamically import with no SSR to prevent QueryClient errors
+const ProductTileContent = dynamic(() => import('./product-tile-content'), {
+  ssr: false,
+  loading: () => <ProductTileSkeleton />
+})
 
 type ProductTileWrapperProps = {
   product: HttpTypes.StoreProduct
-  region: HttpTypes.StoreRegion
+  pricedProduct: HttpTypes.StoreProduct
   countryCode: string
   priority?: boolean
-  pricedProduct?: HttpTypes.StoreProduct
 }
 
 /**
- * Wrapper for ProductTile that works from Client Components
- * If pricedProduct is provided, uses synchronous ProductTileContent
- * Otherwise, uses async ProductTile with Suspense
+ * Client Component wrapper for ProductTileContent
+ * This allows us to use dynamic imports with ssr: false
  */
 export default function ProductTileWrapper({
   product,
-  region,
+  pricedProduct,
   countryCode,
   priority = false,
-  pricedProduct,
 }: ProductTileWrapperProps) {
-  // If pricedProduct is provided, use client wrapper (prevents QueryClient SSR errors)
-  if (pricedProduct) {
-    return (
-      <ProductTileClientWrapper
-        product={product}
-        pricedProduct={pricedProduct}
-        countryCode={countryCode}
-        priority={priority}
-      />
-    )
-  }
-
-  // Otherwise, use async ProductTile with Suspense (Server Component only)
   return (
-    <Suspense fallback={<ProductTileSkeleton />}>
-      <ProductTile
-        product={product}
-        region={region}
-        countryCode={countryCode}
-        priority={priority}
-      />
-    </Suspense>
+    <ProductTileContent
+      product={product}
+      pricedProduct={pricedProduct}
+      countryCode={countryCode}
+      priority={priority}
+    />
   )
 }
-

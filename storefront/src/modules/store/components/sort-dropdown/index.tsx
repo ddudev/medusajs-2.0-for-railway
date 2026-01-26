@@ -58,24 +58,25 @@ const SortDropdown = ({
   }
 
   return (
-    <div className="flex items-center gap-1" data-testid={dataTestId}>
+    <div className="flex flex-col gap-2" data-testid={dataTestId}>
       <span className="text-sm font-normal text-gray-600">{t("filters.sortBy")}:</span>
       <FormControl
         size="small"
         sx={{
-          minWidth: 120,
+          minWidth: 180,
           '& .MuiOutlinedInput-root': {
             borderRadius: '8px',
             color: '#1f2937',
-            fontWeight: 500,
+            fontWeight: 400,
             fontSize: '0.875rem',
             backgroundColor: 'white',
-            border: '1px solid #e5e7eb',
+            border: '1px solid #d1d5db',
             '& fieldset': { border: 'none' },
             '&:hover fieldset': { border: 'none' },
             '&.Mui-focused fieldset': { border: 'none' },
             '&:hover': {
               backgroundColor: '#f9fafb',
+              borderColor: '#9ca3af',
             },
           },
           '& .MuiSelect-icon': {
@@ -90,7 +91,7 @@ const SortDropdown = ({
           IconComponent={KeyboardArrowDown}
           sx={{
             '& .MuiSelect-select': {
-              padding: '6px 32px 6px 12px',
+              padding: '9px 36px 9px 14px',
             },
           }}
           MenuProps={{
@@ -98,16 +99,21 @@ const SortDropdown = ({
               sx: {
                 bgcolor: 'white',
                 color: '#1f2937',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
                 borderRadius: '8px',
+                marginTop: '6px',
+                border: '1px solid #e5e7eb',
                 '& .MuiMenuItem-root': {
                   fontSize: '0.875rem',
+                  padding: '10px 16px',
+                  fontWeight: 400,
                 },
                 '& .MuiMenuItem-root:hover': {
                   bgcolor: '#f3f4f6',
                 },
                 '& .Mui-selected': {
                   bgcolor: '#e5e7eb !important',
+                  fontWeight: 500,
                   '&:hover': {
                     bgcolor: '#d1d5db !important',
                   },

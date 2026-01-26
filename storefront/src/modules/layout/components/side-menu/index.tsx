@@ -1,29 +1,55 @@
 "use client"
 
 import { Popover, Transition } from "@headlessui/react"
-import { ArrowRightMini, XMark, ChevronDown } from "@medusajs/icons"
-import { Text, clx, useToggleState } from "@medusajs/ui"
+import { XMark, ArrowLeft, ChevronRight } from "@medusajs/icons"
 import { Fragment, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import CountrySelect from "../country-select"
 import { HttpTypes } from "@medusajs/types"
-
-const SideMenuItems = {
-  Home: "/",
-  Store: "/store",
-  Search: "/search",
-  Account: "/account",
-  Cart: "/cart",
-}
 
 type SideMenuProps = {
   regions: HttpTypes.StoreRegion[] | null
   categories?: HttpTypes.StoreProductCategory[]
 }
 
-const SideMenu = ({ regions, categories = [] }: SideMenuProps) => {
-  const toggleState = useToggleState()
+type ViewType = "main" | "subcategory"
+type SlideDirection = "left" | "right"
+
+const SideMenu = ({ categories = [] }: SideMenuProps) => {
+  const [currentView, setCurrentView] = useState<ViewType>("main")
+  const [selectedCategory, setSelectedCategory] = useState<HttpTypes.StoreProductCategory | null>(null)
+  const [slideDirection, setSlideDirection] = useState<SlideDirection>("left")
+
+  const handleCategoryClick = (category: HttpTypes.StoreProductCategory, close: () => void) => {
+    const hasChildren = category.category_children && category.category_children.length > 0
+    
+    if (hasChildren) {
+      setSelectedCategory(category)
+      setSlideDirection("left")
+      setCurrentView("subcategory")
+    } else {
+      // No children, navigate directly to PLP
+      close()
+    }
+  }
+
+  const handleBack = () => {
+    setSlideDirection("right")
+    setCurrentView("main")
+    setSelectedCategory(null)
+  }
+
+  const handleSubcategoryClick = (close: () => void) => {
+    close()
+  }
+
+  const handleClose = (close: () => void) => {
+    // Reset state when closing
+    setCurrentView("main")
+    setSelectedCategory(null)
+    close()
+  }
 
   return (
     <div className="h-full">
@@ -56,102 +82,88 @@ const SideMenu = ({ regions, categories = [] }: SideMenuProps) => {
               <Transition
                 show={open}
                 as={Fragment}
-                enter="transition ease-out duration-150"
+                enter="transition ease-out duration-300"
                 enterFrom="opacity-0"
-                enterTo="opacity-100 backdrop-blur-2xl"
-                leave="transition ease-in duration-150"
-                leaveFrom="opacity-100 backdrop-blur-2xl"
+                enterTo="opacity-100"
+                leave="transition ease-in duration-200"
+                leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <Popover.Panel className="flex flex-col fixed inset-0 w-full h-full z-50 bg-white md:absolute md:inset-auto md:right-0 md:top-0 md:w-1/3 md:max-w-sm md:h-[calc(100vh-1rem)] md:m-2 md:backdrop-blur-2xl md:bg-[rgba(3,7,18,0.5)] md:rounded-lg">
-                  <div
-                    data-testid="nav-menu-popup"
-                    className="flex flex-col h-full bg-white md:bg-[rgba(3,7,18,0.5)] md:rounded-lg justify-between p-6"
+                <Popover.Panel className="fixed top-[64px] left-0 right-0 bottom-0 z-[60] md:hidden">
+                  <div className="absolute inset-0 bg-black/50" onClick={() => handleClose(close)} />
+                  
+                  <motion.div
+                    initial={{ x: "-100%" }}
+                    animate={{ x: 0 }}
+                    exit={{ x: "-100%" }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="absolute inset-0 w-full bg-white flex flex-col overflow-hidden"
                   >
-                    <div className="flex justify-end" id="xmark">
-                      <button data-testid="close-menu-button" onClick={close}>
-                        <XMark />
+                    {/* Header - Clean with orange close button */}
+                    <div className="bg-white flex items-center justify-between px-5 pt-4 pb-4 flex-shrink-0">
+                      {currentView === "subcategory" && (
+                        <button
+                          onClick={handleBack}
+                          className="flex items-center gap-2 text-gray-700 hover:text-primary transition-colors"
+                          aria-label="Назад"
+                        >
+                          <ArrowLeft className="w-5 h-5" />
+                          <span className="font-medium">Назад</span>
+                        </button>
+                      )}
+                      
+                      {currentView === "subcategory" && selectedCategory && (
+                        <h2 className="text-gray-800 font-semibold text-base flex-1 text-center">
+                          {selectedCategory.name}
+                        </h2>
+                      )}
+                      
+                      <button
+                        data-testid="close-menu-button"
+                        onClick={() => handleClose(close)}
+                        className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors ml-auto font-medium text-sm"
+                        aria-label="Затвори"
+                      >
+                        <XMark className="w-5 h-5" />
+                        <span>Затвори</span>
                       </button>
                     </div>
-                    <ul className="flex flex-col gap-6 items-start justify-start overflow-y-auto flex-1">
-                      {Object.entries(SideMenuItems).map(([name, href]) => {
-                        return (
-                          <li key={name}>
-                            <LocalizedClientLink
-                              href={href}
-                              className="text-2xl md:text-3xl leading-8 md:leading-10 text-text-primary md:text-ui-fg-on-color hover:text-primary md:hover:text-ui-fg-disabled transition-colors"
-                              onClick={close}
-                              data-testid={`${name.toLowerCase()}-link`}
-                            >
-                              {name}
-                            </LocalizedClientLink>
-                          </li>
-                        )
-                      })}
 
-                      {/* Categories Section */}
-                      {categories.length > 0 && (
-                        <>
-                          <li className="w-full pt-4 border-t border-border-base md:border-ui-border-base">
-                            <Text className="text-lg md:text-xl text-text-secondary md:text-ui-fg-subtle uppercase tracking-wide">
-                              Categories
-                            </Text>
-                          </li>
-                          {categories.map((category) => {
-                            const hasChildren =
-                              category.category_children &&
-                              category.category_children.length > 0
-
-                            if (!hasChildren) {
-                              return (
-                                <li key={category.id} className="w-full">
-                                  <LocalizedClientLink
-                                    href={`/categories/${category.handle}`}
-                                    className="text-xl md:text-2xl leading-7 md:leading-8 text-text-primary md:text-ui-fg-on-color hover:text-primary md:hover:text-ui-fg-disabled transition-colors"
-                                    onClick={close}
-                                  >
-                                    {category.name}
-                                  </LocalizedClientLink>
-                                </li>
-                              )
-                            }
-
-                            return (
-                              <CategoryAccordion
-                                key={category.id}
-                                category={category}
-                                onLinkClick={close}
-                              />
-                            )
-                          })}
-                        </>
-                      )}
-                    </ul>
-                    <div className="flex flex-col gap-y-6">
-                      <div
-                        className="flex justify-between"
-                        onMouseEnter={toggleState.open}
-                        onMouseLeave={toggleState.close}
-                      >
-                        {regions && (
-                          <CountrySelect
-                            toggleState={toggleState}
-                            regions={regions}
-                          />
+                    {/* Scrollable Content Area */}
+                    <div className="flex-1 overflow-y-auto overscroll-contain bg-white">
+                      <AnimatePresence mode="wait" initial={false}>
+                        {currentView === "main" ? (
+                          <motion.div
+                            key="main"
+                            initial={{ x: slideDirection === "right" ? "-100%" : 0 }}
+                            animate={{ x: 0 }}
+                            exit={{ x: slideDirection === "left" ? "-100%" : "100%" }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                            className="min-h-full"
+                          >
+                            <MainMenuView
+                              categories={categories}
+                              onCategoryClick={(category) => handleCategoryClick(category, close)}
+                            />
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="subcategory"
+                            initial={{ x: slideDirection === "left" ? "100%" : 0 }}
+                            animate={{ x: 0 }}
+                            exit={{ x: slideDirection === "right" ? "100%" : "-100%" }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                            className="min-h-full"
+                          >
+                            <SubcategoryMenuView
+                              category={selectedCategory}
+                              onSubcategoryClick={() => handleSubcategoryClick(close)}
+                            />
+                          </motion.div>
                         )}
-                        <ArrowRightMini
-                          className={clx(
-                            "transition-transform duration-150",
-                            toggleState.state ? "-rotate-90" : ""
-                          )}
-                        />
-                      </div>
-                      <Text className="flex justify-between txt-compact-small">
-                        © {new Date().getFullYear()} MS Store. All rights
-                        reserved.
-                      </Text>
+                      </AnimatePresence>
                     </div>
-                  </div>
+                  </motion.div>
                 </Popover.Panel>
               </Transition>
             </>
@@ -162,59 +174,77 @@ const SideMenu = ({ regions, categories = [] }: SideMenuProps) => {
   )
 }
 
-// Category Accordion Component for nested categories
-const CategoryAccordion = ({
-  category,
-  onLinkClick,
+// Main Menu View Component
+const MainMenuView = ({
+  categories,
+  onCategoryClick,
 }: {
-  category: HttpTypes.StoreProductCategory
-  onLinkClick: () => void
+  categories: HttpTypes.StoreProductCategory[]
+  onCategoryClick: (category: HttpTypes.StoreProductCategory) => void
 }) => {
-  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <ul className="divide-y divide-gray-200">
+      {categories.map((category) => {
+        const hasChildren = category.category_children && category.category_children.length > 0
+
+        return (
+          <li key={category.id}>
+            {hasChildren ? (
+              <button
+                onClick={() => onCategoryClick(category)}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 active:bg-orange-50 transition-colors text-left"
+              >
+                <span className="text-base font-medium text-gray-800">
+                  {category.name}
+                </span>
+                <ChevronRight className="w-5 h-5 text-primary flex-shrink-0" />
+              </button>
+            ) : (
+              <LocalizedClientLink
+                href={`/categories/${category.handle}`}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 active:bg-orange-50 transition-colors"
+              >
+                <span className="text-base font-medium text-gray-800">
+                  {category.name}
+                </span>
+              </LocalizedClientLink>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+// Subcategory Menu View Component
+const SubcategoryMenuView = ({
+  category,
+  onSubcategoryClick,
+}: {
+  category: HttpTypes.StoreProductCategory | null
+  onSubcategoryClick: () => void
+}) => {
+  if (!category || !category.category_children) {
+    return null
+  }
 
   return (
-    <li className="w-full">
-      <div className="flex flex-col">
-        <div className="flex items-center justify-between">
+    <ul className="divide-y divide-gray-200">
+      {category.category_children.map((subcategory) => (
+        <li key={subcategory.id}>
           <LocalizedClientLink
-            href={`/categories/${category.handle}`}
-            className="text-xl md:text-2xl leading-7 md:leading-8 text-text-primary md:text-ui-fg-on-color hover:text-primary md:hover:text-ui-fg-disabled transition-colors flex-1"
-            onClick={onLinkClick}
+            href={`/categories/${subcategory.handle}`}
+            onClick={onSubcategoryClick}
+            className="block px-5 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors"
           >
-            {category.name}
+            <span className="text-[15px] text-gray-600 flex items-start">
+              <span className="mr-2">•</span>
+              <span>{subcategory.name}</span>
+            </span>
           </LocalizedClientLink>
-          {category.category_children && category.category_children.length > 0 && (
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="ml-4 p-2 hover:text-ui-fg-disabled transition-colors"
-              aria-label={isOpen ? "Collapse" : "Expand"}
-            >
-              <ChevronDown
-                className={clx(
-                  "w-5 h-5 transition-transform duration-200",
-                  isOpen ? "rotate-180" : ""
-                )}
-              />
-            </button>
-          )}
-        </div>
-        {isOpen && category.category_children && (
-          <ul className="flex flex-col gap-3 mt-3 ml-4">
-            {category.category_children.map((child) => (
-              <li key={child.id}>
-                <LocalizedClientLink
-                  href={`/categories/${child.handle}`}
-                  className="text-lg md:text-xl leading-6 md:leading-7 text-text-secondary md:text-ui-fg-subtle hover:text-text-primary md:hover:text-ui-fg-disabled transition-colors"
-                  onClick={onLinkClick}
-                >
-                  {child.name}
-                </LocalizedClientLink>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </li>
+        </li>
+      ))}
+    </ul>
   )
 }
 

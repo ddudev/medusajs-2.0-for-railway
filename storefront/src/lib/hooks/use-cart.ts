@@ -34,24 +34,7 @@ export function useCart() {
  * Add to cart with optimistic updates and automatic rollback on error
  */
 export function useAddToCart() {
-  // Check if we're on the client side to prevent SSR errors
-  const [isClient, setIsClient] = useState(false)
-  
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-  
-  // Only call useQueryClient on the client side
-  // During SSR or before hydration, queryClient will be undefined
-  let queryClient
-  try {
-    // This will throw during SSR if QueryProvider isn't available
-    queryClient = useQueryClient()
-  } catch (e) {
-    // Silently fail during SSR - the mutation won't work but won't crash
-    queryClient = null
-  }
-  
+  const queryClient = useQueryClient()
   const params = useParams()
   const countryCode = params?.countryCode as string
   const { trackProductAddedToCart } = useAnalytics()
@@ -62,9 +45,6 @@ export function useAddToCart() {
 
     // Optimistic update - runs immediately before server call
     onMutate: async ({ variantId, quantity }) => {
-      // Skip optimistic updates if queryClient is not available (SSR)
-      if (!queryClient) return { previousCart: null }
-      
       // Cancel any outgoing cart queries to prevent race conditions
       await queryClient.cancelQueries({ queryKey: cartKeys.detail() })
 
@@ -100,7 +80,7 @@ export function useAddToCart() {
 
     // On error - rollback to previous state
     onError: (err, variables, context) => {
-      if (queryClient && context?.previousCart) {
+      if (context?.previousCart) {
         queryClient.setQueryData(cartKeys.detail(), context.previousCart)
       }
       console.error('Failed to add to cart:', err)
@@ -119,9 +99,7 @@ export function useAddToCart() {
 
     // Always refetch after mutation completes (success or error)
     onSettled: () => {
-      if (queryClient) {
-        queryClient.invalidateQueries({ queryKey: cartKeys.detail() })
-      }
+      queryClient.invalidateQueries({ queryKey: cartKeys.detail() })
     },
   })
 }
@@ -130,14 +108,7 @@ export function useAddToCart() {
  * Update line item quantity with optimistic updates
  */
 export function useUpdateLineItem() {
-  // Safe queryClient access
-  let queryClient
-  try {
-    queryClient = useQueryClient()
-  } catch (e) {
-    queryClient = null
-  }
-  
+  const queryClient = useQueryClient()
   const { trackCartUpdated } = useAnalytics()
 
   return useMutation({
@@ -145,8 +116,6 @@ export function useUpdateLineItem() {
       updateLineItemAPI({ lineId, quantity }),
 
     onMutate: async ({ lineId, quantity }) => {
-      if (!queryClient) return { previousCart: null }
-      
       await queryClient.cancelQueries({ queryKey: cartKeys.detail() })
 
       const previousCart = queryClient.getQueryData<HttpTypes.StoreCart>(cartKeys.detail())
@@ -166,7 +135,7 @@ export function useUpdateLineItem() {
     },
 
     onError: (err, variables, context) => {
-      if (queryClient && context?.previousCart) {
+      if (context?.previousCart) {
         queryClient.setQueryData(cartKeys.detail(), context.previousCart)
       }
       console.error('Failed to update line item:', err)
@@ -180,9 +149,7 @@ export function useUpdateLineItem() {
     },
 
     onSettled: () => {
-      if (queryClient) {
-        queryClient.invalidateQueries({ queryKey: cartKeys.detail() })
-      }
+      queryClient.invalidateQueries({ queryKey: cartKeys.detail() })
     },
   })
 }
@@ -191,22 +158,13 @@ export function useUpdateLineItem() {
  * Remove line item with optimistic updates
  */
 export function useRemoveLineItem() {
-  // Safe queryClient access
-  let queryClient
-  try {
-    queryClient = useQueryClient()
-  } catch (e) {
-    queryClient = null
-  }
-  
+  const queryClient = useQueryClient()
   const { trackProductRemovedFromCart } = useAnalytics()
 
   return useMutation({
     mutationFn: (lineId: string) => deleteLineItemAPI(lineId),
 
     onMutate: async (lineId) => {
-      if (!queryClient) return { previousCart: null, removedItem: null }
-      
       await queryClient.cancelQueries({ queryKey: cartKeys.detail() })
 
       const previousCart = queryClient.getQueryData<HttpTypes.StoreCart>(cartKeys.detail())
@@ -227,7 +185,7 @@ export function useRemoveLineItem() {
     },
 
     onError: (err, lineId, context) => {
-      if (queryClient && context?.previousCart) {
+      if (context?.previousCart) {
         queryClient.setQueryData(cartKeys.detail(), context.previousCart)
       }
       console.error('Failed to remove line item:', err)
@@ -244,9 +202,7 @@ export function useRemoveLineItem() {
     },
 
     onSettled: () => {
-      if (queryClient) {
-        queryClient.invalidateQueries({ queryKey: cartKeys.detail() })
-      }
+      queryClient.invalidateQueries({ queryKey: cartKeys.detail() })
     },
   })
 }
