@@ -9,6 +9,8 @@ import { PostHogProviderWrapper } from "@lib/analytics/posthog-provider"
 import { PostHogSurveys } from "@lib/analytics/posthog-surveys"
 import { WebVitalsTracker } from "@lib/analytics/web-vitals-tracker"
 import { ScrollDepthTracker } from "@lib/analytics/scroll-depth-tracker"
+import { GTMProvider } from "@lib/analytics/gtm-provider"
+import { MetaPixelProvider } from "@lib/analytics/meta-pixel-provider"
 
 const inter = Inter({
   weight: ['300', '400', '500', '600', '700'],
@@ -58,21 +60,25 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         )}
       </head>
       <body>
-        <PostHogProviderWrapper>
-          <MuiProviders>
-            <main className="relative">
-              <Suspense fallback={<div className="min-h-screen animate-pulse bg-background-base" />}>
-                {props.children}
-              </Suspense>
-            </main>
-            <Suspense fallback={null}>
-              <PWAComponents />
-            </Suspense>
-            <PostHogSurveys />
-            <WebVitalsTracker />
-            <ScrollDepthTracker />
-          </MuiProviders>
-        </PostHogProviderWrapper>
+        <GTMProvider>
+          <MetaPixelProvider>
+            <PostHogProviderWrapper>
+              <MuiProviders>
+                <main className="relative">
+                  <Suspense fallback={<div className="min-h-screen animate-pulse bg-background-base" />}>
+                    {props.children}
+                  </Suspense>
+                </main>
+                <Suspense fallback={null}>
+                  <PWAComponents />
+                </Suspense>
+                <PostHogSurveys />
+                <WebVitalsTracker />
+                <ScrollDepthTracker />
+              </MuiProviders>
+            </PostHogProviderWrapper>
+          </MetaPixelProvider>
+        </GTMProvider>
       </body>
     </html>
   )

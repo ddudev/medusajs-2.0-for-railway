@@ -32,7 +32,7 @@ const SlideInCart = ({ cart }: SlideInCartProps) => {
   useEffect(() => {
     if (isCartOpen && cart && cart.items && cart.items.length > 0) {
       trackCartViewed({
-        cart_value: cart.total ? Number(cart.total) / 100 : 0,
+        cart_value: cart.total ? Number(cart.total) : 0,
         item_count: totalItems,
         currency: cart.currency_code || 'EUR',
         cart_id: cart.id,

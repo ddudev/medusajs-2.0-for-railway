@@ -24,7 +24,7 @@ export default function CartPageTracker({ cart }: CartPageTrackerProps) {
       const totalItems = cart.items.reduce((acc, item) => acc + item.quantity, 0)
       
       trackCartViewed({
-        cart_value: cart.total ? Number(cart.total) / 100 : 0,
+        cart_value: cart.total ? Number(cart.total) : 0,
         item_count: totalItems,
         currency: cart.currency_code || 'EUR',
         cart_id: cart.id,

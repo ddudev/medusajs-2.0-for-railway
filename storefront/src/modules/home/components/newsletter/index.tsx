@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import { trackNewsletterSignup } from "@lib/analytics/lead-capture"
 
 const Newsletter = () => {
   const { t } = useTranslation()
@@ -11,6 +12,16 @@ const Newsletter = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Track newsletter signup to GTM and Meta Pixel
+    if (email) {
+      await trackNewsletterSignup({
+        email,
+        source: 'homepage',
+        hasMarketingConsent: allowMarketing,
+      })
+    }
+    
     // TODO: Implement newsletter subscription API call
     console.log("Subscribe:", { email, allowMarketing })
     setIsSubscribed(true)

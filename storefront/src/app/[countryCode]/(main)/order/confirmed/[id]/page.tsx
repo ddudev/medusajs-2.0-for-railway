@@ -40,9 +40,17 @@ export default async function OrderConfirmedPage({ params }: Props) {
 
   // Track order confirmation page view (server-side)
   try {
+    // Import server-side tracking functions
     const { trackOrderConfirmed } = await import("@lib/analytics/server")
-    const orderTotal = order.total ? Number(order.total) / 100 : 0
+    const { trackGA4Purchase, generateClientId } = await import("@lib/analytics/server-gtm")
+    const { trackMetaPurchaseServer } = await import("@lib/analytics/server-meta")
+    const { generateEventId } = await import("@lib/analytics/privacy")
+    
+    const orderTotal = order.total ? Number(order.total) : 0
     const itemsCount = order.items?.length || 0
+    const eventId = generateEventId()
+    
+    // Track to PostHog (existing)
     await trackOrderConfirmed(
       order.id,
       orderTotal,
@@ -50,6 +58,76 @@ export default async function OrderConfirmedPage({ params }: Props) {
       order.customer_id,
       order.email
     )
+    
+    // Prepare items for GTM/Meta
+    const items = (order.items || []).map((item: any) => ({
+      item_id: item.product_id || item.variant_id || '',
+      item_name: item.title || item.product_title || '',
+      item_category: item.product?.categories?.[0]?.name || '',
+      item_variant: item.variant?.title || '',
+      price: item.unit_price ? Number(item.unit_price) : 0,
+      quantity: item.quantity || 0,
+      product_id: item.product_id || '',
+      variant_id: item.variant_id || '',
+    }))
+    
+    // Get customer/shipping address data
+    const shippingAddress = order.shipping_address
+    const billingAddress = order.billing_address
+    const email = order.email
+    const phone = shippingAddress?.phone || billingAddress?.phone
+    const firstName = shippingAddress?.first_name || billingAddress?.first_name
+    const lastName = shippingAddress?.last_name || billingAddress?.last_name
+    const city = shippingAddress?.city || billingAddress?.city
+    const state = shippingAddress?.province || billingAddress?.province
+    const postalCode = shippingAddress?.postal_code || billingAddress?.postal_code
+    const country = shippingAddress?.country_code || billingAddress?.country_code
+    
+    // Track to GA4 (server-side)
+    await trackGA4Purchase({
+      client_id: generateClientId(),
+      transaction_id: order.id,
+      value: orderTotal,
+      currency: order.currency_code || 'EUR',
+      tax: order.tax_total ? Number(order.tax_total) : undefined,
+      shipping: order.shipping_total ? Number(order.shipping_total) : undefined,
+      items,
+      email,
+      phone_number: phone,
+      address: {
+        first_name: firstName,
+        last_name: lastName,
+        city,
+        region: state,
+        postal_code: postalCode,
+        country,
+      },
+      user_id: order.customer_id,
+    })
+    
+    // Track to Meta Conversions API (server-side)
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://localhost:8000'
+    await trackMetaPurchaseServer({
+      transaction_id: order.id,
+      value: orderTotal,
+      currency: order.currency_code || 'EUR',
+      contents: items.map(item => ({
+        id: item.variant_id || item.product_id,
+        quantity: item.quantity,
+        item_price: item.price,
+      })),
+      num_items: itemsCount,
+      email,
+      phone,
+      firstName,
+      lastName,
+      city,
+      state,
+      postalCode,
+      country,
+      eventSourceUrl: `${baseUrl}/order/confirmed/${order.id}`,
+      eventId,
+    })
   } catch (error) {
     // Don't block page render if analytics fails
     console.error("Failed to track order confirmation:", error)

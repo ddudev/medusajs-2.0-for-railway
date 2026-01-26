@@ -11,6 +11,7 @@ import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { useAnalytics } from "@lib/analytics/use-analytics"
 import { useRef } from "react"
 import { useCheckoutCart } from "@lib/context/checkout-cart-context"
+import { trackContactInfoCapture } from "@lib/analytics/lead-capture"
 
 const Contact = ({
   cart: initialCart,
@@ -126,7 +127,7 @@ const Contact = ({
       if (cart && !hasTrackedContactRef.current) {
         if (finalEmail && finalPhone) {
           trackCheckoutContactCompleted({
-            cart_value: cart.total ? Number(cart.total) / 100 : 0,
+            cart_value: cart.total ? Number(cart.total) : 0,
             item_count: cart.items?.length || 0,
             currency: cart.currency_code || 'EUR',
             has_email: !!finalEmail,
@@ -135,10 +136,23 @@ const Contact = ({
           })
           
           trackCheckoutStepCompleted({
-            cart_value: cart.total ? Number(cart.total) / 100 : 0,
+            cart_value: cart.total ? Number(cart.total) : 0,
             item_count: cart.items?.length || 0,
             currency: cart.currency_code || 'EUR',
             step_name: 'contact',
+          })
+          
+          // Track lead capture to GTM and Meta Pixel
+          trackContactInfoCapture({
+            email: finalEmail,
+            phone: finalPhone,
+            firstName: dataToSave.first_name || formData.first_name || cart?.shipping_address?.first_name,
+            lastName: dataToSave.last_name || formData.last_name || cart?.shipping_address?.last_name,
+            source: 'checkout',
+            additionalData: {
+              cart_value: cart.total ? Number(cart.total) : 0,
+              item_count: cart.items?.length || 0,
+            },
           })
           
           hasTrackedContactRef.current = true

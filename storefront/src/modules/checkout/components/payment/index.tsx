@@ -100,7 +100,7 @@ const Payment = ({
         }
         
         // Track payment method selected
-        const cartValue = cart.total ? Number(cart.total) / 100 : 0
+        const cartValue = cart.total ? Number(cart.total) : 0
         const paymentMethodName = paymentInfoMap[selectedPaymentMethod]?.title || selectedPaymentMethod
         
         trackCheckoutPaymentMethodSelected({
@@ -108,6 +108,13 @@ const Payment = ({
           item_count: cart.items?.length || 0,
           currency: cart.currency_code || 'EUR',
           payment_method: paymentMethodName,
+          items: cart.items?.map((item) => ({
+            product_id: item.product_id || '',
+            variant_id: item.variant_id || '',
+            quantity: item.quantity,
+            price: item.unit_price ? Number(item.unit_price) : 0,
+            product_name: item.product_title || '',
+          })),
         })
         
         trackCheckoutStepCompleted({

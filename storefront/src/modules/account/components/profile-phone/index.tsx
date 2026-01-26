@@ -25,6 +25,15 @@ const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
 
     try {
       await updateCustomer(customer)
+      
+      // Track phone update as lead capture
+      if (customer.phone) {
+        trackPhoneCapture({
+          phone: customer.phone,
+          source: 'account',
+        })
+      }
+      
       return { success: true, error: null }
     } catch (error: any) {
       return { success: false, error: error.toString() }

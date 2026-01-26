@@ -49,7 +49,7 @@ export default function PriceBox({
 
   // Use price parts if available, otherwise convert
   const priceParts = selectedPrice.calculated_price_parts || convertToLocaleParts({
-    amount: selectedPrice.calculated_price_number / 100, // Convert from cents
+    amount: selectedPrice.calculated_price_number, // Prices are already in decimal format
     currency_code: selectedPrice.currency_code || "EUR",
   })
 

@@ -29,10 +29,17 @@ export default function CheckoutTracker({ cart }: CheckoutTrackerProps) {
       const totalItems = cart.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
       
       trackCheckoutStarted({
-        cart_value: cart.total ? Number(cart.total) / 100 : 0,
+        cart_value: cart.total ? Number(cart.total) : 0,
         item_count: totalItems,
         currency: cart.currency_code || 'EUR',
         cart_id: cart.id,
+        items: cart.items?.map((item) => ({
+          product_id: item.product_id || '',
+          variant_id: item.variant_id || '',
+          quantity: item.quantity,
+          price: item.unit_price ? Number(item.unit_price) : 0,
+          product_name: item.product_title || '',
+        })),
       })
 
       hasTrackedRef.current = true

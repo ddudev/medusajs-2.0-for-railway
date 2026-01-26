@@ -33,7 +33,7 @@ export default function ProductViewTracker({
       // Get product price
       const variant = product.variants?.[0]
       const price = variant?.calculated_price?.calculated_amount
-        ? Number(variant.calculated_price.calculated_amount) / 100
+        ? Number(variant.calculated_price.calculated_amount)
         : undefined
       const currency = variant?.calculated_price?.currency_code || region.currency_code || 'EUR'
 

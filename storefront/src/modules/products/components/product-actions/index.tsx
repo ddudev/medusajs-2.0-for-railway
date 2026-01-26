@@ -140,7 +140,7 @@ export default function ProductActions({
 
     // Track product info for analytics
     const price = selectedVariant.calculated_price?.calculated_amount
-      ? Number(selectedVariant.calculated_price.calculated_amount) / 100
+      ? Number(selectedVariant.calculated_price.calculated_amount)
       : undefined
     const currency = selectedVariant.calculated_price?.currency_code || region.currency_code || 'EUR'
 

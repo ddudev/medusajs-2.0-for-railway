@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { trackNewsletterSignup } from "@lib/analytics/lead-capture"
 
 type NewsletterFormProps = {
     placeholderText: string
@@ -16,8 +17,18 @@ export default function NewsletterForm({
     const [email, setEmail] = useState("")
     const [consent, setConsent] = useState(false)
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        
+        // Track newsletter signup to GTM and Meta Pixel
+        if (email) {
+            await trackNewsletterSignup({
+                email,
+                source: 'footer',
+                hasMarketingConsent: consent,
+            })
+        }
+        
         // TODO: Implement newsletter subscription logic
         console.log("Newsletter subscription:", { email, consent })
     }

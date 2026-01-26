@@ -20,7 +20,7 @@ export function useCartAbandonmentTracking(cart: { items?: any[]; total?: number
     }
 
     // Update cart value
-    cartValueRef.current = cart.total ? Number(cart.total) / 100 : 0
+    cartValueRef.current = cart.total ? Number(cart.total) : 0
 
     // Reset abandonment flag when cart changes
     cartAbandonedRef.current = false
@@ -46,7 +46,7 @@ export function useCartAbandonmentTracking(cart: { items?: any[]; total?: number
             product_id: item.product_id || item.variant?.product_id,
             variant_id: item.variant_id,
             quantity: item.quantity,
-            price: item.unit_price ? Number(item.unit_price) / 100 : 0,
+            price: item.unit_price ? Number(item.unit_price) : 0,
           })),
         })
 
@@ -96,7 +96,7 @@ export function useCheckoutAbandonmentTracking(
         const timeInCheckout = Date.now() - startTimeRef.current
 
         trackEvent('checkout_abandoned', {
-          cart_value: cart.total ? Number(cart.total) / 100 : 0,
+          cart_value: cart.total ? Number(cart.total) : 0,
           item_count: cart.items?.length || 0,
           currency: cart.currency_code || 'EUR',
           cart_id: cart.id,

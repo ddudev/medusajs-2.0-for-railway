@@ -9,6 +9,7 @@ import { SubmitButton } from "@modules/checkout/components/submit-button"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { signup } from "@lib/data/customer"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import { trackEmailCapture, trackPhoneCapture } from "@lib/analytics/lead-capture"
 
 type Props = {
   setCurrentView: (view: LOGIN_VIEW) => void
@@ -17,6 +18,28 @@ type Props = {
 const Register = ({ setCurrentView }: Props) => {
   const [message, formAction] = useActionState(signup, null)
   const { t } = useTranslation()
+
+  // Track email capture on blur
+  const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const email = e.target.value
+    if (email) {
+      trackEmailCapture({
+        email,
+        source: 'registration',
+      })
+    }
+  }
+
+  // Track phone capture on blur
+  const handlePhoneBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const phone = e.target.value
+    if (phone) {
+      trackPhoneCapture({
+        phone,
+        source: 'registration',
+      })
+    }
+  }
 
   return (
     <div
@@ -52,6 +75,7 @@ const Register = ({ setCurrentView }: Props) => {
             type="email"
             autoComplete="email"
             data-testid="email-input"
+            onBlur={handleEmailBlur}
           />
           <Input
             label={t("login.phone")}
@@ -59,6 +83,7 @@ const Register = ({ setCurrentView }: Props) => {
             type="tel"
             autoComplete="tel"
             data-testid="phone-input"
+            onBlur={handlePhoneBlur}
           />
           <Input
             label={t("login.password")}

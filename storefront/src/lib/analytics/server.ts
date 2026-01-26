@@ -60,13 +60,13 @@ export async function trackPurchase(order: HttpTypes.StoreOrder): Promise<void> 
     // Track purchase event
     const properties: PurchaseEventProperties = {
       order_id: order.id,
-      order_total: order.total ? Number(order.total) / 100 : 0, // Convert from cents
+      order_total: order.total ? Number(order.total) : 0,
       currency: order.currency_code || 'EUR',
       items: (order.items || []).map((item: any) => ({
         product_id: item.product_id || '',
         variant_id: item.variant_id || '',
         quantity: item.quantity || 0,
-        price: item.unit_price ? Number(item.unit_price) / 100 : 0,
+        price: item.unit_price ? Number(item.unit_price) : 0,
       })),
       shipping_method: order.shipping_methods?.[0]?.name,
       payment_method: order.payment_collections?.[0]?.provider_id,

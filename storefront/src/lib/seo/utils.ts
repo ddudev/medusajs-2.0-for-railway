@@ -56,7 +56,7 @@ export function getProductPriceForSchema(
   }
 
   return {
-    price: cheapestPrice.calculated_price_number / 100, // Convert from cents
+    price: cheapestPrice.calculated_price_number, // Prices are already in decimal format
     currency: cheapestPrice.currency_code,
   }
 }

@@ -1,28 +1,48 @@
 import { getPricesForVariant } from "@lib/util/get-product-price"
+import { getPercentageDiff } from "@lib/util/get-precentage-diff"
 import { HttpTypes } from "@medusajs/types"
 import { clx } from "@medusajs/ui"
+import PriceDisplay from "@modules/common/components/price-display"
 
 type LineItemUnitPriceProps = {
   item: HttpTypes.StoreCartLineItem | HttpTypes.StoreOrderLineItem
   style?: "default" | "tight"
+  className?: string
 }
 
 const LineItemUnitPrice = ({
   item,
   style = "default",
+  className,
 }: LineItemUnitPriceProps) => {
-  const {
-    original_price,
-    calculated_price,
-    original_price_number,
-    calculated_price_number,
-    percentage_diff,
-  } = getPricesForVariant(item.variant) ?? {}
-  const hasReducedPrice = calculated_price_number < original_price_number
+  // Try to get prices from variant first (for product pages)
+  const variantPrices = getPricesForVariant(item.variant)
+  
+  // For cart line items, use the item's own price fields as fallback
+  const unitPriceNumber = variantPrices?.calculated_price_number ?? 
+    (item.unit_price ? Number(item.unit_price) : null)
+  const originalUnitPriceNumber = variantPrices?.original_price_number ?? unitPriceNumber
+  
+  // Get currency
+  const currency_code = variantPrices?.currency_code ?? item.currency_code ?? 'EUR'
+  
+  // Calculate percentage diff if we have both prices
+  const percentage_diff = originalUnitPriceNumber && unitPriceNumber && originalUnitPriceNumber > unitPriceNumber
+    ? getPercentageDiff(originalUnitPriceNumber, unitPriceNumber)
+    : (variantPrices?.percentage_diff ?? 0)
+  
+  const hasReducedPrice = originalUnitPriceNumber && unitPriceNumber 
+    ? unitPriceNumber < originalUnitPriceNumber 
+    : false
+
+  // Don't render if we don't have valid price data
+  if (unitPriceNumber === null || unitPriceNumber === undefined || isNaN(unitPriceNumber)) {
+    return null
+  }
 
   return (
-    <div className="flex flex-col text-ui-fg-muted justify-center h-full">
-      {hasReducedPrice && (
+    <div className={clx("flex flex-col text-ui-fg-muted justify-center h-full", className)}>
+      {hasReducedPrice && originalUnitPriceNumber && (
         <>
           <p>
             {style === "default" && (
@@ -32,7 +52,11 @@ const LineItemUnitPrice = ({
               className="line-through"
               data-testid="product-unit-original-price"
             >
-              {original_price}
+              <PriceDisplay
+                amount={originalUnitPriceNumber}
+                currency_code={currency_code}
+                bgnClassName="text-xs"
+              />
             </span>
           </p>
           {style === "default" && (
@@ -46,7 +70,11 @@ const LineItemUnitPrice = ({
         })}
         data-testid="product-unit-price"
       >
-        {calculated_price}
+        <PriceDisplay
+          amount={unitPriceNumber}
+          currency_code={currency_code}
+          bgnClassName="text-xs"
+        />
       </span>
     </div>
   )

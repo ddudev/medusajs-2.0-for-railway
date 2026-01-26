@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import { TextField, Button, Alert } from "@mui/material"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import { trackContactFormSubmit } from "@lib/analytics/lead-capture"
 
 export default function ContactForm() {
   const { t } = useTranslation()
@@ -47,6 +48,15 @@ export default function ContactForm() {
     }
 
     setIsSubmitting(true)
+
+    // Track contact form submission as lead
+    if (formData.email) {
+      trackContactFormSubmit({
+        email: formData.email,
+        name: formData.name,
+        subject: 'Contact Form',
+      })
+    }
 
     // Simulate form submission (display-only as per requirements)
     setTimeout(() => {

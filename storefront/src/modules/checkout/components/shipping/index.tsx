@@ -70,8 +70,8 @@ const Shipping: React.FC<ShippingProps> = ({
         
         // Track shipping method selected
         if (selectedMethod) {
-          const shippingPrice = selectedMethod.amount ? Number(selectedMethod.amount) / 100 : 0
-          const cartValue = cart.total ? Number(cart.total) / 100 : 0
+          const shippingPrice = selectedMethod.amount ? Number(selectedMethod.amount) : 0
+          const cartValue = cart.total ? Number(cart.total) : 0
           
           trackCheckoutShippingMethodSelected({
             cart_value: cartValue,
@@ -79,6 +79,13 @@ const Shipping: React.FC<ShippingProps> = ({
             currency: cart.currency_code || 'EUR',
             shipping_method: selectedMethod.name || selectedMethod.id,
             shipping_price: shippingPrice,
+            items: cart.items?.map((item) => ({
+              product_id: item.product_id || '',
+              variant_id: item.variant_id || '',
+              quantity: item.quantity,
+              price: item.unit_price ? Number(item.unit_price) : 0,
+              product_name: item.product_title || '',
+            })),
           })
           
           trackCheckoutStepCompleted({

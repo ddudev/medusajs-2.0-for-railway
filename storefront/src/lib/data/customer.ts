@@ -129,6 +129,42 @@ export async function signup(_currentState: unknown, formData: FormData) {
       // Don't block signup if cart transfer fails
       console.warn("Failed to transfer cart after signup:", error)
     }
+    
+    // Track signup completion to GTM and Meta Pixel
+    try {
+      const { trackGTMSignUp } = await import("@lib/analytics/gtm-events")
+      const { trackMetaCompleteRegistration } = await import("@lib/analytics/meta-events")
+      const { prepareAdvancedMatchingData } = await import("@lib/analytics/privacy")
+      const { updateMetaAdvancedMatching } = await import("@lib/analytics/meta-pixel-provider")
+      
+      // Track to GTM
+      trackGTMSignUp({
+        method: 'email',
+        email: customerForm.email,
+        phone: customerForm.phone,
+      })
+      
+      // Track to Meta Pixel
+      trackMetaCompleteRegistration({
+        status: 'success',
+        content_name: 'account_registration',
+      })
+      
+      // Update Meta advanced matching
+      const advancedMatchingData = await prepareAdvancedMatchingData({
+        email: customerForm.email,
+        phone: customerForm.phone,
+        firstName: customerForm.first_name,
+        lastName: customerForm.last_name,
+      })
+      
+      if (Object.keys(advancedMatchingData).length > 0) {
+        updateMetaAdvancedMatching(advancedMatchingData)
+      }
+    } catch (error) {
+      // Don't block signup if tracking fails
+      console.error("Failed to track signup:", error)
+    }
 
     return createdCustomer
   } catch (error: any) {
@@ -193,6 +229,15 @@ export async function login(_currentState: unknown, formData: FormData) {
               user_id: customer.id,
               login_method: 'email',
             }, customer.id)
+            
+            // Track login to GTM and Meta (client-side will be done via useAnalytics)
+            // For now, just update Meta advanced matching on server-side
+            try {
+              // Note: This runs server-side, so we can't use client-side GTM/Meta functions
+              // Client-side login tracking will happen via identifyUser in useAnalytics hook
+            } catch (error) {
+              console.error("Failed to track login to GTM/Meta:", error)
+            }
           }
         } catch (error) {
           // Don't block login if analytics fails
