@@ -36,7 +36,7 @@ export async function POST(
     // Use provided openaiApiKey or default from env
     const resolvedOpenaiApiKey = openaiApiKey || process.env.OPENAI_API_KEY
     // Use provided openaiModel or default from env or recommended model
-    const resolvedOpenaiModel = openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    const resolvedOpenaiModel = openaiModel || process.env.OPENAI_MODEL || 'gpt-5-mini'
     
     logger.info(`Starting import for session ${id} with ChatGPT Model: ${resolvedOpenaiModel}`)
 

@@ -60,6 +60,7 @@ export interface MedusaProductData {
   description?: string
   handle: string
   status?: 'draft' | 'published'
+  external_id: string
   weight?: number
   length?: number
   width?: number
@@ -99,5 +100,10 @@ export interface PriceUpdateData {
   priceGross?: number    // Cost price (gross)
   srpNet?: number        // SRP (price to consumer)
   srpGross?: number      // SRP (gross)
-  stockQuantity?: number
+  stockQuantity?: number // Stock for first variant (fallback)
+  variants?: Array<{     // Stock for all variants
+    codeExternal: string // Barcode to match variant
+    stockQuantity: number
+    stockId?: string     // Stock location ID from XML
+  }>
 }

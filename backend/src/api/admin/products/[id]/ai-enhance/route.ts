@@ -50,7 +50,7 @@ export const POST = async (
 
     // Initialize ChatGPT Service
     const openaiApiKey = process.env.OPENAI_API_KEY
-    const openaiModel = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    const openaiModel = process.env.OPENAI_MODEL || 'gpt-5-mini'
     
     if (!openaiApiKey) {
       logger.error(`[AI ENHANCE] OPENAI_API_KEY not configured`)

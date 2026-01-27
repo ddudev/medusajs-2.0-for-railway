@@ -54,9 +54,9 @@ export class ChatGPTService {
     this.client = new OpenAI({
       apiKey: config.apiKey || process.env.OPENAI_API_KEY
     })
-    // Use gpt-4o-mini by default (fast, cheap, no reasoning overhead)
-    // Options: gpt-4o-mini, gpt-4o, gpt-4-turbo
-    this.model = config.model || process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    // Use gpt-5-mini by default (fast, cheap, no reasoning overhead)
+    // Options: gpt-5-mini, gpt-4o, gpt-4-turbo
+    this.model = config.model || process.env.OPENAI_MODEL || 'gpt-5-mini'
     this.timeout = config.timeout || 120000
   }
 

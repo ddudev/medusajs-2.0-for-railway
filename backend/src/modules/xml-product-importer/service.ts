@@ -10,9 +10,6 @@ import { ImportConfig } from "./models/import-config"
 import { ImportExecution } from "./models/import-execution"
 import { ImportExecutionLog } from "./models/import-execution-log"
 import {
-  FieldMappingRule,
-  ImportOptions,
-  ImportStatus,
   ListOptions,
   PreviewRequest,
   PreviewResponse,

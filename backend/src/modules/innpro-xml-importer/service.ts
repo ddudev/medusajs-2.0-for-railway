@@ -854,6 +854,7 @@ class InnProXmlImporterService extends MedusaService({
       description,
       handle,
       status: 'draft',
+      external_id: String(productId),
       weight: productWeight,
       ...dimensions,
       hs_code: hsCode,
@@ -1056,14 +1057,28 @@ class InnProXmlImporterService extends MedusaService({
       const firstSize = sizeArray[0]
 
       // Extract cost price (what we pay) - can be at product or size level
-      const priceNet = priceProduct.price?.net || firstSize.price?.net || firstSize.price?.['#text']
-      const priceGross = priceProduct.price?.gross || firstSize.price?.gross
-      
+      const priceNet = priceProduct.price?.['@_net']
+      const priceGross = priceProduct.price?.['@_gross']
+
       // Extract SRP (recommended selling price / price to consumer)
-      const srpNet = priceProduct.srp?.net || firstSize.srp?.net
-      const srpGross = priceProduct.srp?.gross || firstSize.srp?.gross
+      const srpNet = priceProduct.srp?.['@_net']
+      const srpGross = priceProduct.srp?.['@_gross']
       
-      const stockQuantity = firstSize.stock?.quantity || firstSize.stock?.['#text'] || '0'
+      // Extract stock quantity
+      const stockQuantity = firstSize.stock?.['@_quantity'] || '0'
+
+      // Extract stock for ALL variants (sizes)
+      const variants = sizeArray.map(size => {
+        const codeExternal = size.code_external || size['iaiext:code_external']
+        const sizeStockQuantity = size.stock?.['@_quantity'] || '0'
+        const stockId = size.stock?.id
+        
+        return {
+          codeExternal: String(codeExternal || ''),
+          stockQuantity: parseInt(sizeStockQuantity, 10),
+          stockId: stockId ? String(stockId) : undefined,
+        }
+      }).filter(v => v.codeExternal) // Only keep variants with valid code_external
 
       const priceData: PriceUpdateData = {
         productId: String(productId),
@@ -1071,7 +1086,8 @@ class InnProXmlImporterService extends MedusaService({
         priceGross: priceGross ? parseFloat(priceGross) : undefined,
         srpNet: srpNet ? parseFloat(srpNet) : undefined,
         srpGross: srpGross ? parseFloat(srpGross) : undefined,
-        stockQuantity: parseInt(stockQuantity, 10),
+        stockQuantity: parseInt(stockQuantity, 10), // Fallback to first size
+        variants: variants.length > 0 ? variants : undefined, // All variants with stock
       }
 
       priceDataMap.set(String(productId), priceData)

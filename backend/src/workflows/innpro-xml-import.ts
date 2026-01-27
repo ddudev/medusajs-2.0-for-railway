@@ -213,7 +213,7 @@ const translateProductsStep = createStep(
   ) => {
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
     const openaiApiKey = input.openaiApiKey || process.env.OPENAI_API_KEY
-    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-5-mini'
 
     logger.info(`Translating ${input.products.length} products to Bulgarian using ChatGPT with model ${openaiModel}`)
 
@@ -373,7 +373,7 @@ const optimizeDescriptionsStep = createStep(
   ) => {
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
     const openaiApiKey = input.openaiApiKey || process.env.OPENAI_API_KEY
-    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-5-mini'
 
     logger.info(`Optimizing descriptions for ${input.products.length} products using ChatGPT with model ${openaiModel}`)
 
@@ -645,7 +645,7 @@ const processCategoriesAndBrandsStep = createStep(
 
     // Initialize ChatGPT service for category translation
     const openaiApiKey = input.openaiApiKey || process.env.OPENAI_API_KEY
-    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-5-mini'
     const chatgptService = new ChatGPTService({ apiKey: openaiApiKey, model: openaiModel })
 
     // Cache for category lookups (key: "categoryName|parentId" -> categoryId)

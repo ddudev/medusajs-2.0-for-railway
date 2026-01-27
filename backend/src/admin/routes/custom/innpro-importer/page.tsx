@@ -5,6 +5,7 @@ import { ParseXmlForm } from "./components/parse-xml-form"
 import { SelectionPanel } from "./components/selection-panel"
 import { ImportPreview } from "./components/import-preview"
 import { ImportStatus } from "./components/import-status"
+import { PriceUpdateTrigger } from "./components/price-update-trigger"
 import { getApiUrl, authenticatedFetch } from "./utils"
 
 type ImportStep = 'parse' | 'select' | 'preview' | 'importing'
@@ -162,6 +163,9 @@ const InnProImporterPage = () => {
           Import products from InnPro XML feed with category and brand selection
         </p>
       </div>
+
+      {/* Price Update Trigger */}
+      <PriceUpdateTrigger />
 
       {/* Progress Steps */}
       <div style={{ 
