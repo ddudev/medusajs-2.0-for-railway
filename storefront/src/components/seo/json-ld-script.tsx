@@ -19,5 +19,5 @@ export default function JsonLdScript({ id, data }: JsonLdScriptProps) {
     />
   )
 }
-
+/** Qko */
 
