@@ -5,13 +5,13 @@ const path = require("path")
 // In a production setup, you might want to compile these to JS or use a different approach
 const themeColors = {
   primary: {
-    base: "#FF6B35", // Main - Orange (brand color)
+    base: "#EB7310", // Main - Orange (brand color)
     hover: "#E55A2B",
     active: "#CC5529",
     disabled: "#9E9E9E",
     light: "#FF8C5A",
     dark: "#E55A2B",
-    "1": "#FF6B35", // Primary/1
+    "1": "#EB7310", // Primary/1
     "2": "#E55A2B", // Primary/2
     "4": "rgba(255, 107, 53, 0.1)", // Primary/4 - Light primary
     "5": "rgba(255, 107, 53, 0.05)", // Primary/5 - Very light primary
@@ -25,11 +25,11 @@ const themeColors = {
     dark: "#F9FAFB",
   },
   accent: {
-    base: "#FF6B35", // Contrast - Vibrant reddish orange
+    base: "#EB7310", // Contrast - Vibrant reddish orange
     hover: "#E55A2B",
     light: "#FF8C5A",
     dark: "#CC5529",
-    "1": "#FF6B35", // Contrast/1
+    "1": "#EB7310", // Contrast/1
   },
   interactive: {
     base: "#1F2937", // Interactive - Very dark gray/black
@@ -175,6 +175,7 @@ module.exports = {
       lg: "1024px",
       small: "1024px",
       desktop: "1024px",
+      xl: "1280px",
       medium: "1280px",
       large: "1440px",
       xlarge: "1680px",
@@ -259,6 +260,7 @@ module.exports = {
           DEFAULT: themeColors.border.base,
           hover: themeColors.border.hover,
           focus: themeColors.border.focus,
+          base: "#E5E7EB",
         },
         neutral: {
           "2": themeColors.neutral["2"],
@@ -426,6 +428,9 @@ module.exports = {
         enter: "enter 200ms ease-out",
         "slide-in": "slide-in 1.2s cubic-bezier(.41,.73,.51,1.02)",
         leave: "leave 150ms ease-in forwards",
+      },
+      boxShadow: {
+        lg: "0 6px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px #0000000d", // <- your custom shadow-lg
       },
     },
   },

@@ -2,11 +2,14 @@
 
 import { Popover, Transition } from "@headlessui/react"
 import { XMark, ArrowLeft, ChevronRight } from "@medusajs/icons"
-import { Fragment, useState } from "react"
+import { Fragment, useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { HttpTypes } from "@medusajs/types"
+
+import { usePathname } from "next/navigation"
 
 type SideMenuProps = {
   regions: HttpTypes.StoreRegion[] | null
@@ -17,6 +20,14 @@ type ViewType = "main" | "subcategory"
 type SlideDirection = "left" | "right"
 
 const SideMenu = ({ categories = [] }: SideMenuProps) => {
+  const pathname = usePathname()
+  const closeMenuRef = useRef<(() => void) | null>(null)
+
+  // Close menu when route changes (e.g. after clicking a link)
+  useEffect(() => {
+    closeMenuRef.current?.()
+  }, [pathname])
+
   const [currentView, setCurrentView] = useState<ViewType>("main")
   const [selectedCategory, setSelectedCategory] = useState<HttpTypes.StoreProductCategory | null>(null)
   const [slideDirection, setSlideDirection] = useState<SlideDirection>("left")
@@ -55,15 +66,17 @@ const SideMenu = ({ categories = [] }: SideMenuProps) => {
     <div className="h-full">
       <div className="flex items-center h-full">
         <Popover className="h-full flex">
-          {({ open, close }) => (
+          {({ open, close }) => {
+            closeMenuRef.current = close
+            return (
             <>
               <div className="relative flex h-full">
                 <Popover.Button
                   data-testid="nav-menu-button"
-                  className="relative p-2 transition-all ease-out duration-200 focus:outline-none bg-primary text-white rounded-full md:bg-transparent md:text-text-secondary md:hover:text-text-primary md:rounded-none"
+                  className="relative p-2 transition-all ease-out duration-200 border border-border-base rounded-lg focus:outline-none text-base md:bg-transparent md:text-text-secondary md:hover:text-text-primary"
                 >
                   <svg
-                    className="w-8 h-8 md:w-5 md:h-5"
+                    className="w-6 h-6 md:w-5 md:h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -89,7 +102,7 @@ const SideMenu = ({ categories = [] }: SideMenuProps) => {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <Popover.Panel className="fixed top-[64px] left-0 right-0 bottom-0 z-[60] md:hidden">
+                <Popover.Panel className="fixed top-0 left-0 right-0 bottom-0 z-[60] md:hidden">
                   <div className="absolute inset-0 bg-black/50" onClick={() => handleClose(close)} />
                   
                   <motion.div
@@ -100,20 +113,20 @@ const SideMenu = ({ categories = [] }: SideMenuProps) => {
                     className="absolute inset-0 w-full bg-white flex flex-col overflow-hidden"
                   >
                     {/* Header - Clean with orange close button */}
-                    <div className="bg-white flex items-center justify-between px-5 pt-4 pb-4 flex-shrink-0">
+                    <div className="bg-white flex items-center justify-between px-5 pt-3 pb-3 flex-shrink-0 border-b border-border-base shadow-lg z-10">
                       {currentView === "subcategory" && (
                         <button
                           onClick={handleBack}
-                          className="flex items-center gap-2 text-gray-700 hover:text-primary transition-colors"
+                          className="flex items-center gap-1 text-xs text-gray-600"
                           aria-label="Назад"
                         >
-                          <ArrowLeft className="w-5 h-5" />
+                          <ArrowLeft className="w-4 h-4" />
                           <span className="font-medium">Назад</span>
                         </button>
                       )}
                       
                       {currentView === "subcategory" && selectedCategory && (
-                        <h2 className="text-gray-800 font-semibold text-base flex-1 text-center">
+                        <h2 className="text-gray-800 font-semibold text-sm flex-1 text-center">
                           {selectedCategory.name}
                         </h2>
                       )}
@@ -121,11 +134,10 @@ const SideMenu = ({ categories = [] }: SideMenuProps) => {
                       <button
                         data-testid="close-menu-button"
                         onClick={() => handleClose(close)}
-                        className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors ml-auto font-medium text-sm"
+                        className="flex items-center gap-1 bg-neutral-100 text-neutral-500 p-2 rounded-full hover:bg-neutral-300 transition-colors ml-auto font-medium text-xs"
                         aria-label="Затвори"
                       >
-                        <XMark className="w-5 h-5" />
-                        <span>Затвори</span>
+                        <XMark className="w-4 h-4" />
                       </button>
                     </div>
 
@@ -167,7 +179,8 @@ const SideMenu = ({ categories = [] }: SideMenuProps) => {
                 </Popover.Panel>
               </Transition>
             </>
-          )}
+            )
+          }}
         </Popover>
       </div>
     </div>
@@ -182,8 +195,21 @@ const MainMenuView = ({
   categories: HttpTypes.StoreProductCategory[]
   onCategoryClick: (category: HttpTypes.StoreProductCategory) => void
 }) => {
+
+  const { t } = useTranslation()
+
   return (
     <ul className="divide-y divide-gray-200">
+      <li>
+        <LocalizedClientLink
+          href="/store"
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 active:bg-orange-50 transition-colors"
+        >
+          <span className="text-base font-medium text-gray-800">
+            {t("common.allProducts") || "Всички продукти"}
+          </span>
+        </LocalizedClientLink>
+      </li>
       {categories.map((category) => {
         const hasChildren = category.category_children && category.category_children.length > 0
 

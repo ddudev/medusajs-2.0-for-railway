@@ -41,7 +41,22 @@ const ProductCount = ({ currentPage, pageSize, totalCount, totalPages }: Product
   const resultsText = `${totalCount} ${t("filters.results") || "резултата"}`
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-row md:flex-col justify-between md:items-start w-full md:w-auto gap-2">
+
+      {/* Total results - aligned with sort label when no pagination */}
+      <Typography 
+        variant="body2" 
+        sx={{ 
+          color: '#6b7280', 
+          fontSize: '0.875rem', 
+          fontWeight: 400,
+          // Add top margin when no pagination to align with sort label
+          marginTop: totalPages <= 1 ? '2px' : '0',
+        }}
+      >
+        {resultsText}
+      </Typography>
+
       {/* Pagination on top - only show if multiple pages */}
       {totalPages > 1 && (
         <div className="flex items-center gap-2">
@@ -112,19 +127,6 @@ const ProductCount = ({ currentPage, pageSize, totalCount, totalPages }: Product
         </div>
       )}
       
-      {/* Total results - aligned with sort label when no pagination */}
-      <Typography 
-        variant="body2" 
-        sx={{ 
-          color: '#6b7280', 
-          fontSize: '0.875rem', 
-          fontWeight: 400,
-          // Add top margin when no pagination to align with sort label
-          marginTop: totalPages <= 1 ? '2px' : '0',
-        }}
-      >
-        {resultsText}
-      </Typography>
     </div>
   )
 }

@@ -56,6 +56,9 @@ export default function ProductTileContent({
   const { cheapestPrice } = getProductPrice({
     product: pricedProduct,
   })
+  const hasPrice = !!cheapestPrice?.calculated_price_number
+  // fallback ако нямаш calculated_price_number:
+  const hasPriceFallback = !!cheapestPrice
 
   const thumbnail = product.thumbnail || product.images?.[0]?.url
   const hasVariants = product.variants && product.variants.length > 0
@@ -130,18 +133,15 @@ export default function ProductTileContent({
   }
 
   return (
-    <Card
-      className="h-full flex flex-col bg-background-elevated rounded-lg shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer"
-      sx={{
-        borderRadius: '8px',
-      }}
+    <div
+      className="h-full flex flex-col bg-background-elevated border bodred-border-base overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer"
     >
       <Link href={productUrl} className="block flex-grow items-center">
         {/* Image Section with Lazy Loading and Wishlist Button */}
         <CardMedia
           component="div"
-          className="relative h-52 md:h-64 lg:h-72 bg-gray-100 overflow-hidden flex items-center justify-center w-full"
-          style={{ aspectRatio: '3/4' }} // Taller aspect ratio for product tiles
+          className="relative bg-gray-100 overflow-hidden flex items-center justify-center w-full"
+          style={{ aspectRatio: '1/1' }} // Taller aspect ratio for product tiles
         >
           {thumbnail ? (
             <Image
@@ -156,7 +156,7 @@ export default function ProductTileContent({
                 return parts.join(' - ')
               })()}
               fill
-              className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out self-center"
+              className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out self-center aspect-square"
               sizes="(max-width: 640px) 200px, (max-width: 1024px) 240px, 280px"
               priority={priority}
               loading={priority ? 'eager' : 'lazy'}
@@ -170,49 +170,28 @@ export default function ProductTileContent({
             </Box>
           )}
           {/* Wishlist Heart Icon - Top Right */}
-          <IconButton
+          <button type="button"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              // TODO: Implement wishlist functionality
-            }}
-            className="bg-white/80 hover:bg-white rounded-full p-1.5 z-10"
-            sx={{
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              },
             }}
             aria-label="Add to wishlist"
+            className="bg-white/80 hover:bg-white rounded-full p-1.5 relative top-2 left-2 z-10 border border-border-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
           >
-            <FavoriteBorder className="w-5 h-5 text-gray-600" />
-          </IconButton>
+            <FavoriteBorder className="w-4 h-4 text-gray-600" />
+          </button>
         </CardMedia>
 
         {/* Content Section */}
-        <CardContent className="flex-grow flex flex-col p-4 md:p-5">
+        <div className="flex-grow flex flex-col px-4 pt-4 pb-2">
           {/* Title */}
-          <Typography
-            variant="h6"
-            component="h3"
-            className="text-text-primary mb-4 md:mb-5 line-clamp-2"
-            sx={{
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              fontSize: '1rem',
-              fontWeight: 400,
-              '@media (min-width: 768px)': {
-                fontSize: '1.125rem',
-              },
-            }}
-          >
+          <h3 className="text-text-primary text-base font-medium mb-2 md:mb-3 line-clamp-2 leading-tight">
             {product.title}
-          </Typography>
+          </h3>
 
           {/* Price Section - EUR prominent, BGN secondary */}
           {cheapestPrice ? (
-            <div className="flex justify-between items-baseline mb-4 md:mb-5">
+            <div className="flex justify-between items-baseline">
               <span className="text-text-primary font-bold text-lg md:text-xl">
                 {cheapestPrice.calculated_price_parts?.eur || ''}
               </span>
@@ -225,44 +204,36 @@ export default function ProductTileContent({
               {t("product.priceNotAvailable")}
             </Typography>
           )}
-        </CardContent>
+        </div>
       </Link>
 
       {/* Actions - Outside Link to prevent navigation */}
-      <CardActions className="p-4 md:p-5 pt-0 mt-auto">
-        <Button
-          variant="contained"
-          fullWidth
-          startIcon={isAdding ? <CircularProgress size={16} color="inherit" /> : <AddShoppingCart />}
-          disabled={!isInStock || isAdding || !defaultVariant}
+      <div className="p-4 md:p-2 pt-0 mt-auto">
+        <button
+          disabled={!hasPrice || !isInStock || isAdding || !defaultVariant}
           onClick={handleAddToCartClick}
-          className="bg-primary hover:bg-primary-hover text-white transition-all duration-200 h-11 md:h-12 rounded-xl shadow-sm hover:shadow-md border-none"
-          sx={{
-            fontSize: '0.875rem',
-            fontWeight: 700,
-            textTransform: 'none',
-            '@media (min-width: 768px)': {
-              fontSize: '0.9375rem',
-            },
-            '&.MuiButton-contained': {
-              backgroundColor: '#FFFFFF', // primary
-              color: '#373737',
-              '&:hover': {
-                color: '#FFFFFF',
-                backgroundColor: '#E55A2B', // primary-hover
-              },
-            },
-            '&.Mui-disabled': {
-              backgroundColor: '#F3F4F6',
-              color: '#9CA3AF',
-            },
-          }}
+          className="
+            w-full
+            flex items-center justify-center gap-2
+            bg-white hover:bg-neutral-100
+            text-black
+            h-11 md:h-12
+            rounded-md
+            border border-border-base
+            text-sm md:text-[15px]
+            transition-all duration-200
+            disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none
+          "
         >
+          {isAdding
+            ? <CircularProgress size={16} className="shrink-0" />
+            : <AddShoppingCart className="w-3 h-3 shrink-0" />
+          }
           <span>
             {isAdding ? t("product.adding") : isInStock ? t("product.addToCart") : t("product.outOfStock")}
           </span>
-        </Button>
-      </CardActions>
+        </button>
+      </div>
 
       {/* Quick View Modal for Variant Selection */}
       {hasMultipleVariants && (
@@ -273,7 +244,7 @@ export default function ProductTileContent({
           countryCode={actualCountryCode}
         />
       )}
-    </Card>
+    </div>
   )
 }
 

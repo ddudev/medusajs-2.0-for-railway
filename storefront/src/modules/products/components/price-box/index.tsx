@@ -70,14 +70,14 @@ export default function PriceBox({
   const hasOptions = product.options && product.options.length > 0
 
   return (
-    <div className="bg-background-elevated border border-border-base rounded-3xl p-4 md:p-6 flex flex-col gap-4 md:gap-6">
+    <div className="bg-zinc-800 border border-border-base rounded-3xl p-4 md:p-6 flex flex-col gap-4 md:gap-6 shadow-lg">
       {/* Variant Selection */}
       {hasVariants && hasOptions && product.options && setOptionValue && (
         <div className="flex flex-col gap-4">
           {product.options.map((option) => {
             return (
               <div key={option.id} className="flex flex-col gap-3">
-                <label className="text-sm font-semibold text-text-primary uppercase tracking-wide">
+                <label className="text-sm font-semibold text-white/90 uppercase tracking-wide">
                   {option.title}
                 </label>
                 <OptionSelect
@@ -96,12 +96,12 @@ export default function PriceBox({
 
       {/* Price Display Section */}
       <div className="flex flex-col gap-2 md:gap-3">
-        <span className="text-base md:text-lg text-text-primary">Цена:</span>
+        <span className="text-base md:text-lg text-white/90">Цена:</span>
         <div className="flex items-baseline gap-2 md:gap-3">
-          <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-text-primary">
+          <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
             {priceParts.eur}
           </span>
-          <span className="text-lg md:text-xl text-text-secondary">
+          <span className="text-lg md:text-xl text-white/80">
             {priceParts.bgn}
           </span>
         </div>
@@ -110,14 +110,19 @@ export default function PriceBox({
       {/* Add to Cart Section - Unified dark block for mobile/tablet, split for desktop */}
       <div className="flex flex-col md:flex-row gap-3 bg-[#111111] lg:bg-transparent p-3 md:p-4 lg:p-0 rounded-2xl lg:rounded-none">
         {/* Quantity Selector */}
-        <div className="flex items-center bg-white/10 lg:bg-text-primary text-white rounded-xl overflow-hidden border border-white/5 lg:border-none w-full md:w-auto justify-between md:justify-start">
+        <div className="flex items-center bg-neutral-800 text-white rounded-xl overflow-hidden border border-neutral-500 w-full md:w-auto justify-between md:justify-start">
           <IconButton
             onClick={() => handleQuantityChange(quantity - 1)}
             disabled={quantity <= 1 || isAdding}
             className="text-white hover:bg-white/20"
             size="small"
             aria-label="Decrease quantity"
-            sx={{ color: 'white' }}
+            sx={{
+              color: 'white',
+              '&.Mui-disabled': {
+                color: 'rgba(255, 255, 255, 0.4)',
+              },
+            }}
           >
             <Remove />
           </IconButton>
@@ -162,7 +167,12 @@ export default function PriceBox({
             className="text-white hover:bg-white/20"
             size="small"
             aria-label="Increase quantity"
-            sx={{ color: 'white' }}
+            sx={{
+              color: 'white',
+              '&.Mui-disabled': {
+                color: 'rgba(255, 255, 255, 0.4)',
+              },
+            }}
           >
             <Add />
           </IconButton>

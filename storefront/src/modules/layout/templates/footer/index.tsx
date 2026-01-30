@@ -22,14 +22,14 @@ export default async function Footer({ countryCode = "us" }: FooterProps) {
   return (
     <footer className="w-full">
       {/* Newsletter Banner */}
-      <div className="w-full bg-primary">
+      <div className="w-full bg-gradient-to-r from-[#B95A0C] to-[#EB7310]">
         <div className="content-container py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4 text-white">
-              <span className="text-3xl font-bold">
+              <span className="text-5xl font-bold">
                 {getTranslation(translations, "footer.newsletter.discount") || "-10%"}
               </span>
-              <p className="text-sm max-w-xs">
+              <p className="text-lg max-w-xs font-semibold">
                 {getTranslation(translations, "footer.newsletter.title") || "Register now and get 10% discount on your first order"}
               </p>
             </div>

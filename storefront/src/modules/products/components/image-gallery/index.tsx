@@ -89,7 +89,7 @@ const ImageGallery = ({ images, productName, categoryName, brandName }: ImageGal
     <div className="flex flex-col gap-4 w-full" style={{ flexDirection: 'column' }}>
       {/* Main Image - Optimized for LCP */}
       <div 
-        className="relative w-full overflow-hidden bg-background-elevated rounded-3xl group"
+        className="relative w-full overflow-hidden bg-background-elevated rounded-3xl group border border-border-base shadow-lg"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -179,8 +179,8 @@ const ImageGallery = ({ images, productName, categoryName, brandName }: ImageGal
             <button
               key={image.id}
               onClick={() => setSelectedImageIndex(index)}
-              className={`relative flex-shrink-0 w-16 h-16 md:w-20 md:h-20 overflow-hidden bg-background-elevated rounded-2xl border-2 transition-all ${selectedImageIndex === index
-                ? "border-primary shadow-md"
+              className={`relative flex-shrink-0 w-16 h-16 md:w-20 md:h-20 overflow-hidden bg-background-elevated rounded-2xl border transition-all ${selectedImageIndex === index
+                ? "border-border-base"
                 : "border-border-base hover:border-primary/50"
                 }`}
               aria-label={`${t("gallery.viewImage")} ${index + 1}`}

@@ -51,7 +51,7 @@ const MainHeader = async ({
 
           {/* Category Links - White text on black background, on same line - with left margin to account for button */}
           {displayCategories.length > 0 && (
-            <div className="hidden md:flex items-center gap-6 ml-[220px]">
+            <div className="hidden md:flex items-center gap-6 ml-[220px] overflow-x-scroll overflow-y-visible py-4 max-w-full">
               {displayCategories.map((category) => (
                 <CategoryMenuItem key={category.handle} category={category} />
               ))}

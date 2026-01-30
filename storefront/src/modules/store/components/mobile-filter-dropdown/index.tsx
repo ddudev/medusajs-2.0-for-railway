@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { Button, Divider, Badge, Fade, Grow } from '@mui/material'
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
 import { useSearchParams, usePathname, useRouter } from "next/navigation"
@@ -91,6 +91,18 @@ const MobileFilterDropdown = ({
     setOpen(!open)
   }
 
+  // Prevent body scroll when filter is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [open])
+
   return (
     <>
       {/* Filter Button */}
@@ -161,14 +173,9 @@ const MobileFilterDropdown = ({
               maxHeight: 'calc(100vh - 200px)',
             }}
           >
-            <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
               <div className="flex flex-col gap-6">
-                <h3 className="text-lg font-semibold text-white">
-                  {t("filters.title") || "Филтри"}
-                </h3>
-
-                <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
-
+                
                 {/* Categories Filter */}
                 {categories && categories.length > 0 && (
                   <FilterCategory

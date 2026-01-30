@@ -69,21 +69,21 @@ const SlideInCart = ({ cart }: SlideInCartProps) => {
           >
             <Dialog.Panel className="w-full max-w-md bg-white shadow-xl flex flex-col pointer-events-auto">
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border-base">
-                <Dialog.Title className="text-xl font-semibold text-text-primary">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border-base shadow-lg z-10">
+                <Dialog.Title className="text-base font-medium text-text-primary">
                   {t("cart.title")}
                 </Dialog.Title>
                 <button
                   onClick={closeCart}
-                  className="p-2 hover:bg-background-elevated rounded-md transition-colors"
+                  className="p-2 bg-neutral-100 text-neutral-500 rounded-full transition-colors"
                   aria-label="Close cart"
                 >
-                  <XMark className="w-5 h-5" />
+                  <XMark className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto px-6 py-4">
+              <div className="flex-1 overflow-y-auto px-4 bg-background-base">
                 {cart?.items?.length ? (
                   <>
                     {/* Free Shipping Progress Bar */}
@@ -104,10 +104,6 @@ const SlideInCart = ({ cart }: SlideInCartProps) => {
                         ))}
                     </div>
 
-                    {/* Cart Totals */}
-                    <div className="mt-6 pt-6 border-t border-border-base">
-                      <CartTotals totals={cart} />
-                    </div>
                   </>
                 ) : (
                   <EmptyCartMessage />
@@ -119,8 +115,8 @@ const SlideInCart = ({ cart }: SlideInCartProps) => {
                 <div className="px-6 py-4 border-t border-border-base bg-background-elevated">
                   <div className="mb-3">
                     <div className="flex justify-between items-center text-lg font-semibold">
-                      <span className="text-text-primary">{t("cart.total")}:</span>
-                      <span className="text-text-primary">
+                      <span className="text-text-primary text-base text-medium">{t("cart.total")}:</span>
+                      <span className="text-text-primary text-base text-medium">
                         {convertToLocale({
                           amount: cart.total ?? 0,
                           currency_code: cart.currency_code ?? "",

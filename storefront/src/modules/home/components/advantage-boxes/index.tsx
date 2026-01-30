@@ -23,7 +23,7 @@ const AdvantageBoxes = async ({
     {
       icon: (
         <svg
-          className="w-8 h-8"
+          className="w-12 h-12"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -42,7 +42,7 @@ const AdvantageBoxes = async ({
     {
       icon: (
         <svg
-          className="w-8 h-8"
+          className="w-12 h-12"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -60,7 +60,7 @@ const AdvantageBoxes = async ({
     {
       icon: (
         <svg
-          className="w-8 h-8"
+          className="w-12 h-12"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -80,17 +80,17 @@ const AdvantageBoxes = async ({
   const displayAdvantages = advantages || defaultAdvantages
   return (
     <div className="content-container py-8 md:py-12">
-      <div className="bg-background-elevated rounded-3xl p-6 md:p-8">
+      <div className="bg-background-elevated rounded-3xl p-6 md:p-8 border border-border-base shadow-lg">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {displayAdvantages.map((advantage, index) => (
             <div
               key={index}
-              className="flex items-start gap-4 md:gap-6"
+              className="flex flex-col items-center gap-2 md:gap-4"
             >
               <div className="flex-shrink-0 text-primary">
                 {advantage.icon}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 text-center">
                 <h3 className="text-base md:text-lg font-semibold text-text-primary mb-1">
                   {advantage.title}
                 </h3>

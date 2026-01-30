@@ -51,8 +51,8 @@ const CollapsibleFilter = ({
           variant="body2"
           sx={{
             color: darkMode ? 'rgba(255, 255, 255, 0.9)' : 'text.secondary',
-            fontWeight: 500,
-            fontSize: '0.9375rem',
+            fontWeight: 600,
+            fontSize: '1rem',
           }}
         >
           {title}

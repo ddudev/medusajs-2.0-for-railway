@@ -34,10 +34,10 @@ const AccountLink = () => {
     return (
       <LocalizedClientLink
         href="/account"
-        className="flex items-center gap-2 text-text-primary hover:opacity-80 transition-opacity"
+        className="flex items-center gap-2 text-text-primary hover:opacity-80 transition-opacity p-1"
         data-testid="nav-account-link"
       >
-        <User className="w-8 h-8" viewBox="0 0 15 15" />
+        <User className="w-5 h-5" viewBox="0 0 15 15" />
         <span className="text-base font-medium md:block hidden">Вход</span>
       </LocalizedClientLink>
     )
@@ -48,10 +48,10 @@ const AccountLink = () => {
     return (
       <LocalizedClientLink
         href="/account"
-        className="flex items-center gap-2 text-text-primary hover:opacity-80 transition-opacity"
+        className="flex items-center gap-2 text-text-primary hover:opacity-80 transition-opacity p-1"
         data-testid="nav-account-link"
       >
-        <User className="w-8 h-8" viewBox="0 0 15 15" />
+        <User className="w-5 h-5" viewBox="0 0 15 15" />
         <span className="text-base font-medium md:block hidden">Вход</span>
       </LocalizedClientLink>
     )
@@ -61,11 +61,11 @@ const AccountLink = () => {
   return (
     <LocalizedClientLink
       href="/account"
-      className="flex items-center gap-2 text-text-primary hover:opacity-80 transition-opacity"
+      className="flex items-center gap-2 text-text-primary hover:opacity-80 transition-opacity p-1"
       data-testid="nav-account-link"
     >
-      <User className="w-8 h-8" viewBox="0 0 15 15" />
-      <span className="text-sm font-medium md:block hidden">Вход</span>
+      <User className="w-5 h-5" viewBox="0 0 15 15" />
+      <span className="text-base font-medium md:block hidden">Вход</span>
     </LocalizedClientLink>
   )
 }

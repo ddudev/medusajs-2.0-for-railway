@@ -46,7 +46,7 @@ const FilterCheckboxGroup = ({
               <Typography
                 variant="body2"
                 sx={{
-                  fontSize: '0.875rem',
+                  fontSize: '0.95rem',
                   fontWeight: isChecked ? 500 : 400,
                   color: darkMode 
                     ? (isChecked ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.7)')
@@ -60,7 +60,7 @@ const FilterCheckboxGroup = ({
               margin: 0,
               marginBottom: '6px',
               '& .MuiFormControlLabel-label': {
-                marginLeft: '8px',
+                marginLeft: '6px',
               },
             }}
           />
