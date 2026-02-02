@@ -352,6 +352,12 @@ body {
     border-color: var(--color-border-base);
   }
 
+  /* Checkout Form Styles */
+  /* Checkout step headings - consistent styling across contact, address, delivery, payment, review */
+  .checkout-heading {
+    @apply flex flex-row gap-x-2 items-baseline mb-6 font-semibold text-[22px] leading-snug;
+  }
+
   /* Keyframe animation to completely remove Chrome autofill styling */
   @-webkit-keyframes autofill {
     to {

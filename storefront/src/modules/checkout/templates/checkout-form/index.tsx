@@ -45,54 +45,52 @@ export default async function CheckoutForm({
   }
 
   return (
-    <div>
-      <div className="w-full grid grid-cols-1 gap-y-8">
-        {/* Contact Section - First Name, Last Name, Email, Phone */}
-        <div>
-          <Contact cart={cart} customer={customer} />
-        </div>
-
-        {/* TODO: Uncomment when needed - Shipping Address Section
-          Only show when Econt Address/Door is selected (not for Econt Office)
-          For Econt Office, shipping address is not required
-        */}
-        {/* <div>
-          <Addresses cart={cart} customer={customer} />
-        </div> */}
-
-        {/* Shipping Method Section - Econt integration */}
-        <div>
-          <Shipping cart={cart} availableShippingMethods={shippingMethods} />
-        </div>
-
-        {/* Payment Section - Payment method selection and card input (conditional) */}
-        <Suspense
-          fallback={
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded mb-4"></div>
-              <div className="h-32 bg-gray-200 rounded"></div>
-            </div>
-          }
-        >
-          <div>
-            <Payment cart={cart} availablePaymentMethods={paymentMethods} />
-          </div>
-        </Suspense>
-
-        {/* Review Section - Order summary and place order button */}
-        <Suspense
-          fallback={
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded mb-4"></div>
-              <div className="h-24 bg-gray-200 rounded"></div>
-            </div>
-          }
-        >
-          <div>
-            <Review cart={cart} />
-          </div>
-        </Suspense>
+    <div className="w-full grid grid-cols-1 gap-y-8 py-8 max-w-[600px] lg:ml-auto mx-auto">
+      {/* Contact Section - First Name, Last Name, Email, Phone */}
+      <div>
+        <Contact cart={cart} customer={customer} />
       </div>
+
+      {/* TODO: Uncomment when needed - Shipping Address Section
+        Only show when Econt Address/Door is selected (not for Econt Office)
+        For Econt Office, shipping address is not required
+      */}
+      {/* <div>
+        <Addresses cart={cart} customer={customer} />
+      </div> */}
+
+      {/* Shipping Method Section - Econt integration */}
+      <div>
+        <Shipping cart={cart} availableShippingMethods={shippingMethods} />
+      </div>
+
+      {/* Payment Section - Payment method selection and card input (conditional) */}
+      <Suspense
+        fallback={
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded mb-4"></div>
+            <div className="h-32 bg-gray-200 rounded"></div>
+          </div>
+        }
+      >
+        <div>
+          <Payment cart={cart} availablePaymentMethods={paymentMethods} />
+        </div>
+      </Suspense>
+
+      {/* Review Section - Order summary and place order button */}
+      <Suspense
+        fallback={
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded mb-4"></div>
+            <div className="h-24 bg-gray-200 rounded"></div>
+          </div>
+        }
+      >
+        <div>
+          <Review cart={cart} />
+        </div>
+      </Suspense>
     </div>
   )
 }

@@ -54,15 +54,15 @@ async function CheckoutContent() {
 
   return (
     <CheckoutCartProvider initialCart={cart}>
-      <div className="content-container py-12">
+      <div className="">
         <CheckoutTracker cart={cart} />
-        <div className="max-w-6xl mx-auto grid grid-cols-1 small:grid-cols-2 gap-x-8 small:gap-x-12">
-        <Wrapper cart={cart}>
-          <CheckoutForm cart={cart} customer={customer} />
-        </Wrapper>
-        <Suspense fallback={<SuspenseLoading />}>
-          <CheckoutSummary cart={cart} />
-        </Suspense>
+        <div className="flex flex-col lg:flex-row">
+          <Wrapper cart={cart}>
+            <CheckoutForm cart={cart} customer={customer} />
+          </Wrapper>
+          <Suspense fallback={<SuspenseLoading />}>
+            <CheckoutSummary cart={cart} />
+          </Suspense>
         </div>
       </div>
     </CheckoutCartProvider>
