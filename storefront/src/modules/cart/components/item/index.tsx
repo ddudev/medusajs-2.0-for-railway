@@ -70,7 +70,7 @@ const Item = ({ item, type = "full" }: ItemProps) => {
             <LineItemPrice item={item} style="tight" />
             <div className="flex items-center gap-2 text-xs text-gray-400">
               <Text className="text-gray-400 text-xs">{item.quantity}x</Text>
-              <LineItemUnitPrice item={item} style="tight text-xs" />
+              <LineItemUnitPrice item={item} style="tight" className="text-xs" />
             </div>
           </div>
         </div>
