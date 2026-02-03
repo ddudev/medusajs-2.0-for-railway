@@ -21,6 +21,9 @@
   "resolutions": {
     "webpack": "^5"
   },
+  "pnpm": {
+    "neverBuiltDependencies": ["unrs-resolver"]
+  },
   "dependencies": {
     "@headlessui/react": "^1.6.1",
     "@hookform/error-message": "^2.0.0",
