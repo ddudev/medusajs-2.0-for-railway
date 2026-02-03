@@ -58,19 +58,21 @@ const Item = ({ item, type = "full" }: ItemProps) => {
           />
         </LocalizedClientLink>
         
-        <div className="flex-1 flex flex-col gap-1">
-          <Text className="text-sm font-medium text-gray-900" data-testid="product-title">
-            {item.product_title}
-          </Text>
-          <LineItemOptions variant={item.variant} data-testid="product-variant" />
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Text className="text-gray-500">{item.quantity}x</Text>
-            <LineItemUnitPrice item={item} style="tight" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full">
+          <div className="flex-1 flex flex-col gap-1 mr-auto">
+            <Text className="text-sm font-medium text-gray-900" data-testid="product-title">
+              {item.product_title}
+            </Text>
+            <LineItemOptions variant={item.variant} data-testid="product-variant" />
           </div>
-        </div>
-        
-        <div className="flex-shrink-0 text-right">
-          <LineItemPrice item={item} style="tight" />
+          
+          <div className="flex-shrink-0 text-right ml-auto">
+            <LineItemPrice item={item} style="tight" />
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <Text className="text-gray-400 text-xs">{item.quantity}x</Text>
+              <LineItemUnitPrice item={item} style="tight text-xs" />
+            </div>
+          </div>
         </div>
       </div>
     )

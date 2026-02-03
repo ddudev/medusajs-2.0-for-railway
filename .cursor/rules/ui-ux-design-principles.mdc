@@ -45,7 +45,7 @@ You are an expert in UI and UX design principles for software development. Follo
 
 ### UI Components
 - Use familiar UI components to reduce cognitive load
-- Prefer MUI components for complex interactions (see `mui-component-usage.mdc`)
+- Prefer MUI components for complex interactions (see `storefront-shadcn-ui.mdc`)
 - Use consistent component patterns throughout the application
 
 ### Calls-to-Action
@@ -230,7 +230,7 @@ You are an expert in UI and UX design principles for software development. Follo
 ## Implementation Guidelines
 
 ### MUI Integration
-- Use MUI components for complex UI elements (see `mui-component-usage.mdc`)
+- Use MUI components for complex UI elements (see `storefront-shadcn-ui.mdc`)
 - Customize MUI theme in `storefront/src/lib/theme/mui-theme.ts`
 - Use Tailwind for layout and custom styling
 - Combine MUI components with Tailwind classes when needed
@@ -251,7 +251,7 @@ You are an expert in UI and UX design principles for software development. Follo
 
 - **WCAG Guidelines**: https://www.w3.org/WAI/WCAG21/quickref/
 - **MUI Theme**: `storefront/src/lib/theme/mui-theme.ts`
-- **MUI Components**: See `mui-component-usage.mdc`
+- **MUI Components**: See `storefront-shadcn-ui.mdc`
 - **Next.js Image Optimization**: https://nextjs.org/docs/app/building-your-application/optimizing/images
 - **Core Web Vitals**: https://web.dev/vitals/
 

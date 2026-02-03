@@ -1,5 +1,5 @@
 import { HttpTypes } from "@medusajs/types"
-import { Rating } from "@mui/material"
+import { Rating } from "@/components/ui/rating"
 import { getProductReviews } from "@lib/data/products"
 import { isProductInStock } from "@lib/seo/utils"
 
@@ -72,12 +72,12 @@ export default async function ProductInfoBox({
   return (
     <div className="bg-background-elevated border border-border-base rounded-3xl shadow-lg p-4 md:p-6 flex flex-col gap-4 md:gap-6">
       {/* Product Title */}
-      <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-text-primary leading-tight">
+      <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-text-primary leading-tight">
         {product.title}
       </h1>
 
       {/* Metadata Group */}
-      <div className="flex flex-wrap items-center gap-2 md:gap-3 text-sm md:text-base text-text-primary border-b border-border-base pb-4">
+      <div className="flex flex-wrap items-center gap-2 md:gap-3 text-xs md:text-sm text-neutral-600 border-b border-border-base pb-4">
         <span>Код: {productCode}</span>
         <span className="text-border-base">|</span>
         <span>{inStock ? "В наличност" : "Не е наличен"}</span>
@@ -91,11 +91,6 @@ export default async function ProductInfoBox({
                 readOnly
                 size="small"
                 precision={0.5}
-                sx={{
-                  "& .MuiRating-iconFilled": {
-                    color: "#FFD700", // Gold color for stars
-                  },
-                }}
               />
               <span className="text-text-secondary text-sm">
                 (от {reviewCount} {reviewCount === 1 ? "ревю" : "ревюта"})
@@ -143,7 +138,7 @@ export default async function ProductInfoBox({
 
       {/* Delivery Information */}
       <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2 text-sm md:text-base text-text-primary">
+        <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-text-primary">
           <span>Очаквайте доставка на:</span>
           <span className="font-medium">
             {formatDate(deliveryStart)} - {formatDate(deliveryEnd)}

@@ -11,18 +11,14 @@ import { useTranslation } from "@lib/i18n/hooks/use-translation"
 const CheckoutSummary = ({ cart }: { cart: any }) => {
   const { t } = useTranslation()
   return (
-    <div className="sticky top-0 flex flex-col-reverse small:flex-col gap-y-8 py-8 small:py-0 ">
-      <div className="w-full bg-white flex flex-col">
+    <div className="hidden lg:block w-[45%] px-16 py-8 bg-background-base">
+      <div className="w-full flex flex-col max-w-[400px] py-8">
         <Divider className="my-6 small:hidden" />
-        <Heading
-          level="h2"
-          className="flex flex-row text-3xl-regular items-baseline"
-        >
+        <Heading level="h2" className="checkout-heading">
           {t("checkout.inYourCart")}
         </Heading>
-        <Divider className="my-6" />
-        <CartTotals totals={cart} />
         <ItemsPreviewTemplate items={cart?.items} />
+        <CartTotals totals={cart} />
         <div className="my-6">
           <DiscountCode cart={cart} />
         </div>

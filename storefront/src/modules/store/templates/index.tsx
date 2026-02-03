@@ -51,15 +51,17 @@ async function PaginatedProductsWrapper({
   return (
     <>
       {/* Results Count with Pagination and Sort - matches design */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col md:flex-row md:items-center items-start gap-2 md:justify-between">
         <ProductCount
           currentPage={page}
           pageSize={result.pageSize}
           totalCount={result.totalCount}
           totalPages={result.totalPages || 1}
         />
-        {/* Sort Dropdown - Visible on all screen sizes (stays in content area) */}
-        <SortDropdown />
+        {/* Sort Dropdown - Hidden on mobile (sort is in sticky bar), visible on desktop */}
+        <div className="hidden md:block">
+          <SortDropdown />
+        </div>
       </div>
 
       {/* Active Filters */}

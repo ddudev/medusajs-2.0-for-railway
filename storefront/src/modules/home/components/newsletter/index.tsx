@@ -30,8 +30,8 @@ const Newsletter = () => {
 
   return (
     <div className="content-container py-8 md:py-12">
-      <div className="bg-background-elevated rounded-3xl p-6 md:p-8 lg:p-12">
-        <div className="max-w-4xl mx-auto">
+      <div className="bg-background-elevated rounded-3xl p-6 md:p-8 lg:p-12 border border-border-base shadow-lg">
+        <div className="mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-8">
             {/* Icon and Text */}
             <div className="flex items-start gap-4 md:gap-6 flex-1">

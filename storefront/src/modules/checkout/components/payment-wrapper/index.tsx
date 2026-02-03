@@ -67,7 +67,7 @@ const Wrapper: React.FC<WrapperProps> = ({ cart: initialCart, children }) => {
     )
   }
 
-  return <div>{children}</div>
+  return <><div className="w-full lg:w-[55%] lg:px-16 md:px-8 px-6 lg:py-8 py-4">{children}</div></>
 }
 
 export default Wrapper

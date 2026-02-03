@@ -34,10 +34,10 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
               onClick={() => updateOption(option.title ?? "", v ?? "")}
               key={v}
               className={clx(
-                "min-w-[60px] h-12 px-4 rounded-lg border-2 text-sm font-medium transition-all duration-200",
+                "min-w-[60px] h-12 px-4 rounded-lg border-border-base text-sm font-medium transition-all duration-200",
                 {
                   "bg-primary text-text-inverse border-primary hover:bg-primary-hover": isSelected,
-                  "bg-background-base text-text-primary border-border-base hover:border-primary hover:bg-background-elevated": !isSelected,
+                  "bg-neutral-100 text-base border border-border-base hover:border-primary hover:bg-neutral-200": !isSelected,
                   "opacity-50 cursor-not-allowed": disabled,
                 }
               )}

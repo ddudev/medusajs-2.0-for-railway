@@ -217,7 +217,7 @@ export default function ProductActions({
           <QuickBuy
             product={product}
             variant={selectedVariant}
-            className="w-full h-12 border-2 border-primary text-primary bg-transparent hover:bg-primary hover:text-text-inverse transition-colors font-semibold rounded-lg"
+            className="w-full h-12 border border-border-base outline-none shadow-none text-white bg-primary hover:bg-primary hover:text-text-inverse transition-colors text-base font-semibold rounded-lg"
           />
         )}
 

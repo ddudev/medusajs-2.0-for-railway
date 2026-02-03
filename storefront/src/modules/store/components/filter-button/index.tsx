@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation"
 import { useMemo } from "react"
 import { Funnel } from "@medusajs/icons"
-import { Badge } from "@mui/material"
+import { Badge } from "@/components/ui/badge"
 import { useFilterContext } from "@modules/store/templates/store-template-client"
 
 type FilterButtonProps = {
@@ -14,7 +14,6 @@ const FilterButton = ({ "data-testid": dataTestId }: FilterButtonProps) => {
   const searchParams = useSearchParams()
   const { openFilterDrawer } = useFilterContext()
 
-  // Count active filters
   const activeFilterCount = useMemo(() => {
     let count = 0
     const collectionIds = searchParams.getAll("collection").filter(Boolean)
@@ -43,20 +42,11 @@ const FilterButton = ({ "data-testid": dataTestId }: FilterButtonProps) => {
 
       {activeFilterCount > 0 && (
         <Badge
-          badgeContent={activeFilterCount}
-          color="primary"
-          sx={{
-            position: "absolute",
-            top: "-4px",
-            right: "-4px",
-            "& .MuiBadge-badge": {
-              fontSize: "0.75rem",
-              minWidth: "18px",
-              height: "18px",
-              padding: "0 4px",
-            },
-          }}
-        />
+          variant="default"
+          className="absolute -top-1 -right-1 h-[18px] min-w-[18px] px-1 text-[0.75rem] flex items-center justify-center rounded-full"
+        >
+          {activeFilterCount}
+        </Badge>
       )}
     </button>
   )

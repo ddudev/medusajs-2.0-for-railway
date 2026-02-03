@@ -1,7 +1,9 @@
 "use client"
 
 import React, { useState } from "react"
-import { TextField, Button, Alert } from "@mui/material"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { trackContactFormSubmit } from "@lib/analytics/lead-capture"
 
@@ -93,51 +95,69 @@ export default function ContactForm() {
       </p>
 
       {isSuccess && (
-        <Alert severity="success" className="mb-6">
+        <div
+          role="alert"
+          className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200"
+        >
           {t("contact.form.success") ||
             "Thank you for your message! We will get back to you soon."}
-        </Alert>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <TextField
-          fullWidth
-          label={t("contact.form.name") || "Name"}
-          value={formData.name}
-          onChange={handleChange("name")}
-          error={!!errors.name}
-          helperText={errors.name}
-          required
-          disabled={isSubmitting}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="contact-name">
+            {t("contact.form.name") || "Name"}
+          </Label>
+          <Input
+            id="contact-name"
+            value={formData.name}
+            onChange={handleChange("name")}
+            required
+            disabled={isSubmitting}
+            className={errors.name ? "border-destructive" : ""}
+          />
+          {errors.name && (
+            <p className="text-sm text-destructive">{errors.name}</p>
+          )}
+        </div>
 
-        <TextField
-          fullWidth
-          label={t("contact.form.email") || "Email Address"}
-          type="email"
-          value={formData.email}
-          onChange={handleChange("email")}
-          error={!!errors.email}
-          helperText={errors.email}
-          required
-          disabled={isSubmitting}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="contact-email">
+            {t("contact.form.email") || "Email Address"}
+          </Label>
+          <Input
+            id="contact-email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange("email")}
+            required
+            disabled={isSubmitting}
+            className={errors.email ? "border-destructive" : ""}
+          />
+          {errors.email && (
+            <p className="text-sm text-destructive">{errors.email}</p>
+          )}
+        </div>
 
-        <TextField
-          fullWidth
-          label={
-            t("contact.form.message") ||
-            "Write your question, suggestion or comment"
-          }
-          multiline
-          rows={6}
-          value={formData.message}
-          onChange={handleChange("message")}
-          error={!!errors.message}
-          helperText={errors.message}
-          required
-          disabled={isSubmitting}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="contact-message">
+            {t("contact.form.message") ||
+              "Write your question, suggestion or comment"}
+          </Label>
+          <textarea
+            id="contact-message"
+            rows={6}
+            value={formData.message}
+            onChange={handleChange("message")}
+            required
+            disabled={isSubmitting}
+            className={`flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.message ? "border-destructive" : ""}`}
+          />
+          {errors.message && (
+            <p className="text-sm text-destructive">{errors.message}</p>
+          )}
+        </div>
 
         <p className="text-sm text-text-tertiary">
           {t("contact.form.requiredNote") ||
@@ -146,10 +166,8 @@ export default function ContactForm() {
 
         <Button
           type="submit"
-          variant="contained"
-          fullWidth
+          className="mt-4 w-full"
           disabled={isSubmitting}
-          className="mt-4"
         >
           {isSubmitting
             ? t("contact.form.submitting") || "Submitting..."

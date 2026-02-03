@@ -150,10 +150,7 @@ const Shipping: React.FC<ShippingProps> = ({
 
   return (
     <div className="bg-white">
-        <Heading
-          level="h2"
-        className="flex flex-row text-3xl-regular gap-x-2 items-baseline mb-6"
-      >
+        <Heading level="h2" className="checkout-heading">
         {t("checkout.delivery")}
         {(cart.shipping_methods?.length ?? 0) > 0 && <CheckCircleSolid />}
         </Heading>

@@ -1,9 +1,11 @@
 'use client'
 
-import { Checkbox, FormControlLabel, Typography } from '@mui/material'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
 type FilterCheckboxGroupProps = {
-  title?: string // Optional now since CollapsibleFilter handles the title
+  title?: string
   items: {
     value: string
     label: string
@@ -15,7 +17,6 @@ type FilterCheckboxGroupProps = {
 }
 
 const FilterCheckboxGroup = ({
-  title,
   items,
   selectedValues,
   handleChange,
@@ -27,43 +28,38 @@ const FilterCheckboxGroup = ({
       {items?.map((item) => {
         const isChecked = selectedValues.includes(item.value)
         return (
-          <FormControlLabel
+          <div
             key={item.value}
-            control={
-              <Checkbox
-                checked={isChecked}
-                onChange={(e) => handleChange(item.value, e.target.checked)}
-                size="small"
-                sx={{
-                  color: darkMode ? 'rgba(255, 255, 255, 0.5)' : undefined,
-                  '&.Mui-checked': {
-                    color: darkMode ? '#ff6b35' : undefined,
-                  },
-                }}
-              />
-            }
-            label={
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: '0.875rem',
-                  fontWeight: isChecked ? 500 : 400,
-                  color: darkMode 
-                    ? (isChecked ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.7)')
-                    : (isChecked ? 'text.primary' : 'text.secondary'),
-                }}
-              >
-                {item.label}
-              </Typography>
-            }
-            sx={{
-              margin: 0,
-              marginBottom: '6px',
-              '& .MuiFormControlLabel-label': {
-                marginLeft: '8px',
-              },
-            }}
-          />
+            className={cn(
+              "flex items-center space-x-2 mb-1.5",
+              darkMode && "text-white/90"
+            )}
+          >
+            <Checkbox
+              id={`filter-${item.value}`}
+              checked={isChecked}
+              onCheckedChange={(checked) => handleChange(item.value, !!checked)}
+              className={cn(
+                darkMode && "border-white/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+              )}
+            />
+            <Label
+              htmlFor={`filter-${item.value}`}
+              className={cn(
+                "text-[0.95rem] cursor-pointer",
+                isChecked ? "font-medium" : "font-normal",
+                darkMode
+                  ? isChecked
+                    ? "text-white/95"
+                    : "text-white/70"
+                  : isChecked
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
+              {item.label}
+            </Label>
+          </div>
         )
       })}
     </div>
@@ -71,4 +67,3 @@ const FilterCheckboxGroup = ({
 }
 
 export default FilterCheckboxGroup
-

@@ -1,9 +1,10 @@
 'use client'
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useMemo } from "react"
-import { Chip } from '@mui/material'
-import { Close } from '@mui/icons-material'
+import { useCallback } from "react"
+import { X } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { HttpTypes } from "@medusajs/types"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { Brand } from "@lib/data/brands"
@@ -172,27 +173,23 @@ const ActiveFilters = ({
   return (
     <div className="flex flex-wrap gap-2 mb-4">
       {activeFilters.map((filter) => (
-        <Chip
+        <Badge
           key={`${filter.type}-${filter.id}`}
-          label={filter.label}
-          onDelete={filter.onRemove}
-          deleteIcon={<Close />}
-          size="small"
-          sx={{
-            backgroundColor: '#f3f4f6',
-            color: '#374151',
-            '&:hover': {
-              backgroundColor: '#e5e7eb',
-            },
-            '& .MuiChip-deleteIcon': {
-              color: '#6b7280',
-              fontSize: '1rem',
-              '&:hover': {
-                color: '#374151',
-              },
-            },
-          }}
-        />
+          variant="secondary"
+          className="flex items-center gap-1 py-1.5 pl-2.5 pr-1 bg-muted text-foreground hover:bg-muted/80"
+        >
+          <span>{filter.label}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={filter.onRemove}
+            className="h-5 w-5 rounded-full hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground"
+            aria-label="Remove filter"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </Badge>
       ))}
     </div>
   )

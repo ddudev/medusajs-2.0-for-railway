@@ -1,13 +1,6 @@
 import { Suspense } from 'react'
-import {
-  Card,
-  CardContent,
-  CardMedia,
-  CardActions,
-  Typography,
-  Skeleton,
-  Box,
-} from '@mui/material'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { HttpTypes } from '@medusajs/types'
 import { getProductsById } from '@lib/data/products'
 import ProductTileWrapper from './product-tile-wrapper'
@@ -69,83 +62,26 @@ export default async function ProductTile({
  */
 export function ProductTileSkeleton() {
   return (
-    <Card
-      className="h-full flex flex-col bg-background-elevated hover:shadow-lg transition-all duration-300"
-    >
-      {/* Image Skeleton - matches CardMedia h-48 (192px) with aspect ratio */}
-      <CardMedia
-        component="div"
-        className="relative h-48 bg-gray-100 overflow-hidden"
-        style={{ aspectRatio: '4/3' }}
-      >
-        <Skeleton
-          variant="rectangular"
-          height="100%"
-          width="100%"
-          className="absolute inset-0"
-          animation="wave"
-        />
-      </CardMedia>
+    <Card className="h-full flex flex-col bg-background-elevated hover:shadow-lg transition-all duration-300">
+      {/* Image Skeleton */}
+      <div className="relative h-48 bg-gray-100 overflow-hidden aspect-[4/3]">
+        <Skeleton className="absolute inset-0 h-full w-full rounded-none" />
+      </div>
 
-      {/* Content Section - matches CardContent structure */}
       <CardContent className="flex-grow flex flex-col">
-        {/* Title Skeleton - h6 variant, mb-2 */}
-        <Skeleton
-          variant="text"
-          height={32}
-          className="mb-2"
-          sx={{ fontSize: '1.25rem' }} // h6 font size
-        />
-
-        {/* Description Skeleton - body2 variant, mb-2, optional (2 lines) */}
-        <Skeleton
-          variant="text"
-          height={20}
-          width="100%"
-          className="mb-1"
-        />
-        <Skeleton
-          variant="text"
-          height={20}
-          width="80%"
-          className="mb-2"
-        />
-
-        {/* Price Skeleton - mb-2 */}
-        <Skeleton
-          variant="text"
-          height={28}
-          width="40%"
-          className="mb-2"
-          sx={{ fontSize: '1.25rem' }} // h6 font size for price
-        />
-
-        {/* Status Chips Skeleton - mt-auto flex gap-2 flex-wrap */}
-        <Box className="flex gap-2 mt-auto flex-wrap">
-          <Skeleton
-            variant="rectangular"
-            width={80}
-            height={24}
-            sx={{ borderRadius: '16px' }} // Chip border radius
-          />
-          <Skeleton
-            variant="rectangular"
-            width={100}
-            height={24}
-            sx={{ borderRadius: '16px' }} // Chip border radius
-          />
-        </Box>
+        <Skeleton className="mb-2 h-8 w-3/4" />
+        <Skeleton className="mb-1 h-5 w-full" />
+        <Skeleton className="mb-2 h-5 w-4/5" />
+        <Skeleton className="mb-2 h-7 w-2/5" />
+        <div className="flex gap-2 mt-auto flex-wrap">
+          <Skeleton className="h-6 w-20 rounded-full" />
+          <Skeleton className="h-6 w-24 rounded-full" />
+        </div>
       </CardContent>
 
-      {/* Actions Skeleton - matches CardActions p-4 pt-0 */}
-      <CardActions className="p-4 pt-0">
-        <Skeleton
-          variant="rectangular"
-          height={40}
-          width="100%"
-          sx={{ borderRadius: '4px' }} // Button border radius
-        />
-      </CardActions>
+      <CardFooter className="p-4 pt-0">
+        <Skeleton className="h-10 w-full rounded-md" />
+      </CardFooter>
     </Card>
   )
 }

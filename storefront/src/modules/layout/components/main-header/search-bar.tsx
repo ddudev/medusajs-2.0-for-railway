@@ -6,9 +6,10 @@ import dynamic from "next/dynamic"
 import { SEARCH_INDEX_NAME, searchClient } from "@lib/search-client"
 import { useRouter } from "next/navigation"
 import { ChangeEvent, FormEvent } from "react"
+import type { InstantSearchProps, UiState } from "react-instantsearch-hooks-web"
 
 // Lazy load InstantSearch and hooks only when needed
-const InstantSearch = dynamic(
+const InstantSearch = dynamic<InstantSearchProps<UiState, UiState>>(
   () => import("react-instantsearch-hooks-web").then((mod) => mod.InstantSearch),
   { ssr: false }
 )
@@ -110,11 +111,11 @@ const SearchBarContentWrapper = ({
         <button
           type="button"
           onClick={handleIconClick}
-          className="md:hidden p-2 text-text-secondary hover:text-primary transition-colors"
+          className="md:hidden p-1 text-text-secondary hover:text-primary transition-colors"
           aria-label={t("common.searchPlaceholder") || "Search"}
         >
           <svg
-            className="w-8 h-8"
+            className="w-5 h-5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -148,7 +149,7 @@ const SearchBarContentWrapper = ({
             onChange={handleChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            className={`flex-1 h-16 md:h-16 px-6 rounded-lg border-2 border-border-base focus:border-primary focus:outline-none text-text-primary placeholder:text-text-tertiary bg-background-base text-lg ${isExpanded
+            className={`flex-1 h-14 md:h-14 px-6 rounded-lg border border-border-base focus:border-primary focus:outline-none text-text-primary placeholder:text-text-tertiary bg-background-base text-base ${isExpanded
               ? "pr-16 md:pr-12 shadow-lg md:shadow-none"
               : "pr-12 md:pr-12"
               }`}
@@ -350,7 +351,7 @@ const SearchBar = () => {
       <div
         ref={searchContainerRef}
         className={`md:relative z-40 md:z-[51] ${isExpanded
-          ? "fixed md:relative left-0 md:left-auto right-0 md:right-auto w-screen md:w-auto px-6 md:px-0 z-[51] md:z-[51]"
+          ? "fixed md:relative left-0 md:left-auto right-0 md:right-auto w-screen md:w-full md:max-w-xl px-6 md:px-0 z-[51] md:z-[51]"
           : "relative w-full"
           }`}
         style={isExpanded && typeof window !== "undefined" && window.innerWidth < 768 ? {

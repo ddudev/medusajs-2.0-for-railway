@@ -2,33 +2,91 @@ import { HttpTypes } from "@medusajs/types"
 import { NextRequest, NextResponse } from "next/server"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
-const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+// Trim to avoid 400 from backend when .env has trailing newline/space
+const PUBLISHABLE_API_KEY = (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ?? "").trim()
 const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "us"
 
 const regionMapCache = {
   regionMap: new Map<string, HttpTypes.StoreRegion>(),
   regionMapUpdated: Date.now(),
+  /** After a 400 (invalid publishable key), skip refetch for this long to avoid log spam */
+  lastFailureAt: 0 as number,
+  lastFailureLoggedAt: 0 as number,
 }
 
 async function getRegionMap() {
   const { regionMap, regionMapUpdated } = regionMapCache
 
+  const now = Date.now()
+  const backoffMs = 60 * 1000 // After 400, don't refetch for 60s
+  const isInBackoff = regionMapCache.lastFailureAt > 0 && now - regionMapCache.lastFailureAt < backoffMs
+
   if (
-    !regionMap.keys().next().value ||
-    regionMapUpdated < Date.now() - 3600 * 1000
+    (!regionMap.keys().next().value || regionMapUpdated < now - 3600 * 1000) &&
+    !isInBackoff
   ) {
     // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
-    const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
-      headers: {
-        "x-publishable-api-key": PUBLISHABLE_API_KEY!,
-      },
-      next: {
-        revalidate: 3600,
-        tags: ["regions"],
-      },
-    }).then((res) => res.json())
+    const regionsUrl = `${BACKEND_URL}/store/regions`
+    if (process.env.NODE_ENV === "development") {
+      console.debug("[middleware] getRegionMap: fetching", {
+        url: regionsUrl,
+        hasBackendUrl: !!BACKEND_URL,
+        hasPublishableKey: !!PUBLISHABLE_API_KEY,
+        keyLength: PUBLISHABLE_API_KEY.length,
+      })
+    }
+
+    let regions: HttpTypes.StoreRegion[] | undefined
+    try {
+      const res = await fetch(regionsUrl, {
+        headers: {
+          "x-publishable-api-key": PUBLISHABLE_API_KEY,
+        },
+        // Edge middleware: next.revalidate/tags are for Node fetch only; omit or use cache
+        cache: "force-cache",
+      })
+
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[middleware] getRegionMap: response", {
+          status: res.status,
+          statusText: res.statusText,
+          ok: res.ok,
+        })
+      }
+
+      if (!res.ok) {
+        const text = await res.text()
+        regionMapCache.lastFailureAt = now
+        // Log at most once per 60s to avoid terminal spam
+        if (now - regionMapCache.lastFailureLoggedAt >= backoffMs) {
+          regionMapCache.lastFailureLoggedAt = now
+          console.error("[middleware] getRegionMap: backend rejected request (400 = publishable key invalid)", {
+            status: res.status,
+            body: text.slice(0, 300),
+            hint: "Ensure NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY in storefront .env matches a key in Medusa Admin → Settings → Publishable API Keys. No spaces/newlines.",
+          })
+        }
+        return regionMapCache.regionMap
+      }
+      // Success: clear failure backoff
+      regionMapCache.lastFailureAt = 0
+
+      const data = await res.json().catch((parseError) => {
+        console.error("[middleware] getRegionMap: JSON parse error", parseError)
+        return null
+      })
+      regions = data?.regions
+    } catch (fetchError) {
+      console.error("[middleware] getRegionMap: fetch failed", {
+        error: fetchError instanceof Error ? fetchError.message : String(fetchError),
+        stack: fetchError instanceof Error ? fetchError.stack : undefined,
+        url: regionsUrl,
+      })
+      return regionMapCache.regionMap
+    }
 
     if (!regions?.length) {
+      console.error("debug: no regions found + regions", regions)
       if (process.env.NODE_ENV === "development") {
         console.error(
           "Middleware: No regions found. Did you set up regions in your Medusa Admin?"

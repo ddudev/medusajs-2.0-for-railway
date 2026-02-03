@@ -2,9 +2,9 @@
 
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
-import TextField from "@mui/material/TextField"
-import IconButton from "@mui/material/IconButton"
-import { Add, Remove, ShoppingCart } from "@mui/icons-material"
+import { Input } from "@/components/ui/input"
+import { Button as ShadcnButton } from "@/components/ui/button"
+import { Plus, Minus, ShoppingCart } from "lucide-react"
 import { getProductPrice } from "@lib/util/get-product-price"
 import { convertToLocaleParts } from "@lib/util/money"
 import OptionSelect from "../product-actions/option-select"
@@ -70,14 +70,14 @@ export default function PriceBox({
   const hasOptions = product.options && product.options.length > 0
 
   return (
-    <div className="bg-background-elevated border border-border-base rounded-3xl p-4 md:p-6 flex flex-col gap-4 md:gap-6">
+    <div className="bg-zinc-800 border border-border-base rounded-3xl p-4 md:p-6 flex flex-col gap-4 md:gap-6 shadow-lg">
       {/* Variant Selection */}
       {hasVariants && hasOptions && product.options && setOptionValue && (
         <div className="flex flex-col gap-4">
           {product.options.map((option) => {
             return (
               <div key={option.id} className="flex flex-col gap-3">
-                <label className="text-sm font-semibold text-text-primary uppercase tracking-wide">
+                <label className="text-sm font-semibold text-white/90 uppercase tracking-wide">
                   {option.title}
                 </label>
                 <OptionSelect
@@ -96,12 +96,12 @@ export default function PriceBox({
 
       {/* Price Display Section */}
       <div className="flex flex-col gap-2 md:gap-3">
-        <span className="text-base md:text-lg text-text-primary">Цена:</span>
+        <span className="text-base md:text-lg text-white/90">Цена:</span>
         <div className="flex items-baseline gap-2 md:gap-3">
-          <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-text-primary">
+          <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
             {priceParts.eur}
           </span>
-          <span className="text-lg md:text-xl text-text-secondary">
+          <span className="text-lg md:text-xl text-white/80">
             {priceParts.bgn}
           </span>
         </div>
@@ -110,62 +110,38 @@ export default function PriceBox({
       {/* Add to Cart Section - Unified dark block for mobile/tablet, split for desktop */}
       <div className="flex flex-col md:flex-row gap-3 bg-[#111111] lg:bg-transparent p-3 md:p-4 lg:p-0 rounded-2xl lg:rounded-none">
         {/* Quantity Selector */}
-        <div className="flex items-center bg-white/10 lg:bg-text-primary text-white rounded-xl overflow-hidden border border-white/5 lg:border-none w-full md:w-auto justify-between md:justify-start">
-          <IconButton
+        <div className="flex items-center bg-neutral-800 text-white rounded-xl overflow-hidden border border-neutral-500 w-full md:w-auto justify-between md:justify-start">
+          <ShadcnButton
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => handleQuantityChange(quantity - 1)}
             disabled={quantity <= 1 || isAdding}
-            className="text-white hover:bg-white/20"
-            size="small"
+            className="h-9 w-9 text-white hover:bg-white/20 disabled:opacity-40 rounded-none"
             aria-label="Decrease quantity"
-            sx={{ color: 'white' }}
           >
-            <Remove />
-          </IconButton>
-          <TextField
+            <Minus className="h-4 w-4" />
+          </ShadcnButton>
+          <Input
             type="number"
             value={quantity}
             onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
-            inputProps={{
-              min: 1,
-              max: maxQuantity,
-              style: { textAlign: "center", padding: "8px", width: "40px", color: "white" },
-            }}
+            min={1}
+            max={maxQuantity}
             disabled={isAdding}
-            size="small"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  border: "none",
-                },
-                "&:hover fieldset": {
-                  border: "none",
-                },
-                "&.Mui-focused fieldset": {
-                  border: "none",
-                },
-                "& input": {
-                  color: "white",
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  MozAppearance: "textfield",
-                  "&::-webkit-outer-spin-button, &::-webkit-inner-spin-button": {
-                    WebkitAppearance: "none",
-                    margin: 0,
-                  },
-                },
-              },
-            }}
+            className="w-10 h-9 text-center p-0 border-0 bg-transparent text-white font-semibold text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus-visible:ring-0 focus-visible:ring-offset-0"
           />
-          <IconButton
+          <ShadcnButton
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => handleQuantityChange(quantity + 1)}
             disabled={quantity >= maxQuantity || isAdding}
-            className="text-white hover:bg-white/20"
-            size="small"
+            className="h-9 w-9 text-white hover:bg-white/20 disabled:opacity-40 rounded-none"
             aria-label="Increase quantity"
-            sx={{ color: 'white' }}
           >
-            <Add />
-          </IconButton>
+            <Plus className="h-4 w-4" />
+          </ShadcnButton>
         </div>
 
         {/* Add to Cart Button */}
@@ -175,7 +151,7 @@ export default function PriceBox({
           className="flex-1 h-12 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 border-none text-base"
           isLoading={isAdding}
         >
-          {!isAdding && <ShoppingCart className="w-5 h-5" />}
+          {!isAdding && <ShoppingCart className="w-5 h-5 shrink-0" />}
           <span>Добави в количка</span>
         </Button>
       </div>

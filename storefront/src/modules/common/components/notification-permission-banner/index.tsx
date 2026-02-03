@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Snackbar, Alert, Button, Box, Typography } from '@mui/material'
-import { Notifications, Close } from '@mui/icons-material'
+import { Button } from '@/components/ui/button'
+import { Bell, X } from 'lucide-react'
 import { useTranslation } from '@lib/i18n/hooks/use-translation'
 import {
   subscribeToPushNotifications,
@@ -74,51 +74,41 @@ export function NotificationPermissionBanner() {
   }
 
   return (
-    <Snackbar
-      open={open}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      sx={{ bottom: { xs: 16, sm: 24 } }}
+    <div
+      role="alert"
+      className="fixed bottom-4 left-1/2 z-50 w-[90%] max-w-[500px] -translate-x-1/2 rounded-lg border border-border bg-white p-4 shadow-lg sm:bottom-6 dark:bg-gray-900"
     >
-      <Alert
-        severity="info"
-        icon={<Notifications />}
-        action={
-          <Box display="flex" gap={1} alignItems="center">
+      <div className="flex items-start gap-3">
+        <Bell className="h-5 w-5 shrink-0 text-primary mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm text-foreground mb-0.5">
+            {t('pwa.notifications.enableTitle')}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {t('pwa.notifications.enableDescription')}
+          </p>
+          <div className="flex items-center gap-2 mt-3">
             <Button
-              color="inherit"
-              size="small"
+              size="sm"
+              variant="default"
               onClick={handleEnable}
               disabled={isLoading}
-              sx={{ textTransform: 'none' }}
             >
               {isLoading ? t('common.loading') : t('common.enable')}
             </Button>
             <Button
-              color="inherit"
-              size="small"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 shrink-0"
               onClick={handleDismiss}
-              sx={{ minWidth: 'auto', p: 0.5 }}
+              aria-label="Close"
             >
-              <Close fontSize="small" />
+              <X className="h-4 w-4" />
             </Button>
-          </Box>
-        }
-        sx={{
-          minWidth: { xs: '90%', sm: '400px' },
-          maxWidth: { xs: '90%', sm: '500px' },
-          '& .MuiAlert-message': {
-            width: '100%',
-          },
-        }}
-      >
-        <Typography variant="body2" fontWeight={500} mb={0.5}>
-          {t('pwa.notifications.enableTitle')}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t('pwa.notifications.enableDescription')}
-        </Typography>
-      </Alert>
-    </Snackbar>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 

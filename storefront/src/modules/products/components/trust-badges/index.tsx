@@ -28,13 +28,13 @@ export default function TrustBadges() {
   ]
 
   return (
-    <div className="bg-primary/5 border border-border-base rounded-3xl shadow-lg p-4 md:p-6 flex flex-col gap-3 md:gap-4">
+    <div className="bg-primary/5 border border-border-base rounded-3xl shadow-lg p-4 md:p-6 flex flex-row flex-wrap gap-3 md:gap-4">
       {badges.map((badge) => {
         const IconComponent = badge.icon
         return (
           <div
             key={badge.id}
-            className="flex items-center gap-3 text-sm md:text-base text-text-secondary"
+            className="flex items-center gap-2 text-sm md:text-base text-text-secondary"
           >
             <IconComponent size="20" color="currentColor" className="text-primary flex-shrink-0" />
             <span>{badge.text}</span>

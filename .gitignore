@@ -4,3 +4,4 @@ examples/
 docs/
 # Backup directories
 .backup/
+.pnpm-store/

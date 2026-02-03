@@ -184,10 +184,7 @@ const Contact = ({
 
   return (
     <div className="bg-white">
-      <Heading
-        level="h2"
-        className="flex flex-row text-3xl-regular gap-x-2 items-baseline mb-6"
-      >
+        <Heading level="h2" className="checkout-heading">
         {t("checkout.contactInfo")}
       </Heading>
       <div className="grid grid-cols-2 gap-4">
