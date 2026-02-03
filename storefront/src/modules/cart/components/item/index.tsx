@@ -148,7 +148,7 @@ const Item = ({ item, type = "full" }: ItemProps) => {
                 )
               )}
             </CartItemSelect>
-            {updating && <Spinner />}
+            {updating && <Spinner size={20} className="shrink-0" />}
           </div>
         </div>
         

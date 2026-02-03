@@ -1,12 +1,6 @@
-import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
+import PageLoading from "@modules/common/components/page-loading"
 
 export default function Loading() {
-  return (
-    <div className="py-12">
-      <div className="content-container">
-        <SkeletonProductGrid />
-      </div>
-    </div>
-  )
+  return <PageLoading />
 }
 

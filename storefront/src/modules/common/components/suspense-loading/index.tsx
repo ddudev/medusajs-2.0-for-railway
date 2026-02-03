@@ -1,14 +1,9 @@
-import Spinner from "@modules/common/icons/spinner"
+import TopLoadingBar from "@modules/common/components/top-loading-bar"
 
 /**
- * Suspense fallback component
- * Shows a centered spinner
- * Used in Suspense boundaries for component loading
+ * Suspense fallback: small bar at top of page (no UI jump).
+ * Used in Suspense boundaries for component loading.
  */
 export default function SuspenseLoading() {
-  return (
-    <div className="flex items-center justify-center py-8">
-      <Spinner size="32" className="text-primary" />
-    </div>
-  )
+  return <TopLoadingBar />
 }

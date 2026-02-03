@@ -76,7 +76,7 @@ const CartItem = ({ item }: CartItemProps) => {
                 )
               )}
             </CartItemSelect>
-            {updating && <Spinner />}
+            {updating && <Spinner size={20} className="shrink-0" />}
           </div>
           <LineItemPrice item={item} style="tight" />
         </div>

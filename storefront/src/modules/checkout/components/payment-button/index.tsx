@@ -292,7 +292,11 @@ const PayPalPaymentButton = ({
   const [{ isPending, isResolved }] = usePayPalScriptReducer()
 
   if (isPending) {
-    return <Spinner />
+    return (
+      <div className="flex min-h-[42px] items-center justify-center">
+        <Spinner size={24} />
+      </div>
+    )
   }
 
   if (isResolved) {

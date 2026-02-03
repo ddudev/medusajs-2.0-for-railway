@@ -19,6 +19,15 @@
   }
 }
 
+/* Top loading bar - indeterminate progress at top of page */
+@keyframes top-loading-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+.animate-top-loading-bar {
+  animation: top-loading-bar 1.5s ease-in-out infinite;
+}
+
 /* Chrome autofill fix for Shadcn and other inputs */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
