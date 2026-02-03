@@ -1,15 +1,14 @@
-import Spinner from "@modules/common/icons/spinner"
+import TopLoadingBar from "@modules/common/components/top-loading-bar"
 
 /**
- * Page-level loading component
- * Shows a centered spinner with message
- * Used in Next.js loading.tsx files for route transitions
+ * Page-level loading: top bar + full-height spacer so content area never collapses.
+ * Used in Next.js loading.tsx files for route transitions.
  */
 export default function PageLoading() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-      <Spinner size="48" className="text-primary" />
-      <p className="text-base-regular text-ui-fg-subtle">Loading...</p>
-    </div>
+    <>
+      <TopLoadingBar />
+      <div className="min-h-full" aria-hidden />
+    </>
   )
 }

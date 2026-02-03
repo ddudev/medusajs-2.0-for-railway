@@ -6,6 +6,7 @@ import Nav from "@modules/layout/templates/nav"
 import { getBaseURL } from "@lib/util/env"
 import { QueryProvider } from "@lib/query/provider"
 import { ToastContainer } from "@modules/common/components/toast-container"
+import TopLoadingBar from "@modules/common/components/top-loading-bar"
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
@@ -23,20 +24,20 @@ export default async function PageLayout(props: {
     ? resolvedParams.countryCode.toLowerCase() 
     : 'us' // Fallback to 'us' if countryCode is missing
 
+  // Flex column + content slot with min-height so it never collapses (no flash of empty / header-footer stitch)
   // Nav includes CartButton which accesses cookies - wrap in Suspense
-  // QueryProvider provides TanStack Query context for server state management
-  // Zustand UI store (cart drawer, toasts) is initialized automatically
-  // Children are already wrapped in Suspense in root layout - don't double-wrap to avoid hydration errors
   return (
     <QueryProvider>
-      <Suspense fallback={
-        <div className="sticky top-0 inset-x-0 z-50 h-20 bg-background-base animate-pulse" />
-      }>
-      <Nav countryCode={countryCode} />
-      </Suspense>
-      {props.children}
-      <Footer countryCode={countryCode} />
-      <ToastContainer />
+      <div className="flex min-h-screen flex-col">
+        <Suspense fallback={<TopLoadingBar />}>
+          <Nav countryCode={countryCode} />
+        </Suspense>
+        <div className="min-h-[100vh] flex-1">
+          {props.children}
+        </div>
+        <Footer countryCode={countryCode} />
+        <ToastContainer />
+      </div>
     </QueryProvider>
   )
 }

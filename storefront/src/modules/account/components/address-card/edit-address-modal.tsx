@@ -116,7 +116,7 @@ const EditAddress: React.FC<EditAddressProps> = ({
             onClick={removeAddress}
             data-testid="address-delete-button"
           >
-            {removing ? <Spinner /> : <Trash />}
+            {removing ? <Spinner size={16} className="shrink-0" /> : <Trash />}
             Remove
           </button>
         </div>

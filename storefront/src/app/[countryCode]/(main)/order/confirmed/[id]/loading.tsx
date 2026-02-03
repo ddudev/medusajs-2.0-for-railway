@@ -1,5 +1,5 @@
-import SkeletonOrderConfirmed from "@modules/skeletons/templates/skeleton-order-confirmed"
+import PageLoading from "@modules/common/components/page-loading"
 
 export default function Loading() {
-  return <SkeletonOrderConfirmed />
+  return <PageLoading />
 }

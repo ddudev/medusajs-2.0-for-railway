@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { Suspense } from "react"
 import "styles/globals.css"
 import { ThemeProvider } from "next-themes"
+import TopLoadingBar from "@modules/common/components/top-loading-bar"
 import { PWAComponents } from "./pwa-components"
 import { PostHogProviderWrapper } from "@lib/analytics/posthog-provider"
 import { PostHogSurveys } from "@lib/analytics/posthog-surveys"
@@ -65,7 +66,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
             <PostHogProviderWrapper>
               <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
                 <main className="relative">
-                  <Suspense fallback={<div className="min-h-screen animate-pulse bg-background-base" />}>
+                  <Suspense fallback={<TopLoadingBar />}>
                     {props.children}
                   </Suspense>
                 </main>
