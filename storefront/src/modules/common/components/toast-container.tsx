@@ -1,50 +1,59 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
+import { toast as sonnerToast } from 'sonner'
 import { useToasts } from '@lib/store/ui-store'
-import { Alert, Snackbar, Button } from '@mui/material'
+import { Toaster } from '@/components/ui/sonner'
 
 /**
- * Toast notification container
- * Displays all active toasts from Zustand UI store
+ * Toast notification container using Sonner
+ * Syncs toasts from Zustand UI store to Sonner (keep existing showToast API)
  */
 export function ToastContainer() {
   const { toasts, removeToast } = useToasts()
+  const shownIdsRef = useRef<Set<string>>(new Set())
 
-  return (
-    <>
-      {toasts.map((toast, index) => (
-        <Snackbar
-          key={toast.id}
-          open={true}
-          autoHideDuration={toast.duration || 3000}
-          onClose={() => removeToast(toast.id)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          // Stack toasts vertically
-          style={{ bottom: `${24 + index * 70}px` }}
-        >
-          <Alert
-            severity={toast.type}
-            onClose={() => removeToast(toast.id)}
-            action={
-              toast.action && (
-                <Button
-                  color="inherit"
-                  size="small"
-                  onClick={() => {
-                    toast.action?.onClick()
-                    removeToast(toast.id)
-                  }}
-                >
-                  {toast.action.label}
-                </Button>
-              )
-            }
-            sx={{ width: '100%' }}
-          >
-            {toast.message}
-          </Alert>
-        </Snackbar>
-      ))}
-    </>
-  )
+  useEffect(() => {
+    toasts.forEach((toast) => {
+      if (shownIdsRef.current.has(toast.id)) return
+      shownIdsRef.current.add(toast.id)
+
+      const options = {
+        id: toast.id,
+        duration: (toast.duration === Infinity ? undefined : (toast.duration || 3000)) as number | undefined,
+        onDismiss: () => {
+          removeToast(toast.id)
+          shownIdsRef.current.delete(toast.id)
+        },
+        ...(toast.action && {
+          action: {
+            label: toast.action.label,
+            onClick: () => {
+              toast.action?.onClick()
+              removeToast(toast.id)
+              shownIdsRef.current.delete(toast.id)
+            },
+          },
+        }),
+      }
+
+      switch (toast.type) {
+        case 'success':
+          sonnerToast.success(toast.message, options)
+          break
+        case 'error':
+          sonnerToast.error(toast.message, options)
+          break
+        case 'warning':
+          sonnerToast.warning(toast.message, options)
+          break
+        case 'info':
+        default:
+          sonnerToast.info(toast.message, options)
+          break
+      }
+    })
+  }, [toasts, removeToast])
+
+  return <Toaster position="bottom-left" />
 }

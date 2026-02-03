@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Typography, Box } from '@mui/material'
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
+import { ChevronDown, ChevronUp } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 type CollapsibleFilterProps = {
   title: string
@@ -22,60 +22,51 @@ const CollapsibleFilter = ({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
 
   return (
-    <Box
+    <div
       data-testid={dataTestId}
-      sx={{
-        backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'background.paper',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        border: '1px solid',
-        borderColor: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'divider',
-      }}
+      className={cn(
+        "rounded-xl overflow-hidden border",
+        darkMode
+          ? "bg-white/5 border-white/10"
+          : "bg-card border-border"
+      )}
     >
-      {/* Header - Clickable to toggle */}
-      <Box
+      <button
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '14px 16px',
-          cursor: 'pointer',
-          userSelect: 'none',
-          '&:hover': {
-            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.08)' : 'background.default',
-          },
-        }}
+        className={cn(
+          "flex items-center justify-between w-full px-4 py-3.5 cursor-pointer select-none text-left",
+          darkMode
+            ? "hover:bg-white/[0.08]"
+            : "hover:bg-muted/50"
+          )}
       >
-        <Typography
-          variant="body2"
-          sx={{
-            color: darkMode ? 'rgba(255, 255, 255, 0.9)' : 'text.secondary',
-            fontWeight: 600,
-            fontSize: '1rem',
-          }}
+        <span
+          className={cn(
+            "text-base font-semibold",
+            darkMode ? "text-white/90" : "text-muted-foreground"
+          )}
         >
           {title}
-        </Typography>
+        </span>
         {isExpanded ? (
-          <KeyboardArrowUp sx={{ fontSize: '20px', color: darkMode ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary' }} />
+          <ChevronUp className={cn("h-5 w-5", darkMode ? "text-white/70" : "text-muted-foreground")} />
         ) : (
-          <KeyboardArrowDown sx={{ fontSize: '20px', color: darkMode ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary' }} />
+          <ChevronDown className={cn("h-5 w-5", darkMode ? "text-white/70" : "text-muted-foreground")} />
         )}
-      </Box>
+      </button>
 
-      {/* Content - Shown when expanded */}
       {isExpanded && (
-        <Box
-          sx={{
-            padding: '12px 16px 16px',
-            backgroundColor: darkMode ? 'rgba(0, 0, 0, 0.2)' : 'background.elevated',
-          }}
+        <div
+          className={cn(
+            "px-4 pt-3 pb-4",
+            darkMode ? "bg-black/20" : "bg-muted/30"
+          )}
         >
           {children}
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   )
 }
 

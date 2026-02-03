@@ -1,7 +1,9 @@
 "use client"
 
 import { fetchProductReviewsClient } from "../../../../lib/data/products"
-import { Rating, Typography, Button, Skeleton } from "@mui/material"
+import { Rating } from "@/components/ui/rating"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { StoreProductReview } from "../../../../types/global"
 import { useState, useEffect } from "react"
 import ProductReviewsForm from "./form"
@@ -15,9 +17,9 @@ function ReviewItem({ review }: { review: StoreProductReview }) {
     <div className="flex flex-col gap-y-2 text-base-regular text-ui-fg-base border-b border-ui-border-base pb-6 mb-6 last:border-b-0 last:mb-0">
       <div className="flex gap-x-2 items-center">
         {review.title && (
-          <Typography variant="h6" component="strong" className="text-text-primary">
+          <strong className="text-text-primary font-semibold">
             {review.title}
-          </Typography>
+          </strong>
         )}
         <Rating value={review.rating} readOnly size="small" />
       </div>
@@ -104,9 +106,9 @@ export default function ProductReviews({
   if (error && reviews.length === 0) {
     return (
       <div className="product-page-constraint">
-        <Typography variant="body1" color="error">
+        <p className="text-destructive">
           Грешка при зареждане на ревюта: {error}
-        </Typography>
+        </p>
       </div>
     )
   }
@@ -132,9 +134,9 @@ export default function ProductReviews({
 
       {reviews.length === 0 && !isLoading ? (
         <div className="text-center py-8">
-          <Typography variant="body1" color="text.secondary">
+          <p className="text-text-secondary">
             Все още няма ревюта за този продукт.
-          </Typography>
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-y-6">
@@ -146,8 +148,8 @@ export default function ProductReviews({
 
       {hasMoreReviews && (
         <div className="flex justify-center mt-8">
-          <Button 
-            variant="outlined" 
+          <Button
+            variant="outline"
             onClick={handleLoadMore}
             disabled={isLoading}
           >

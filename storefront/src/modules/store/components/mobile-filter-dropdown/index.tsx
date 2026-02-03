@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useMemo, useCallback, useEffect } from "react"
-import { Button, Divider, Badge, Fade, Grow } from '@mui/material'
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { ChevronDown, ChevronUp } from "lucide-react"
 import { useSearchParams, usePathname, useRouter } from "next/navigation"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { HttpTypes } from "@medusajs/types"
@@ -109,73 +111,35 @@ const MobileFilterDropdown = ({
       <div className="w-full relative z-50">
         <Button
           onClick={handleToggle}
-          endIcon={open ? <KeyboardArrowUp sx={{ color: 'white', fontSize: '1.25rem' }} /> : <KeyboardArrowDown sx={{ color: 'white', fontSize: '1.25rem' }} />}
-          fullWidth
-          className="flex items-center justify-between px-4 transition-colors relative"
-          sx={{
-            color: 'white',
-            fontWeight: 500,
-            fontSize: '0.9375rem',
-            textTransform: 'none',
-            borderRadius: open ? '0 0 0 0' : '0 0 12px 12px',
-            backgroundColor: '#1A1A1A',
-            justifyContent: 'space-between',
-            minHeight: '48px',
-            transition: 'background-color 0.2s ease, border-radius 0.4s ease',
-            '&:hover': {
-              backgroundColor: '#353535',
-            },
-            '& .MuiButton-endIcon': {
-              marginLeft: 'auto',
-            },
-          }}
+          className={`flex items-center justify-between px-4 relative w-full min-h-12 font-medium text-[15px] text-white bg-[#1A1A1A] hover:bg-[#353535] transition-colors rounded-b-xl ${open ? "rounded-b-none" : ""}`}
           data-testid={dataTestId}
           aria-label="Отвори филтри"
           aria-expanded={open}
         >
-          <span className="text-[15px] font-medium text-white">
+          <span>
             {(() => {
               const translated = t("filters.openFilters")
               return translated === "filters.openFilters" ? "Отвори филтри" : translated
             })()}
           </span>
-          {activeFilterCount > 0 && (
-            <Badge
-              badgeContent={activeFilterCount}
-              color="primary"
-              sx={{
-                position: 'absolute',
-                right: '40px',
-                '& .MuiBadge-badge': {
-                  fontSize: '0.625rem',
-                  minWidth: '16px',
-                  height: '16px',
-                  padding: '0 4px',
-                  backgroundColor: '#519717',
-                  color: 'white',
-                },
-              }}
-            />
-          )}
+          <span className="flex items-center gap-2 ml-auto">
+            {activeFilterCount > 0 && (
+              <Badge className="absolute right-10 bg-primary text-primary-foreground text-[10px] min-w-4 h-4 px-1">
+                {activeFilterCount}
+              </Badge>
+            )}
+            {open ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </span>
         </Button>
 
         {/* Filter Panel - Positioned absolutely below button with animation */}
-        <Grow
-          in={open}
-          timeout={400}
-          style={{ transformOrigin: 'top center' }}
-          unmountOnExit
-        >
-          <div 
-            className="absolute top-full left-0 right-0 bg-[#2d2d2d] rounded-b-2xl overflow-hidden z-50"
-            style={{
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
-              maxHeight: 'calc(100vh - 200px)',
-            }}
+        {open && (
+          <div
+            className="absolute top-full left-0 right-0 bg-[#2d2d2d] rounded-b-2xl overflow-hidden z-50 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200"
+            style={{ maxHeight: "calc(100vh - 200px)" }}
           >
             <div className="p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
               <div className="flex flex-col gap-6">
-                
                 {/* Categories Filter */}
                 {categories && categories.length > 0 && (
                   <FilterCategory
@@ -212,42 +176,29 @@ const MobileFilterDropdown = ({
                   />
                 )}
 
-                <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+                <Separator className="bg-white/10" />
 
                 {/* Apply/Close Button */}
                 <Button
                   onClick={handleToggle}
-                  fullWidth
-                  variant="contained"
-                  sx={{
-                    bgcolor: '#519717',
-                    color: 'white',
-                    fontWeight: 600,
-                    py: 1.5,
-                    borderRadius: '12px',
-                    '&:hover': {
-                      bgcolor: '#4a8514',
-                    },
-                  }}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 rounded-xl"
                 >
                   {t("filters.apply") || "Затвори и приложи филтрите"}
                 </Button>
               </div>
             </div>
           </div>
-        </Grow>
+        )}
       </div>
 
-      {/* Backdrop overlay with fade animation */}
-      <Fade in={open} timeout={350} unmountOnExit>
+      {/* Backdrop overlay */}
+      {open && (
         <div
-          className="fixed inset-0 bg-black/50 z-40"
+          className="fixed inset-0 bg-black/50 z-40 backdrop-blur-[2px] animate-in fade-in duration-200"
           onClick={handleToggle}
-          style={{
-            backdropFilter: 'blur(2px)',
-          }}
+          aria-hidden
         />
-      </Fade>
+      )}
     </>
   )
 }

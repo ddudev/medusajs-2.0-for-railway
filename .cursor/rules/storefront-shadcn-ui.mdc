@@ -1,0 +1,91 @@
+---
+description: Storefront UI uses Shadcn UI and Tailwind; component usage and imports.
+globs: storefront/src/**/*.{tsx,ts}
+alwaysApply: true
+---
+# Storefront UI: Shadcn + Tailwind
+
+The storefront uses **Shadcn UI** (Radix primitives + Tailwind) and **Tailwind CSS**.
+
+## UI Components Location
+
+- **Shadcn components**: `storefront/src/components/ui/`
+- **Utility**: `storefront/src/lib/utils.ts` (`cn()` for class merging)
+- **Theme / design tokens**: `storefront/src/styles/globals.css` (CSS variables: `--background`, `--foreground`, `--primary`, etc.)
+
+## Available Shadcn Components
+
+| Component   | Path                         | Use for                          |
+|------------|------------------------------|----------------------------------|
+| Accordion  | `@/components/ui/accordion`  | Collapsible sections (FAQ, tabs)|
+| Badge      | `@/components/ui/badge`      | Counts, status, tags             |
+| Button     | `@/components/ui/button`     | Actions, triggers                |
+| Card       | `@/components/ui/card`      | Product cards, content blocks    |
+| Checkbox   | `@/components/ui/checkbox`    | Filters, forms                   |
+| Dialog     | `@/components/ui/dialog`     | Modals, overlays                 |
+| Input      | `@/components/ui/input`      | Text fields                      |
+| Label      | `@/components/ui/label`       | Form labels                      |
+| Rating     | `@/components/ui/rating`     | Star rating (read-only or input) |
+| Select     | `@/components/ui/select`     | Dropdowns                        |
+| Separator  | `@/components/ui/separator`   | Dividers                         |
+| Skeleton   | `@/components/ui/skeleton`   | Loading placeholders             |
+| Slider     | `@/components/ui/slider`     | Range inputs (e.g. price filter) |
+| Sonner     | `@/components/ui/sonner`     | Toaster; use `toast()` from `sonner` |
+
+## When to Use Shadcn vs Tailwind
+
+### ✅ Use Shadcn (`@/components/ui/*`) For:
+- **Forms**: Input, Label, Checkbox, Select, Slider
+- **Overlays**: Dialog
+- **Feedback**: Button, Badge, Skeleton, Sonner (toast)
+- **Layout**: Card, Separator, Accordion
+- **Rating**: `@/components/ui/rating` (custom star rating)
+
+### ✅ Use Tailwind For:
+- Layout, spacing, flexbox, grid
+- One-off styles, responsive breakpoints
+- Color utilities, typography (unless using theme tokens)
+
+### ✅ Icons
+Use **lucide-react** for icons (e.g. `ShoppingCart`, `ChevronDown`, `Loader2`, `X`, `Bell`).
+
+## Import Examples
+
+```tsx
+// Shadcn
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Separator } from "@/components/ui/separator"
+import { Slider } from "@/components/ui/slider"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Rating } from "@/components/ui/rating"
+
+// Icons
+import { ShoppingCart, ChevronDown, Loader2, X } from "lucide-react"
+
+// Toast (Sonner)
+import { toast } from "sonner"
+```
+
+## Next.js 16
+
+Page components must **await params**:
+
+```tsx
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ countryCode: string }>
+}) {
+  const resolvedParams = await params
+  const { countryCode } = resolvedParams
+  // ...
+}
+```

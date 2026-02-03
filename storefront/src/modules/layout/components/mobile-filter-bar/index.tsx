@@ -36,12 +36,6 @@ const MobileFilterBar = ({
   const searchParams = useSearchParams()
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
 
-  const isPLPPage = pathname?.includes('/store') || pathname?.includes('/categories')
-
-  if (!isPLPPage) {
-    return null
-  }
-
   const createQueryString = useCallback(
     (name: string, value: string | string[]) => {
       const params = new URLSearchParams(searchParams)
@@ -94,6 +88,11 @@ const MobileFilterBar = ({
       document.body.style.overflow = ""
     }
   }, [filterDrawerOpen])
+
+  const isPLPPage = pathname?.includes("/store") || pathname?.includes("/categories")
+  if (!isPLPPage) {
+    return null
+  }
 
   return (
     <>

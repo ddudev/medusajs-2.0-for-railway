@@ -19,19 +19,11 @@
   }
 }
 
-/* Completely remove Chrome autofill styling from MUI inputs */
-.MuiOutlinedInput-root input:-webkit-autofill,
-.MuiOutlinedInput-root input:-webkit-autofill:hover,
-.MuiOutlinedInput-root input:-webkit-autofill:focus,
-.MuiOutlinedInput-root input:-webkit-autofill:active,
-.MuiTextField-root .MuiOutlinedInput-root input:-webkit-autofill,
-.MuiTextField-root .MuiOutlinedInput-root input:-webkit-autofill:hover,
-.MuiTextField-root .MuiOutlinedInput-root input:-webkit-autofill:focus,
-.MuiTextField-root .MuiOutlinedInput-root input:-webkit-autofill:active,
-.MuiAutocomplete-root .MuiOutlinedInput-root input:-webkit-autofill,
-.MuiAutocomplete-root .MuiOutlinedInput-root input:-webkit-autofill:hover,
-.MuiAutocomplete-root .MuiOutlinedInput-root input:-webkit-autofill:focus,
-.MuiAutocomplete-root .MuiOutlinedInput-root input:-webkit-autofill:active {
+/* Chrome autofill fix for Shadcn and other inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
   -webkit-animation-name: autofill !important;
   -webkit-animation-fill-mode: both !important;
   animation-name: autofill !important;
@@ -47,7 +39,30 @@
 }
 
 /* Theme CSS Variables - Can be overridden for client customization */
+/* Shadcn/Radix variables - mapped from existing theme for consistent UI */
 :root {
+  /* Shadcn base (maps to existing theme) */
+  --background: #F9FAFB;
+  --foreground: #1F2937;
+  --card: #FFFFFF;
+  --card-foreground: #1F2937;
+  --popover: #FFFFFF;
+  --popover-foreground: #1F2937;
+  --primary: #FF6B35;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F9FAFB;
+  --secondary-foreground: #1F2937;
+  --muted: #F3F4F6;
+  --muted-foreground: #4B5563;
+  --accent: #FF6B35;
+  --accent-foreground: #FFFFFF;
+  --destructive: #D97706;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #FF6B35;
+  --radius: 0.25rem;
+
   /* Primary Color System - Orange (Main Brand Color) */
   --color-primary: #FF6B35;
   --color-primary-hover: #E55A2B;
@@ -375,37 +390,4 @@ body {
     }
   }
 
-  /* Apply animation + box-shadow hack to all autofilled MUI inputs - completely removes Chrome's styling */
-  /* Using very specific selectors to override Chrome's autofill */
-  .MuiOutlinedInput-root input:-webkit-autofill,
-  .MuiOutlinedInput-root input:-webkit-autofill:hover,
-  .MuiOutlinedInput-root input:-webkit-autofill:focus,
-  .MuiOutlinedInput-root input:-webkit-autofill:active,
-  .MuiTextField-root .MuiOutlinedInput-root input:-webkit-autofill,
-  .MuiTextField-root .MuiOutlinedInput-root input:-webkit-autofill:hover,
-  .MuiTextField-root .MuiOutlinedInput-root input:-webkit-autofill:focus,
-  .MuiTextField-root .MuiOutlinedInput-root input:-webkit-autofill:active {
-    /* Keyframe animation approach - most reliable */
-    -webkit-animation-name: autofill !important;
-    -webkit-animation-fill-mode: both !important;
-    animation-name: autofill !important;
-    animation-fill-mode: both !important;
-    /* Box-shadow hack as backup - covers Chrome's background */
-    -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
-    box-shadow: 0 0 0 1000px #FFFFFF inset !important;
-    /* Text color override */
-    -webkit-text-fill-color: #424242 !important;
-    color: #424242 !important;
-    caret-color: #424242 !important;
-    /* Long transition to prevent Chrome from changing styles */
-    transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s !important;
-    /* Explicit background color */
-    background-color: #FFFFFF !important;
-    background: #FFFFFF !important;
-  }
-
-  /* Ensure MUI label stays visible with autofill */
-  .MuiInputLabel-root {
-    z-index: 1;
-  }
 }

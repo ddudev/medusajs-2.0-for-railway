@@ -3,7 +3,7 @@ import { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Suspense } from "react"
 import "styles/globals.css"
-import { MuiProviders } from "./mui-providers"
+import { ThemeProvider } from "next-themes"
 import { PWAComponents } from "./pwa-components"
 import { PostHogProviderWrapper } from "@lib/analytics/posthog-provider"
 import { PostHogSurveys } from "@lib/analytics/posthog-surveys"
@@ -63,7 +63,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <GTMProvider>
           <MetaPixelProvider>
             <PostHogProviderWrapper>
-              <MuiProviders>
+              <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
                 <main className="relative">
                   <Suspense fallback={<div className="min-h-screen animate-pulse bg-background-base" />}>
                     {props.children}
@@ -75,7 +75,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
                 <PostHogSurveys />
                 <WebVitalsTracker />
                 <ScrollDepthTracker />
-              </MuiProviders>
+              </ThemeProvider>
             </PostHogProviderWrapper>
           </MetaPixelProvider>
         </GTMProvider>

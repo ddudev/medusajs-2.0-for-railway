@@ -1,5 +1,5 @@
 import { HttpTypes } from "@medusajs/types"
-import { Rating } from "@mui/material"
+import { Rating } from "@/components/ui/rating"
 import { getProductReviews } from "@lib/data/products"
 import { isProductInStock } from "@lib/seo/utils"
 
@@ -91,11 +91,6 @@ export default async function ProductInfoBox({
                 readOnly
                 size="small"
                 precision={0.5}
-                sx={{
-                  "& .MuiRating-iconFilled": {
-                    color: "#FFD700", // Gold color for stars
-                  },
-                }}
               />
               <span className="text-text-secondary text-sm">
                 (от {reviewCount} {reviewCount === 1 ? "ревю" : "ревюта"})

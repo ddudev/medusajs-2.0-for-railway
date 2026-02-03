@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react"
 import { retrieveCustomer } from "../../../../lib/data/customer"
 import { HttpTypes } from "@medusajs/types"
-import { Button, TextField, Rating, Typography } from "@mui/material"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Rating } from "@/components/ui/rating"
 import { addProductReview } from "../../../../lib/data/products"
-import { Snackbar, Alert } from "@mui/material"
+import { toast } from "sonner"
 import Link from "next/link"
 
 type ProductReviewsFormProps = {
@@ -21,11 +24,6 @@ export default function ProductReviewsForm({ productId, onReviewSubmitted }: Pro
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [rating, setRating] = useState<number | null>(0)
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false,
-    message: '',
-    severity: 'success'
-  })
 
   useEffect(() => {
     const loadCustomer = async () => {
@@ -46,11 +44,7 @@ export default function ProductReviewsForm({ productId, onReviewSubmitted }: Pro
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     if (!content || !rating || rating < 1) {
-      setSnackbar({
-        open: true,
-        message: "Моля, попълнете всички задължителни полета.",
-        severity: 'error'
-      })
+      toast.error("Моля, попълнете всички задължителни полета.")
       return
     }
 
@@ -71,21 +65,13 @@ export default function ProductReviewsForm({ productId, onReviewSubmitted }: Pro
       setTitle("")
       setContent("")
       setRating(0)
-      setSnackbar({
-        open: true,
-        message: "Вашето ревю е изпратено и очаква одобрение.",
-        severity: 'success'
-      })
-      
+      toast.success("Вашето ревю е изпратено и очаква одобрение.")
+
       if (onReviewSubmitted) {
         onReviewSubmitted()
       }
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: "Възникна грешка при изпращането на ревюто. Моля, опитайте отново по-късно.",
-        severity: 'error'
-      })
+      toast.error("Възникна грешка при изпращането на ревюто. Моля, опитайте отново по-късно.")
     } finally {
       setIsLoading(false)
     }
@@ -96,9 +82,7 @@ export default function ProductReviewsForm({ productId, onReviewSubmitted }: Pro
     return (
       <div className="product-page-constraint mt-8">
         <div className="flex justify-center">
-          <Typography variant="body2" color="text.secondary">
-            Зареждане...
-          </Typography>
+          <p className="text-sm text-text-secondary">Зареждане...</p>
         </div>
       </div>
     )
@@ -109,15 +93,11 @@ export default function ProductReviewsForm({ productId, onReviewSubmitted }: Pro
     return (
       <div className="product-page-constraint mt-8">
         <div className="flex flex-col items-center gap-y-4 text-center">
-          <Typography variant="body1" color="text.secondary">
+          <p className="text-text-secondary">
             За да добавите ревю, моля влезте в профила си.
-          </Typography>
-          <Button 
-            variant="contained" 
-            component={Link}
-            href="/account"
-          >
-            Влез в профил
+          </p>
+          <Button asChild variant="default">
+            <Link href="/account">Влез в профил</Link>
           </Button>
         </div>
       </div>
@@ -128,7 +108,7 @@ export default function ProductReviewsForm({ productId, onReviewSubmitted }: Pro
     <div className="product-page-constraint mt-8">
       {!showForm && (
         <div className="flex justify-center">
-          <Button variant="outlined" onClick={() => setShowForm(true)}>
+          <Button variant="outline" onClick={() => setShowForm(true)}>
             Добави ревю
           </Button>
         </div>
@@ -139,45 +119,44 @@ export default function ProductReviewsForm({ productId, onReviewSubmitted }: Pro
             <span className="text-xl-regular text-ui-fg-base">
               Добави ревю
             </span>
-            
+
             <form onSubmit={handleSubmit} className="flex flex-col gap-y-4">
               <div className="flex flex-col gap-y-2">
-                <TextField 
-                  name="title" 
-                  label="Заглавие"
-                  value={title} 
-                  onChange={(e) => setTitle(e.target.value)} 
-                  placeholder="Заглавие (по избор)" 
-                  fullWidth
+                <Label htmlFor="review-title">Заглавие</Label>
+                <Input
+                  id="review-title"
+                  name="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Заглавие (по избор)"
                 />
               </div>
               <div className="flex flex-col gap-y-2">
-                <TextField 
-                  name="content" 
-                  label="Съдържание *"
-                  value={content} 
-                  onChange={(e) => setContent(e.target.value)} 
-                  placeholder="Вашето мнение за продукта..." 
-                  multiline
+                <Label htmlFor="review-content">Съдържание *</Label>
+                <textarea
+                  id="review-content"
+                  name="content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Вашето мнение за продукта..."
                   rows={4}
                   required
-                  fullWidth
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
               <div className="flex flex-col gap-y-2">
-                <span className="text-sm font-medium text-text-primary mb-1">Оценка *</span>
+                <Label>Оценка *</Label>
                 <Rating
                   value={rating || 0}
-                  onChange={(_, newValue) => {
-                    setRating(newValue)
-                  }}
+                  readOnly={false}
+                  onChange={(newValue) => setRating(newValue)}
                   size="large"
                 />
               </div>
               <div className="flex gap-x-2">
-                <Button 
-                  type="button" 
-                  variant="outlined" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => {
                     setShowForm(false)
                     setTitle("")
@@ -188,11 +167,7 @@ export default function ProductReviewsForm({ productId, onReviewSubmitted }: Pro
                 >
                   Отказ
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isLoading} 
-                  variant="contained"
-                >
+                <Button type="submit" disabled={isLoading} variant="default">
                   {isLoading ? "Изпращане..." : "Изпрати"}
                 </Button>
               </div>
@@ -200,19 +175,6 @@ export default function ProductReviewsForm({ productId, onReviewSubmitted }: Pro
           </div>
         </div>
       )}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      >
-        <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
-          severity={snackbar.severity}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </div>
   )
 }

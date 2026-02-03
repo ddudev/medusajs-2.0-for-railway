@@ -1,11 +1,13 @@
-import React from 'react'
+"use client"
+
+import React from "react"
 import {
-  Accordion as MuiAccordion,
-  AccordionSummary,
-  AccordionDetails,
-  Typography,
-} from '@mui/material'
-import { ExpandMore } from '@mui/icons-material'
+  Accordion as ShadcnAccordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion"
+import { cn } from "@/lib/utils"
 
 type AccordionItemProps = {
   title: string
@@ -31,21 +33,27 @@ type AccordionProps = {
   className?: string
 }
 
-// Wrapper component - doesn't need 'use client' since it's just a container
-const Accordion: React.FC<AccordionProps> & {
+const headingSizeClasses = {
+  small: "text-sm",
+  medium: "text-base",
+  large: "text-lg font-semibold",
+}
+
+const AccordionRoot: React.FC<AccordionProps> & {
   Item: React.FC<AccordionItemProps>
 } = ({ children, type = "single", defaultValue, className }) => {
-  // MUI Accordion allows multiple items to be expanded by default
-  // Each Item manages its own state, so multiple can be open simultaneously
   return (
-    <div className={className}>
+    <ShadcnAccordion
+      type={type}
+      defaultValue={defaultValue as string | string[] | undefined}
+      className={cn(className)}
+      collapsible={type === "single"}
+    >
       {children}
-    </div>
+    </ShadcnAccordion>
   )
 }
 
-// Item component needs to be client-side because it uses useState and interactive MUI components
-// But since index.tsx is already 'use client', this will work fine
 const Item: React.FC<AccordionItemProps> = ({
   title,
   subtitle,
@@ -53,56 +61,41 @@ const Item: React.FC<AccordionItemProps> = ({
   children,
   className,
   headingSize = "large",
-  customTrigger = undefined,
-  forceMountContent = undefined,
   value,
-  ...props
 }) => {
-  const [expanded, setExpanded] = React.useState(forceMountContent ? true : false)
-
-  const handleChange = (_event: React.SyntheticEvent, isExpanded: boolean) => {
-    setExpanded(isExpanded)
-  }
+  const itemValue = value ?? title
 
   return (
-    <MuiAccordion
-      expanded={expanded}
-      onChange={handleChange}
-      className={`border-t border-gray-200 last:border-b ${className || ''}`}
-      {...props}
-    >
-      <AccordionSummary
-        expandIcon={customTrigger || <ExpandMore />}
-        className="px-1 py-3"
-      >
-        <div className="flex flex-col w-full">
+    <AccordionItem value={itemValue} className={cn("border-t border-gray-200 last:border-b", className)}>
+      <AccordionTrigger className="px-1 py-3 hover:no-underline [&[data-state=open]>svg]:rotate-180">
+        <div className="flex flex-col w-full text-left">
           <div className="flex w-full items-center justify-between">
-            <Typography 
-              variant={headingSize === "small" ? "body2" : headingSize === "medium" ? "body1" : "h6"}
-              className="text-gray-600"
+            <span
+              className={cn(
+                "text-gray-600",
+                headingSize === "small" && headingSizeClasses.small,
+                headingSize === "medium" && headingSizeClasses.medium,
+                headingSize === "large" && headingSizeClasses.large
+              )}
             >
               {title}
-            </Typography>
+            </span>
           </div>
           {subtitle && (
-            <Typography variant="body2" className="mt-1 text-gray-500">
-              {subtitle}
-            </Typography>
+            <span className="mt-1 text-sm text-gray-500">{subtitle}</span>
           )}
         </div>
-      </AccordionSummary>
-      <AccordionDetails className="px-1">
+      </AccordionTrigger>
+      <AccordionContent className="px-1">
         {description && (
-          <Typography variant="body2" className="mb-2 text-gray-600">
-            {description}
-          </Typography>
+          <p className="mb-2 text-sm text-gray-600">{description}</p>
         )}
         <div className="w-full">{children}</div>
-      </AccordionDetails>
-    </MuiAccordion>
+      </AccordionContent>
+    </AccordionItem>
   )
 }
 
-Accordion.Item = Item
+AccordionRoot.Item = Item
 
-export default Accordion
+export default AccordionRoot

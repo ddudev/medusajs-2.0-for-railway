@@ -2,7 +2,10 @@
 
 import { useSearchParams } from "next/navigation"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { Slider, TextField, Box, Typography } from '@mui/material'
+import * as SliderPrimitive from "@radix-ui/react-slider"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import CollapsibleFilter from "@modules/common/components/collapsible-filter"
 
@@ -127,8 +130,7 @@ const FilterPrice = ({
   const debouncedUpdatePrice = useDebounce(updatePrice, 300)
 
   // Handle slider change
-  const handleSliderChange = useCallback((_event: Event, newValue: number | number[]) => {
-    const values = newValue as number[]
+  const handleSliderChange = useCallback((values: number[]) => {
     setSliderValue(values)
     setMinInput(values[0] === MIN_PRICE ? "" : values[0].toString())
     setMaxInput(values[1] >= MAX_PRICE ? "" : values[1].toString())
@@ -235,115 +237,92 @@ const FilterPrice = ({
       data-testid={dataTestId}
       darkMode={darkMode}
     >
-      <Box className="flex gap-x-3 flex-col">
+      <div className="flex flex-col gap-3">
         {hasActiveFilter && (
-          <Box className="flex items-center justify-end mb-2">
+          <div className="flex items-center justify-end mb-2">
             <button
               onClick={handleClear}
-              className="text-xs hover:underline"
-              style={{ color: darkMode ? '#ff6b35' : undefined }}
+              className={cn("text-xs hover:underline", darkMode && "text-primary")}
               type="button"
             >
               {t("filters.clearFilters")}
             </button>
-          </Box>
+          </div>
         )}
 
-      {/* Price Range Slider */}
-      <Box className="px-2 mb-4">
-        <Slider
-          value={sliderValue}
-          onChange={handleSliderChange}
-          min={MIN_PRICE}
-          max={MAX_PRICE}
-          step={STEP}
-          valueLabelDisplay="auto"
-          valueLabelFormat={(value) => `€${value}`}
-          sx={{
-            color: darkMode ? '#ff6b35' : undefined,
-            '& .MuiSlider-thumb': {
-              width: 18,
-              height: 18,
-            },
-            '& .MuiSlider-track': {
-              height: 4,
-            },
-            '& .MuiSlider-rail': {
-              height: 4,
-              backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.2)' : undefined,
-            },
-          }}
-        />
-      </Box>
+        {/* Price Range Slider */}
+        <div className="px-2 mb-4">
+          <SliderPrimitive.Root
+            className="relative flex w-full touch-none select-none items-center"
+            value={sliderValue}
+            onValueChange={handleSliderChange}
+            min={MIN_PRICE}
+            max={MAX_PRICE}
+            step={STEP}
+            minStepsBetweenThumbs={1}
+          >
+            <SliderPrimitive.Track
+              className={cn(
+                "relative h-1.5 w-full grow overflow-hidden rounded-full",
+                darkMode ? "bg-white/20" : "bg-primary/20"
+              )}
+            >
+              <SliderPrimitive.Range
+                className={cn(
+                  "absolute h-full rounded-full",
+                  darkMode ? "bg-primary" : "bg-primary"
+                )}
+              />
+            </SliderPrimitive.Track>
+            <SliderPrimitive.Thumb className="block h-4 w-4 w-[18px] h-[18px] rounded-full border border-primary/50 bg-background shadow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50" />
+            <SliderPrimitive.Thumb className="block h-4 w-4 w-[18px] h-[18px] rounded-full border border-primary/50 bg-background shadow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50" />
+          </SliderPrimitive.Root>
+        </div>
 
-      {/* Manual Input Fields */}
-      <Box className="flex gap-2 items-center">
-        <TextField
-          size="small"
-          label={t("filters.minPrice") || "Min"}
-          type="number"
-          value={minInput}
-          onChange={handleMinInputChange}
-          onBlur={handleMinInputBlur}
-          inputProps={{
-            min: MIN_PRICE,
-            max: sliderValue[1] - STEP,
-            step: STEP,
-          }}
-          sx={{
-            flex: 1,
-            '& .MuiOutlinedInput-root': {
-              fontSize: '0.875rem',
-              backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : undefined,
-              color: darkMode ? 'rgba(255, 255, 255, 0.9)' : undefined,
-              '& fieldset': {
-                borderColor: darkMode ? 'rgba(255, 255, 255, 0.2)' : undefined,
-              },
-              '&:hover fieldset': {
-                borderColor: darkMode ? 'rgba(255, 255, 255, 0.3)' : undefined,
-              },
-            },
-            '& .MuiInputLabel-root': {
-              color: darkMode ? 'rgba(255, 255, 255, 0.6)' : undefined,
-            },
-          }}
-        />
-        <Typography variant="body2" sx={{ color: darkMode ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary', px: 1 }}>
-          -
-        </Typography>
-        <TextField
-          size="small"
-          label={t("filters.maxPrice") || "Max"}
-          type="number"
-          value={maxInput}
-          onChange={handleMaxInputChange}
-          onBlur={handleMaxInputBlur}
-          inputProps={{
-            min: sliderValue[0] + STEP,
-            max: MAX_PRICE,
-            step: STEP,
-          }}
-          placeholder={`${MAX_PRICE}+`}
-          sx={{
-            flex: 1,
-            '& .MuiOutlinedInput-root': {
-              fontSize: '0.875rem',
-              backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : undefined,
-              color: darkMode ? 'rgba(255, 255, 255, 0.9)' : undefined,
-              '& fieldset': {
-                borderColor: darkMode ? 'rgba(255, 255, 255, 0.2)' : undefined,
-              },
-              '&:hover fieldset': {
-                borderColor: darkMode ? 'rgba(255, 255, 255, 0.3)' : undefined,
-              },
-            },
-            '& .MuiInputLabel-root': {
-              color: darkMode ? 'rgba(255, 255, 255, 0.6)' : undefined,
-            },
-          }}
-        />
-      </Box>
-    </Box>
+        {/* Manual Input Fields */}
+        <div className="flex gap-2 items-center">
+          <div className="flex-1 space-y-1.5">
+            <Label htmlFor="filter-price-min" className={cn("text-sm", darkMode && "text-white/60")}>
+              {t("filters.minPrice") || "Min"}
+            </Label>
+            <Input
+              id="filter-price-min"
+              type="number"
+              min={MIN_PRICE}
+              max={sliderValue[1] - STEP}
+              step={STEP}
+              value={minInput}
+              onChange={handleMinInputChange}
+              onBlur={handleMinInputBlur}
+              className={cn(
+                "h-9 text-sm",
+                darkMode && "bg-white/5 border-white/20 text-white/90 placeholder:text-white/50 hover:border-white/30"
+              )}
+            />
+          </div>
+          <span className={cn("text-sm px-1", darkMode ? "text-white/70" : "text-muted-foreground")}>-</span>
+          <div className="flex-1 space-y-1.5">
+            <Label htmlFor="filter-price-max" className={cn("text-sm", darkMode && "text-white/60")}>
+              {t("filters.maxPrice") || "Max"}
+            </Label>
+            <Input
+              id="filter-price-max"
+              type="number"
+              min={sliderValue[0] + STEP}
+              max={MAX_PRICE}
+              step={STEP}
+              value={maxInput}
+              onChange={handleMaxInputChange}
+              onBlur={handleMaxInputBlur}
+              placeholder={`${MAX_PRICE}+`}
+              className={cn(
+                "h-9 text-sm",
+                darkMode && "bg-white/5 border-white/20 text-white/90 placeholder:text-white/50 hover:border-white/30"
+              )}
+            />
+          </div>
+        </div>
+      </div>
     </CollapsibleFilter>
   )
 }

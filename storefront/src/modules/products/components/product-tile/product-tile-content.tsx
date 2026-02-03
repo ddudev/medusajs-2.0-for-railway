@@ -4,19 +4,8 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import {
-  Card,
-  CardContent,
-  CardMedia,
-  CardActions,
-  Typography,
-  Chip,
-  Button,
-  Box,
-  CircularProgress,
-  IconButton,
-} from '@mui/material'
-import { AddShoppingCart, FavoriteBorder } from '@mui/icons-material'
+import { ShoppingCart, Heart } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { HttpTypes } from '@medusajs/types'
 import { getProductPrice } from '@lib/util/get-product-price'
 import { useTranslation } from '@lib/i18n/hooks/use-translation'
@@ -138,18 +127,12 @@ export default function ProductTileContent({
     >
       <Link href={productUrl} className="block flex-grow items-center">
         {/* Image Section with Lazy Loading and Wishlist Button */}
-        <CardMedia
-          component="div"
-          className="relative bg-gray-100 overflow-hidden flex items-center justify-center w-full"
-          style={{ aspectRatio: '1/1' }} // Taller aspect ratio for product tiles
-        >
+        <div className="relative bg-gray-100 overflow-hidden flex items-center justify-center w-full aspect-square">
           {thumbnail ? (
             <Image
               src={thumbnail}
               alt={(() => {
-                // Generate keyword-rich alt text with product name as main keyword
                 const parts = [product.title || 'Product']
-                // Add category if available for better SEO
                 if (product.categories && product.categories.length > 0) {
                   parts.push(product.categories[0].name)
                 }
@@ -163,24 +146,24 @@ export default function ProductTileContent({
               quality={75}
             />
           ) : (
-            <Box className="h-full flex items-center justify-center bg-gray-100">
-              <Typography variant="body2" color="text.secondary">
-                {t("product.noImage")}
-              </Typography>
-            </Box>
+            <div className="h-full flex items-center justify-center bg-gray-100 text-sm text-muted-foreground">
+              {t("product.noImage")}
+            </div>
           )}
-          {/* Wishlist Heart Icon - Top Right */}
-          <button type="button"
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
             }}
             aria-label="Add to wishlist"
-            className="bg-white/80 hover:bg-white rounded-full p-1.5 relative top-2 left-2 z-10 border border-border-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            className="absolute top-2 left-2 z-10 h-8 w-8 rounded-full bg-white/80 hover:bg-white border border-border"
           >
-            <FavoriteBorder className="w-4 h-4 text-gray-600" />
-          </button>
-        </CardMedia>
+            <Heart className="h-4 w-4 text-gray-600" />
+          </Button>
+        </div>
 
         {/* Content Section */}
         <div className="flex-grow flex flex-col px-4 pt-4 pb-2">
@@ -200,39 +183,30 @@ export default function ProductTileContent({
               </span>
             </div>
           ) : (
-            <Typography variant="body2" color="text.secondary" className="mb-4 md:mb-5">
+            <span className="text-sm text-muted-foreground mb-4 md:mb-5">
               {t("product.priceNotAvailable")}
-            </Typography>
+            </span>
           )}
         </div>
       </Link>
 
       {/* Actions - Outside Link to prevent navigation */}
       <div className="p-4 md:p-2 pt-0 mt-auto">
-        <button
+        <Button
+          variant="outline"
           disabled={!hasPrice || !isInStock || isAdding || !defaultVariant}
           onClick={handleAddToCartClick}
-          className="
-            w-full
-            flex items-center justify-center gap-2
-            bg-white hover:bg-neutral-100
-            text-black
-            h-11 md:h-12
-            rounded-md
-            border border-border-base
-            text-sm md:text-[15px]
-            transition-all duration-200
-            disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none
-          "
+          className="w-full h-11 md:h-12 text-sm md:text-[15px]"
         >
-          {isAdding
-            ? <CircularProgress size={16} className="shrink-0" />
-            : <AddShoppingCart className="w-3 h-3 shrink-0" />
-          }
+          {isAdding ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent shrink-0" />
+          ) : (
+            <ShoppingCart className="h-4 w-4 shrink-0" />
+          )}
           <span>
             {isAdding ? t("product.adding") : isInStock ? t("product.addToCart") : t("product.outOfStock")}
           </span>
-        </button>
+        </Button>
       </div>
 
       {/* Quick View Modal for Variant Selection */}

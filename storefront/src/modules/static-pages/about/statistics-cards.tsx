@@ -1,14 +1,14 @@
 import React from "react"
-import { Card, CardContent, Typography } from "@mui/material"
+import { Card, CardContent } from "@/components/ui/card"
 import { getTranslation } from "@lib/i18n/server"
 import type { TranslationKeys } from "@lib/i18n/config"
 import {
-  People as PeopleIcon,
-  HeadsetMic as HeadsetIcon,
-  Star as StarIcon,
-  LocalShipping as ShippingIcon,
-  Visibility as VisibilityIcon,
-} from "@mui/icons-material"
+  Users,
+  Headphones,
+  Star,
+  Truck,
+  Eye,
+} from "lucide-react"
 
 type StatisticsCardsProps = {
   translations: TranslationKeys
@@ -17,35 +17,35 @@ type StatisticsCardsProps = {
 const statistics = [
   {
     id: "clients",
-    icon: <PeopleIcon className="w-12 h-12 text-primary" />,
+    icon: <Users className="w-12 h-12 text-primary" />,
     number: "1.000.000+",
     labelKey: "about.stats.clients",
     defaultLabel: "satisfied customers",
   },
   {
     id: "consultation",
-    icon: <HeadsetIcon className="w-12 h-12 text-primary" />,
+    icon: <Headphones className="w-12 h-12 text-primary" />,
     number: "Free",
     labelKey: "about.stats.consultation",
     defaultLabel: "consultation",
   },
   {
     id: "rating",
-    icon: <StarIcon className="w-12 h-12 text-primary" />,
+    icon: <Star className="w-12 h-12 text-primary" />,
     number: "9.5",
     labelKey: "about.stats.rating",
     defaultLabel: "out of 10 according to customer reviews",
   },
   {
     id: "processing",
-    icon: <ShippingIcon className="w-12 h-12 text-primary" />,
+    icon: <Truck className="w-12 h-12 text-primary" />,
     number: "Express",
     labelKey: "about.stats.processing",
     defaultLabel: "order processing",
   },
   {
     id: "visits",
-    icon: <VisibilityIcon className="w-12 h-12 text-primary" />,
+    icon: <Eye className="w-12 h-12 text-primary" />,
     number: "10.000.000+",
     labelKey: "about.stats.visits",
     defaultLabel: "website visits",
@@ -66,15 +66,12 @@ export default function StatisticsCards({
         >
           <CardContent className="flex flex-col items-center text-center p-6">
             <div className="mb-4">{stat.icon}</div>
-            <Typography
-              variant="h4"
-              className="font-bold text-text-primary mb-2"
-            >
+            <p className="text-2xl font-bold text-text-primary mb-2">
               {stat.number}
-            </Typography>
-            <Typography variant="body2" className="text-text-secondary">
+            </p>
+            <p className="text-sm text-text-secondary">
               {t(stat.labelKey) || stat.defaultLabel}
-            </Typography>
+            </p>
           </CardContent>
         </Card>
       ))}

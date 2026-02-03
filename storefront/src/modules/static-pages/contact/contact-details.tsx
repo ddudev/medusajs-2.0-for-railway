@@ -1,13 +1,7 @@
 import React from "react"
 import { getTranslation } from "@lib/i18n/server"
 import type { TranslationKeys } from "@lib/i18n/config"
-import {
-  LocationOn as LocationIcon,
-  Phone as PhoneIcon,
-  Email as EmailIcon,
-  AccessTime as TimeIcon,
-  Map as MapIcon,
-} from "@mui/icons-material"
+import { MapPin, Phone, Mail, Clock, Map } from "lucide-react"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
 type ContactDetailsProps = {
@@ -30,7 +24,7 @@ export default function ContactDetails({
       <div className="space-y-6">
         {/* Central Office */}
         <div className="flex items-start gap-4">
-          <LocationIcon className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+          <MapPin className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
           <div>
             <h3 className="font-semibold text-text-primary mb-1">
               {t("contact.details.centralOffice") || "Central Management"}
@@ -47,7 +41,7 @@ export default function ContactDetails({
 
         {/* Phone */}
         <div className="flex items-start gap-4">
-          <PhoneIcon className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+          <Phone className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
           <div>
             <h3 className="font-semibold text-text-primary mb-1">
               {t("contact.details.phone") || "Phone Number"}
@@ -79,7 +73,7 @@ export default function ContactDetails({
 
         {/* Working Hours */}
         <div className="flex items-start gap-4">
-          <TimeIcon className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+          <Clock className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
           <div>
             <h3 className="font-semibold text-text-primary mb-1">
               {t("contact.details.workingHours") || "Working Hours"}
@@ -97,7 +91,7 @@ export default function ContactDetails({
 
         {/* Map */}
         <div className="flex items-start gap-4">
-          <MapIcon className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+          <Map className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
           <div>
             <h3 className="font-semibold text-text-primary mb-1">
               {t("contact.details.map") || "Map"}

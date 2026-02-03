@@ -63,7 +63,7 @@ const nextConfig = {
   cacheComponents: true,
   // Experimental features for better performance
   experimental: {
-    optimizePackageImports: ['@mui/material', '@mui/icons-material', '@medusajs/js-sdk'],
+    optimizePackageImports: ['@medusajs/js-sdk'],
     // Enable server actions optimization
     serverActions: {
       bodySizeLimit: '2mb',
@@ -76,9 +76,6 @@ const nextConfig = {
       exclude: ['error', 'warn'],
     } : false,
   },
-  // Transpile MUI packages for proper Next.js compatibility
-  transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material', '@mui/material-nextjs'],
-  
   // Next.js 16 uses Turbopack by default. Since we have a webpack config for bundle optimization,
   // we need to either:
   // 1. Use Turbopack (add empty config below) - faster builds, but webpack optimizations won't apply

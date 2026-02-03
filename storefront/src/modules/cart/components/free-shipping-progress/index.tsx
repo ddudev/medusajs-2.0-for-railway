@@ -1,8 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { Box, Typography } from "@mui/material"
-import { LocalShipping } from "@mui/icons-material"
+import { Truck } from "lucide-react"
 import { convertToLocale } from "@lib/util/money"
 import { FreeShippingEligibility } from "@lib/data/free-shipping"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
@@ -71,146 +70,78 @@ export default function FreeShippingProgress({
 
   if (variant === "compact") {
     return (
-      <Box className="w-full py-3">
-        {/* Centered callout text */}
-        <Box className="flex justify-center mb-2">
-          <Box
-            className="px-3 py-1.5 rounded-md shadow-sm"
-            sx={{
-              backgroundColor: "#f3f4f6", // gray-100
-              color: "#111827", // gray-900
-              border: "1px solid #d1d5db", // gray-300
-              whiteSpace: "nowrap",
-            }}
-          >
-            <Typography variant="caption" className="font-semibold text-xs">
-              {t("cart.freeShipping.left", {
-                amount: formattedAmount,
-                defaultValue: `${formattedAmount} left`,
-              })}
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box className="relative w-full" sx={{ pb: 3 }}>
-          {/* Progress Bar */}
-          <Box
-            className="relative w-full h-2.5 rounded-full"
-            sx={{
-              backgroundColor: "#e5e7eb",
-              position: "relative",
-            }}
-          >
-            {/* Filled portion - use primary color */}
-            <Box
+      <div className="w-full py-3">
+        <div className="flex justify-center mb-2">
+          <span className="inline-block px-3 py-1.5 rounded-md shadow-sm bg-gray-100 text-gray-900 border border-gray-300 whitespace-nowrap font-semibold text-xs">
+            {t("cart.freeShipping.left", {
+              amount: formattedAmount,
+              defaultValue: `${formattedAmount} left`,
+            })}
+          </span>
+        </div>
+        <div className="relative w-full pb-3">
+          <div className="relative w-full h-2.5 rounded-full bg-gray-200">
+            <div
               className="absolute left-0 top-0 h-full rounded-full transition-all duration-300"
-              sx={{
+              style={{
                 width: `${Math.min(100, progressBarWidth)}%`,
                 backgroundColor: PRIMARY_COLOR,
               }}
             />
-
-            {/* Free shipping icon positioned at exactly 80% */}
-            <Box
-              className="absolute flex flex-col items-center"
-              sx={{
+            <div
+              className="absolute flex flex-col items-center z-10"
+              style={{
                 left: `${iconPosition}%`,
                 top: "50%",
                 transform: "translate(-50%, -50%)",
-                zIndex: 10,
               }}
             >
-              {/* Free shipping icon */}
-              <LocalShipping
-                sx={{
-                  color: PRIMARY_COLOR,
-                  fontSize: 22,
-                }}
-              />
-              {/* Target total label */}
-              <Typography
-                variant="caption"
-                className="text-gray-500 text-xs mt-1"
-                sx={{ color: "#6b7280", whiteSpace: "nowrap" }}
-              >
+              <Truck className="h-[22px] w-[22px] text-primary" style={{ color: PRIMARY_COLOR }} />
+              <span className="text-gray-500 text-xs mt-1 whitespace-nowrap">
                 {formattedMinimum}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Box className="w-full py-4">
-      {/* Centered callout text */}
-      <Box className="flex justify-center mb-2">
-        <Box
-          className="px-4 py-2 rounded-lg shadow-md"
-          sx={{
-            backgroundColor: "#f3f4f6", // gray-100
-            color: "#111827", // gray-900
-            border: "1px solid #d1d5db", // gray-300
-            whiteSpace: "nowrap",
-          }}
-        >
-          <Typography variant="body2" className="font-semibold">
-            {t("cart.freeShipping.left", {
-              amount: formattedAmount,
-              defaultValue: `${formattedAmount} left till free shipping`,
-            })}
-          </Typography>
-        </Box>
-      </Box>
-
-      <Box className="relative w-full" sx={{ pb: 4 }}>
-        {/* Progress Bar */}
-        <Box
-          className="relative w-full h-3 rounded-full"
-          sx={{
-            backgroundColor: "#e5e7eb",
-            position: "relative",
-          }}
-        >
-          {/* Filled portion - use primary color */}
-          <Box
+    <div className="w-full py-4">
+      <div className="flex justify-center mb-2">
+        <span className="inline-block px-4 py-2 rounded-lg shadow-md bg-gray-100 text-gray-900 border border-gray-300 whitespace-nowrap text-sm font-semibold">
+          {t("cart.freeShipping.left", {
+            amount: formattedAmount,
+            defaultValue: `${formattedAmount} left till free shipping`,
+          })}
+        </span>
+      </div>
+      <div className="relative w-full pb-4">
+        <div className="relative w-full h-3 rounded-full bg-gray-200">
+          <div
             className="absolute left-0 top-0 h-full rounded-full transition-all duration-300"
-            sx={{
+            style={{
               width: `${Math.min(100, progressBarWidth)}%`,
               backgroundColor: PRIMARY_COLOR,
             }}
           />
-
-          {/* Free shipping icon positioned at exactly 80% */}
-          <Box
-            className="absolute flex flex-col items-center"
-            sx={{
+          <div
+            className="absolute flex flex-col items-center z-10"
+            style={{
               left: `${iconPosition}%`,
               top: "50%",
               transform: "translate(-50%, -50%)",
-              zIndex: 10,
             }}
           >
-            {/* Free shipping icon */}
-            <LocalShipping
-              sx={{
-                color: PRIMARY_COLOR,
-                fontSize: 28,
-              }}
-            />
-            {/* Target total label */}
-            <Typography
-              variant="body2"
-              className="text-gray-500 mt-1.5"
-              sx={{ color: "#6b7280", whiteSpace: "nowrap" }}
-            >
+            <Truck className="h-7 w-7 text-primary" style={{ color: PRIMARY_COLOR }} />
+            <span className="text-gray-500 text-sm mt-1.5 whitespace-nowrap">
               {formattedMinimum}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 

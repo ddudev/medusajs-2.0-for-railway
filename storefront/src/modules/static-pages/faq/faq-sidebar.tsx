@@ -4,13 +4,13 @@ import React from "react"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { clx } from "@medusajs/ui"
 import {
-  Description as DocumentIcon,
-  LocalOffer as TagIcon,
-  Refresh as ReturnIcon,
-  CreditCard as CardIcon,
-  LocalShipping as TruckIcon,
-  Person as UserIcon,
-} from "@mui/icons-material"
+  FileText,
+  Tag,
+  RefreshCw,
+  CreditCard,
+  Truck,
+  User,
+} from "lucide-react"
 
 type FAQCategory = {
   id: string
@@ -28,12 +28,12 @@ type FAQSidebarProps = {
 }
 
 const iconMap: Record<string, React.ReactNode> = {
-  document: <DocumentIcon className="w-5 h-5" />,
-  tag: <TagIcon className="w-5 h-5" />,
-  return: <ReturnIcon className="w-5 h-5" />,
-  card: <CardIcon className="w-5 h-5" />,
-  truck: <TruckIcon className="w-5 h-5" />,
-  user: <UserIcon className="w-5 h-5" />,
+  document: <FileText className="w-5 h-5" />,
+  tag: <Tag className="w-5 h-5" />,
+  return: <RefreshCw className="w-5 h-5" />,
+  card: <CreditCard className="w-5 h-5" />,
+  truck: <Truck className="w-5 h-5" />,
+  user: <User className="w-5 h-5" />,
 }
 
 export default function FAQSidebar({
@@ -63,7 +63,7 @@ export default function FAQSidebar({
               )}
             >
               <span className="flex-shrink-0">
-                {iconMap[category.icon] || <DocumentIcon className="w-5 h-5" />}
+                {iconMap[category.icon] || <FileText className="w-5 h-5" />}
               </span>
               <span className="font-medium">{categoryName}</span>
             </button>

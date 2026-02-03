@@ -2,7 +2,6 @@
 
 import React from "react"
 import Accordion from "@modules/products/components/product-tabs/accordion"
-import { Typography } from "@mui/material"
 
 type FAQQuestion = {
   id: string
@@ -25,9 +24,7 @@ export default function FAQAccordion({ questions, locale }: FAQAccordionProps) {
   if (questions.length === 0) {
     return (
       <div className="text-center py-8">
-        <Typography variant="body1" className="text-text-secondary">
-          No questions found in this category.
-        </Typography>
+        <p className="text-text-secondary">No questions found in this category.</p>
       </div>
     )
   }
@@ -48,12 +45,9 @@ export default function FAQAccordion({ questions, locale }: FAQAccordionProps) {
               headingSize="medium"
               className="mb-4"
             >
-              <Typography
-                variant="body2"
-                className="text-text-secondary whitespace-pre-line"
-              >
+              <p className="text-text-secondary whitespace-pre-line text-sm">
                 {answerText}
-              </Typography>
+              </p>
             </Accordion.Item>
           )
         })}

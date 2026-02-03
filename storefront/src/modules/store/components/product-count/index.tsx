@@ -1,10 +1,10 @@
 'use client'
 
-import { Typography } from '@mui/material'
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeft, ChevronRight } from '@mui/icons-material'
-import IconButton from '@mui/material/IconButton'
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 type ProductCountProps = {
   currentPage: number
@@ -31,105 +31,56 @@ const ProductCount = ({ currentPage, pageSize, totalCount, totalPages }: Product
 
   if (totalCount === 0) {
     return (
-      <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+      <p className="text-sm text-muted-foreground">
         {t("filters.noProductsFound")}
-      </Typography>
+      </p>
     )
   }
 
-  // Format: "200 резултата"
   const resultsText = `${totalCount} ${t("filters.results") || "резултата"}`
 
   return (
     <div className="flex flex-row md:flex-col justify-between md:items-start w-full md:w-auto gap-2">
-
-      {/* Total results - aligned with sort label when no pagination */}
-      <Typography 
-        variant="body2" 
-        sx={{ 
-          color: '#6b7280', 
-          fontSize: '0.875rem', 
-          fontWeight: 400,
-          // Add top margin when no pagination to align with sort label
-          marginTop: totalPages <= 1 ? '2px' : '0',
-        }}
+      <p
+        className={cn(
+          "text-sm text-gray-500 font-normal",
+          totalPages <= 1 && "mt-0.5"
+        )}
       >
         {resultsText}
-      </Typography>
+      </p>
 
-      {/* Pagination on top - only show if multiple pages */}
       {totalPages > 1 && (
         <div className="flex items-center gap-2">
-          <IconButton
-            size="small"
+          <Button
+            variant="outline"
+            size="icon"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            sx={{ 
-              padding: '8px',
-              borderRadius: '8px',
-              backgroundColor: 'white',
-              border: '1px solid #d1d5db',
-              minWidth: '36px',
-              height: '36px',
-              '&:hover': {
-                backgroundColor: '#f9fafb',
-                borderColor: '#9ca3af',
-              },
-              '&.Mui-disabled': {
-                opacity: 0.3,
-                backgroundColor: '#f9fafb',
-                borderColor: '#e5e7eb',
-              },
-            }}
+            className="h-9 w-9 min-w-9 rounded-lg border border-border bg-white hover:bg-muted/50 hover:border-muted-foreground/30 disabled:opacity-30"
             aria-label="Previous page"
           >
-            <ChevronLeft sx={{ fontSize: '20px', color: '#374151' }} />
-          </IconButton>
-          
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              color: 'text.primary', 
-              fontSize: '1rem', 
-              fontWeight: 400,
-              minWidth: '60px',
-              textAlign: 'center',
-            }}
-          >
-            {currentPage} <span style={{ color: '#9ca3af' }}>/{totalPages}</span>
-          </Typography>
-          
-          <IconButton
-            size="small"
+            <ChevronLeft className="h-5 w-5 text-foreground" />
+          </Button>
+
+          <span className="text-base font-normal text-foreground min-w-[60px] text-center">
+            {currentPage} <span className="text-muted-foreground">/{totalPages}</span>
+          </span>
+
+          <Button
+            variant="outline"
+            size="icon"
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            sx={{ 
-              padding: '8px',
-              borderRadius: '8px',
-              backgroundColor: 'white',
-              border: '1px solid #d1d5db',
-              minWidth: '36px',
-              height: '36px',
-              '&:hover': {
-                backgroundColor: '#f9fafb',
-                borderColor: '#9ca3af',
-              },
-              '&.Mui-disabled': {
-                opacity: 0.3,
-                backgroundColor: '#f9fafb',
-                borderColor: '#e5e7eb',
-              },
-            }}
+            className="h-9 w-9 min-w-9 rounded-lg border border-border bg-white hover:bg-muted/50 hover:border-muted-foreground/30 disabled:opacity-30"
             aria-label="Next page"
           >
-            <ChevronRight sx={{ fontSize: '20px', color: '#374151' }} />
-          </IconButton>
+            <ChevronRight className="h-5 w-5 text-foreground" />
+          </Button>
         </div>
       )}
-      
     </div>
   )
 }
 
 export default ProductCount
-
