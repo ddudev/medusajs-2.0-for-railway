@@ -92,7 +92,9 @@ export default function RootLayout(props: { children: React.ReactNode }) {
               </PostHogProviderWrapper>
             </MetaPixelProvider>
           </GTMProvider>
-          <BottomBannersStack />
+          <Suspense fallback={null}>
+            <BottomBannersStack />
+          </Suspense>
           <CookieSettings />
         </CookieConsentProvider>
       </body>

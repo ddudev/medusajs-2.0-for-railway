@@ -95,13 +95,15 @@ export default async function CategoryTemplate({
 
   if (!category || !countryCode) notFound()
 
-  // Fetch brands and maxPrice for filters (matches store page)
+  // Fetch brands and maxPrice for filters (matches store page).
+  // getMaxProductPrice can reject during prerender when Next.js aborts fetch; use 500 fallback.
+  const DEFAULT_MAX_PRICE = 500
   const [brands, maxPrice] = await Promise.all([
     getActiveBrands(),
     getMaxProductPrice({
       countryCode,
       categoryIds: [category.id],
-    }),
+    }).catch(() => DEFAULT_MAX_PRICE),
   ])
 
   // Create key for Suspense based on filters (matches store page pattern)
