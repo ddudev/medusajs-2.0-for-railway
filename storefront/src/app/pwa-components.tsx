@@ -2,15 +2,15 @@
 
 import { useEffect } from 'react'
 import { registerServiceWorker } from '@lib/pwa/service-worker-registration'
-import { NotificationPermissionBanner } from '@modules/common/components/notification-permission-banner'
-import { PWAInstallPrompt } from '@modules/common/components/pwa-install-prompt'
 
+/**
+ * Registers the service worker. Notification and install banners
+ * are rendered in BottomBannersStack (single column, no overlap).
+ */
 export function PWAComponents() {
   useEffect(() => {
-    // Register service worker (enabled in both dev and production)
-    // CSS files use stale-while-revalidate strategy to allow HMR updates
     registerServiceWorker({
-      onUpdate: (registration) => {
+      onUpdate: () => {
         console.log('[PWA] Service worker update available')
       },
       onSuccess: () => {
@@ -22,11 +22,6 @@ export function PWAComponents() {
     })
   }, [])
 
-  return (
-    <>
-      <NotificationPermissionBanner />
-      <PWAInstallPrompt />
-    </>
-  )
+  return null
 }
 

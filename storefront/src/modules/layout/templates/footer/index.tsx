@@ -6,6 +6,7 @@ import Image from "next/image"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { getTranslations, getTranslation } from "@lib/i18n/server"
 import NewsletterForm from "./newsletter-form"
+import { CookieTrigger } from "@/components/cookie-consent"
 
 type FooterProps = {
   countryCode?: string
@@ -197,9 +198,15 @@ export default async function Footer({ countryCode = "us" }: FooterProps) {
               {getTranslation(translations, "footer.copyright", { year: new Date().getFullYear().toString() }) || `© ${new Date().getFullYear()} NEZ.BG. All rights reserved.`}
             </Text>
 
-            <Text className="text-xs text-gray-400">
-              {getTranslation(translations, "footer.poweredBy") || "Powered by Merch Solutions"}
-            </Text>
+            <div className="flex items-center gap-4">
+              <CookieTrigger
+                variant="text"
+                className="text-xs text-gray-400 hover:text-white transition-colors"
+              />
+              <Text className="text-xs text-gray-400">
+                {getTranslation(translations, "footer.poweredBy") || "Powered by Merch Solutions"}
+              </Text>
+            </div>
           </div>
         </div>
       </div>

@@ -300,7 +300,8 @@
     "install": {
       "title": "Install MS Store App",
       "description": "Install our app for a better shopping experience with offline access.",
-      "installButton": "Install"
+      "installButton": "Install",
+      "installHint": "Use your browser menu (⋮ or ⋯) and choose \"Install\" or \"Add to Home Screen\"."
     }
   },
   "faq": {

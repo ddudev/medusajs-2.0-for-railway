@@ -12,38 +12,38 @@ import {
 
 const STORAGE_KEY = 'pwa-notification-banner-dismissed'
 
-export function NotificationPermissionBanner() {
+export function NotificationPermissionBanner({ embedded = false, stacked = false }: { embedded?: boolean; stacked?: boolean }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
 
   useEffect(() => {
-    checkSubscriptionStatus()
-  }, [])
+    // Show banner when not dismissed and (permission not yet asked, or granted but not subscribed)
+    if (typeof window === 'undefined' || !('Notification' in window)) return
 
-  const checkSubscriptionStatus = async () => {
-    try {
-      const subscribed = await isSubscribedToPushNotifications()
-      setIsSubscribed(subscribed)
+    const dismissed = localStorage.getItem(STORAGE_KEY)
+    if (dismissed) return
 
-      if (!subscribed) {
-        // Check if banner was dismissed
-        const dismissed = localStorage.getItem(STORAGE_KEY)
-        if (!dismissed) {
-          // Check permission status
-          if (typeof window !== 'undefined' && 'Notification' in window) {
-            const permission = Notification.permission
-            if (permission === 'default') {
-              setOpen(true)
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('[PWA] Failed to check subscription status:', error)
+    const permission = Notification.permission
+    // Show immediately when we might want notifications (default = not asked yet, or granted)
+    if (permission === 'default' || permission === 'granted') {
+      setOpen(true)
     }
-  }
+
+    // Check subscription after a short delay so the banner can paint first
+    const t = setTimeout(() => {
+      isSubscribedToPushNotifications()
+        .then((subscribed) => {
+          setIsSubscribed(subscribed)
+          if (subscribed) setOpen(false)
+        })
+        .catch((error) => {
+          console.error('[PWA] Failed to check subscription status:', error)
+        })
+    }, 300)
+    return () => clearTimeout(t)
+  }, [])
 
   const handleEnable = async () => {
     setIsLoading(true)
@@ -73,10 +73,17 @@ export function NotificationPermissionBanner() {
     return null
   }
 
+  if (!open) return null
+
+  const inStack = embedded || stacked
+  const containerClass = inStack
+    ? 'w-full max-w-[500px] rounded-lg border border-border bg-white p-4 shadow-lg dark:bg-gray-900'
+    : 'fixed bottom-4 left-1/2 z-[110] w-[90%] max-w-[500px] -translate-x-1/2 rounded-lg border border-border bg-white p-4 shadow-lg sm:bottom-6 dark:bg-gray-900'
+
   return (
     <div
       role="alert"
-      className="fixed bottom-4 left-1/2 z-50 w-[90%] max-w-[500px] -translate-x-1/2 rounded-lg border border-border bg-white p-4 shadow-lg sm:bottom-6 dark:bg-gray-900"
+      className={containerClass}
     >
       <div className="flex items-start gap-3">
         <Bell className="h-5 w-5 shrink-0 text-primary mt-0.5" />

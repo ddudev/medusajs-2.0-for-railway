@@ -12,48 +12,61 @@ interface BeforeInstallPromptEvent extends Event {
 
 const STORAGE_KEY = 'pwa-install-prompt-dismissed'
 
-export function PWAInstallPrompt() {
+function canShowInstallPrompt(): boolean {
+  if (typeof window === 'undefined') return false
+  if (window.matchMedia('(display-mode: standalone)').matches) return false
+  const dismissed = localStorage.getItem(STORAGE_KEY)
+  if (dismissed) {
+    const dismissedTime = parseInt(dismissed, 10)
+    const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24)
+    if (daysSinceDismissed < 7) return false
+  }
+  return true
+}
+
+/**
+ * In-app install UI per MDN: listen for beforeinstallprompt, store the event,
+ * then show a button that calls event.prompt() to trigger the native install dialog.
+ * @see https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/How_to/Trigger_install_prompt
+ */
+export function PWAInstallPrompt({ stacked = false }: { stacked?: boolean } = {}) {
   const { t } = useTranslation()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showPrompt, setShowPrompt] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
 
   useEffect(() => {
-    // Check if already installed
+    if (typeof window === 'undefined') return
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true)
       return
     }
 
-    // Check if dismissed
-    const dismissed = localStorage.getItem(STORAGE_KEY)
-    if (dismissed) {
-      const dismissedTime = parseInt(dismissed, 10)
-      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24)
-      // Show again after 7 days
-      if (daysSinceDismissed < 7) {
-        return
-      }
-    }
+    if (!canShowInstallPrompt()) return
 
-    // Listen for beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       setShowPrompt(true)
     }
 
+    const handleAppInstalled = () => {
+      setShowPrompt(false)
+      setDeferredPrompt(null)
+      setIsInstalled(true)
+    }
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', handleAppInstalled)
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', handleAppInstalled)
     }
   }, [])
 
   const handleInstall = async () => {
-    if (!deferredPrompt) {
-      return
-    }
+    if (!deferredPrompt) return
 
     try {
       await deferredPrompt.prompt()
@@ -75,6 +88,7 @@ export function PWAInstallPrompt() {
 
   const handleDismiss = () => {
     setShowPrompt(false)
+    setDeferredPrompt(null)
     localStorage.setItem(STORAGE_KEY, Date.now().toString())
   }
 
@@ -82,43 +96,52 @@ export function PWAInstallPrompt() {
     return null
   }
 
+  const baseCardStyles =
+    'rounded-xl border border-border bg-background-elevated shadow-lg dark:border-neutral-2 dark:bg-gray-900'
+
+  const containerClass = stacked
+    ? `w-full max-w-[500px] p-4 ${baseCardStyles}`
+    : `fixed bottom-4 left-1/2 z-[105] w-[90%] max-w-[500px] -translate-x-1/2 p-4 sm:bottom-6 ${baseCardStyles}`
+
   return (
     <div
       role="alert"
-      className="fixed bottom-4 left-1/2 z-50 w-[90%] max-w-[500px] -translate-x-1/2 rounded-lg border border-border bg-white p-4 shadow-lg sm:bottom-6 dark:bg-gray-900"
+      className={containerClass}
+      aria-label={t('pwa.install.title')}
     >
-      <div className="flex items-start gap-3">
-        <Download className="h-5 w-5 shrink-0 text-primary mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm text-foreground mb-0.5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+            aria-hidden
+          >
+            <Download className="h-5 w-5" strokeWidth={2} />
+          </div>
+          <p className="min-w-0 break-words text-sm font-medium leading-snug text-foreground">
             {t('pwa.install.title')}
           </p>
-          <p className="text-sm text-muted-foreground">
-            {t('pwa.install.description')}
-          </p>
-          <div className="flex items-center gap-2 mt-3">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={handleInstall}
-              className="gap-1.5"
-            >
-              <Download className="h-4 w-4" />
-              {t('pwa.install.installButton')}
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 shrink-0"
-              onClick={handleDismiss}
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            size="sm"
+            variant="default"
+            onClick={handleInstall}
+            className="h-9 gap-2 rounded-lg px-4 font-medium shadow-sm transition-colors hover:opacity-90"
+          >
+            <Download className="h-4 w-4" strokeWidth={2} />
+            {t('pwa.install.installButton')}
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 shrink-0 rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+            onClick={handleDismiss}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" strokeWidth={2} />
+          </Button>
         </div>
       </div>
     </div>
   )
 }
-

@@ -315,8 +315,8 @@ self.addEventListener('push', (event) => {
   const options = {
     title: data.title || 'Nez.bg',
     body: data.body || 'You have a new notification',
-    icon: data.icon || '/icon-192x192.png',
-    badge: data.badge || '/icon-192x192.png',
+    icon: data.icon || '/icon512_rounded.png',
+    badge: data.badge || '/icon512_rounded.png',
     image: data.image,
     data: data.data || {},
     tag: data.tag || 'default',

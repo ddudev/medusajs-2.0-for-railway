@@ -5,13 +5,18 @@ import { Suspense } from "react"
 import "styles/globals.css"
 import { ThemeProvider } from "next-themes"
 import TopLoadingBar from "@modules/common/components/top-loading-bar"
-import { PWAComponents } from "./pwa-components"
 import { PostHogProviderWrapper } from "@lib/analytics/posthog-provider"
 import { PostHogSurveys } from "@lib/analytics/posthog-surveys"
 import { WebVitalsTracker } from "@lib/analytics/web-vitals-tracker"
 import { ScrollDepthTracker } from "@lib/analytics/scroll-depth-tracker"
 import { GTMProvider } from "@lib/analytics/gtm-provider"
 import { MetaPixelProvider } from "@lib/analytics/meta-pixel-provider"
+import { PWAComponents } from "./pwa-components"
+import {
+  CookieConsentProvider,
+  CookieSettings,
+} from "@/components/cookie-consent"
+import { BottomBannersStack } from "@/components/bottom-banners-stack"
 
 const inter = Inter({
   weight: ['300', '400', '500', '600', '700'],
@@ -42,7 +47,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="MS Store" />
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/icon512_rounded.png" />
         {/* Resource hints for faster connections */}
         {backendHost && (
           <>
@@ -61,25 +66,35 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         )}
       </head>
       <body>
-        <GTMProvider>
-          <MetaPixelProvider>
-            <PostHogProviderWrapper>
-              <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-                <main className="relative">
-                  <Suspense fallback={<TopLoadingBar />}>
-                    {props.children}
+        <CookieConsentProvider
+          config={{
+            consentVersion: "1.0.0",
+            privacyPolicyUrl: "/privacy",
+            googleConsentMode: { enabled: true },
+          }}
+        >
+          <GTMProvider>
+            <MetaPixelProvider>
+              <PostHogProviderWrapper>
+                <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+                  <main className="relative">
+                    <Suspense fallback={<TopLoadingBar />}>
+                      {props.children}
+                    </Suspense>
+                  </main>
+                  <Suspense fallback={null}>
+                    <PWAComponents />
                   </Suspense>
-                </main>
-                <Suspense fallback={null}>
-                  <PWAComponents />
-                </Suspense>
-                <PostHogSurveys />
-                <WebVitalsTracker />
-                <ScrollDepthTracker />
-              </ThemeProvider>
-            </PostHogProviderWrapper>
-          </MetaPixelProvider>
-        </GTMProvider>
+                  <PostHogSurveys />
+                  <WebVitalsTracker />
+                  <ScrollDepthTracker />
+                </ThemeProvider>
+              </PostHogProviderWrapper>
+            </MetaPixelProvider>
+          </GTMProvider>
+          <BottomBannersStack />
+          <CookieSettings />
+        </CookieConsentProvider>
       </body>
     </html>
   )

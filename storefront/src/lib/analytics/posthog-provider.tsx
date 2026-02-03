@@ -2,6 +2,7 @@
 
 import { PostHogProvider } from 'posthog-js/react'
 import { useEffect, useState } from 'react'
+import { useConsentValue } from '@/components/cookie-consent'
 
 // In Next.js, NEXT_PUBLIC_* variables are replaced at build time as string literals
 // We access them directly - Next.js will replace these with actual values during build
@@ -13,6 +14,7 @@ const POSTHOG_DISABLED = process.env.NEXT_PUBLIC_POSTHOG_DISABLED === 'true'
 export function PostHogProviderWrapper({ children }: { children: React.ReactNode }) {
   const [posthogClient, setPosthogClient] = useState<any>(null)
   const [isInitialized, setIsInitialized] = useState(false)
+  const analyticsConsent = useConsentValue('analytics')
 
   useEffect(() => {
     // Only run on client side
@@ -44,6 +46,8 @@ export function PostHogProviderWrapper({ children }: { children: React.ReactNode
             if (mounted) {
               setPosthogClient(posthogInstance)
               setIsInitialized(true)
+              // GDPR: opt out by default until analytics consent is granted
+              posthogInstance.opt_out_capturing()
             }
           },
           // Enable autocapture (tracks clicks, form submissions automatically)
@@ -89,6 +93,16 @@ export function PostHogProviderWrapper({ children }: { children: React.ReactNode
       mounted = false
     }
   }, [])
+
+  // Sync PostHog capturing with analytics consent
+  useEffect(() => {
+    if (typeof window === 'undefined' || !posthogClient) return
+    if (analyticsConsent) {
+      posthogClient.opt_in_capturing()
+    } else {
+      posthogClient.opt_out_capturing()
+    }
+  }, [posthogClient, analyticsConsent])
 
   // On server, just return children
   if (typeof window === 'undefined') {

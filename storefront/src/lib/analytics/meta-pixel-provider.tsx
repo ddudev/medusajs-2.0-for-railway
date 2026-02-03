@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { useConsentValue } from '@/components/cookie-consent'
 
 // Meta Pixel ID from environment
 const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || null
@@ -21,6 +22,7 @@ type MetaPixelProviderProps = {
 
 export function MetaPixelProvider({ children }: MetaPixelProviderProps) {
   const [isInitialized, setIsInitialized] = useState(false)
+  const marketingConsent = useConsentValue('marketing')
   
   // Handle pathname for static generation
   let pathname: string | null = null
@@ -31,8 +33,8 @@ export function MetaPixelProvider({ children }: MetaPixelProviderProps) {
   }
 
   useEffect(() => {
-    // Skip if no Pixel ID or already initialized
-    if (!META_PIXEL_ID || isInitialized) return
+    // Only initialize when marketing consent is granted
+    if (!META_PIXEL_ID || !marketingConsent || isInitialized) return
 
     // Initialize Meta Pixel
     ;(function(f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
@@ -68,7 +70,7 @@ export function MetaPixelProvider({ children }: MetaPixelProviderProps) {
     if (META_DEBUG) {
       console.log('Meta Pixel initialized with ID:', META_PIXEL_ID)
     }
-  }, [isInitialized])
+  }, [isInitialized, marketingConsent])
 
   // Track page views on route change
   useEffect(() => {

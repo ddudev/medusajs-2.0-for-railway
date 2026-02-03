@@ -49,6 +49,17 @@ export function GTMProvider({ children }: GTMProviderProps) {
     // Set up gtag function
     window.gtag = gtag
 
+    // Google Consent Mode v2: set default to denied before any tags run
+    gtag('consent', 'default', {
+      ad_storage: 'denied',
+      analytics_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied',
+      functionality_storage: 'denied',
+      personalization_storage: 'denied',
+      security_storage: 'granted',
+    })
+
     // Initialize with timestamp
     gtag('js', new Date())
 
