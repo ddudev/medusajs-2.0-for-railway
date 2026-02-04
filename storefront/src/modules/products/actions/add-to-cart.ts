@@ -15,15 +15,14 @@ export async function addToCartAction({
   quantity: number
   countryCode: string
 }) {
-  try {
-    await addToCartLib({
-      variantId,
-      quantity,
-      countryCode,
-    })
-    return { success: true }
-  } catch (error: any) {
-    return { success: false, error: error.message || "Failed to add to cart" }
+  const result = await addToCartLib({
+    variantId,
+    quantity,
+    countryCode,
+  })
+  if (!result.success) {
+    return { success: false, error: result.error }
   }
+  return { success: true }
 }
 

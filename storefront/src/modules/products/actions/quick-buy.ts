@@ -21,14 +21,16 @@ export async function quickBuy({
     throw new Error("Missing variant ID")
   }
 
-  try {
-    // Add to cart
-    await addToCart({
-      variantId,
-      quantity,
-      countryCode,
-    })
+  const addResult = await addToCart({
+    variantId,
+    quantity,
+    countryCode,
+  })
+  if (!addResult.success) {
+    throw new Error(addResult.error)
+  }
 
+  try {
     // Get cart to determine checkout step
     const cart = await getOrSetCart(countryCode)
     

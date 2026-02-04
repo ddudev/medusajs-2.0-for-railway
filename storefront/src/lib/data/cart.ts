@@ -1,7 +1,7 @@
 "use server"
 
 import { sdk } from "@lib/config"
-import medusaError from "@lib/util/medusa-error"
+import medusaError, { getMedusaErrorMessage } from "@lib/util/medusa-error"
 import { HttpTypes } from "@medusajs/types"
 import { omit } from "lodash"
 import { revalidateTag } from "next/cache"
@@ -101,6 +101,9 @@ export async function updateCart(data: HttpTypes.StoreUpdateCart) {
     .catch(medusaError)
 }
 
+/** Result type for cart Server Actions so the client can show backend error messages (Next.js strips Error.message in production). */
+export type CartActionResult = { success: true } | { success: false; error: string }
+
 export async function addToCart({
   variantId,
   quantity,
@@ -109,19 +112,19 @@ export async function addToCart({
   variantId: string
   quantity: number
   countryCode: string
-}) {
+}): Promise<CartActionResult> {
   if (!variantId) {
-    throw new Error("Missing variant ID when adding to cart")
+    return { success: false, error: "Missing variant ID when adding to cart" }
   }
 
   try {
     const cart = await getOrSetCart(countryCode)
     if (!cart) {
-      throw new Error("Error retrieving or creating cart")
+      return { success: false, error: "Error retrieving or creating cart" }
     }
 
     const authHeaders = await getAuthHeaders()
-    
+
     try {
       await sdk.store.cart.createLineItem(
         cart.id,
@@ -132,19 +135,14 @@ export async function addToCart({
         {},
         authHeaders
       )
-      
-      // Note: Removed revalidateTag to prevent page refresh
-      // Cart state is managed client-side with TanStack Query
-      // The mini-cart drawer will update automatically via useCart hook
+      return { success: true }
     } catch (sdkError: any) {
-      // Handle SDK errors without closing connection
-      throw medusaError(sdkError)
+      const message = getMedusaErrorMessage(sdkError)
+      return { success: false, error: message }
     }
   } catch (error: any) {
-    // Ensure errors are properly propagated without closing the connection
-    // Re-throw with a clean error message
     const errorMessage = error.message || "Failed to add item to cart"
-    throw new Error(errorMessage)
+    return { success: false, error: errorMessage }
   }
 }
 
@@ -154,65 +152,53 @@ export async function updateLineItem({
 }: {
   lineId: string
   quantity: number
-}) {
+}): Promise<CartActionResult> {
   if (!lineId) {
-    throw new Error("Missing lineItem ID when updating line item")
+    return { success: false, error: "Missing lineItem ID when updating line item" }
   }
 
   const cartId = await getCartId()
   if (!cartId) {
-    throw new Error("Missing cart ID when updating line item")
+    return { success: false, error: "Missing cart ID when updating line item" }
   }
 
-  const authHeaders = await getAuthHeaders()
-  await sdk.store.cart
-    .updateLineItem(cartId, lineId, { quantity }, {}, authHeaders)
-    .then(() => {
-      // Note: Removed revalidateTag to prevent page refresh
-      // Cart state is managed client-side with TanStack Query (useUpdateLineItem hook)
-    })
-    .catch(medusaError)
+  try {
+    const authHeaders = await getAuthHeaders()
+    await sdk.store.cart.updateLineItem(cartId, lineId, { quantity }, {}, authHeaders)
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: getMedusaErrorMessage(error) }
+  }
 }
 
-export async function deleteLineItem(lineId: string) {
+export async function deleteLineItem(lineId: string): Promise<CartActionResult> {
   if (!lineId) {
-    throw new Error("Missing lineItem ID when deleting line item")
+    return { success: false, error: "Missing lineItem ID when deleting line item" }
   }
 
   try {
     const cartId = await getCartId()
     if (!cartId) {
-      throw new Error("Missing cart ID when deleting line item")
+      return { success: false, error: "Missing cart ID when deleting line item" }
     }
 
     const authHeaders = await getAuthHeaders()
-    await sdk.store.cart
-      .deleteLineItem(cartId, lineId, {}, authHeaders)
-      .then(async () => {
-        // Note: Removed revalidateTag to prevent page refresh
-        // Cart state is managed client-side with TanStack Query
-        
-        // Check if cart is now empty and clear shipping if so
-        try {
-          const { cart } = await sdk.store.cart.retrieve(
-            cartId,
-            { fields: "+items.*,+shipping_methods.*" },
-            authHeaders
-          )
-          
-          // If cart is empty, remove shipping methods
-          if (!cart.items || cart.items.length === 0) {
-            await clearShippingMethods(cartId)
-          }
-        } catch (err) {
-          console.warn("Failed to check/clear shipping after item removal:", err)
-          // Don't fail the whole operation if cleanup fails
-        }
-      })
-      .catch(medusaError)
+    await sdk.store.cart.deleteLineItem(cartId, lineId, {}, authHeaders)
+    try {
+      const { cart } = await sdk.store.cart.retrieve(
+        cartId,
+        { fields: "+items.*,+shipping_methods.*" },
+        authHeaders
+      )
+      if (!cart.items || cart.items.length === 0) {
+        await clearShippingMethods(cartId)
+      }
+    } catch (err) {
+      console.warn("Failed to check/clear shipping after item removal:", err)
+    }
+    return { success: true }
   } catch (error: any) {
-    // Re-throw with a more user-friendly message
-    throw new Error(error.message || "Failed to delete item from cart")
+    return { success: false, error: getMedusaErrorMessage(error) }
   }
 }
 
@@ -287,7 +273,8 @@ export async function setShippingMethod({
 
 /**
  * Remove all shipping methods from cart
- * This is useful when cart becomes empty
+ * This is useful when cart becomes empty.
+ * Uses Store API DELETE directly because the JS SDK does not expose deleteShippingMethod.
  */
 export async function clearShippingMethods(cartId: string) {
   try {
@@ -298,21 +285,37 @@ export async function clearShippingMethods(cartId: string) {
       authHeaders
     )
 
-    // Delete each shipping method
-    if (cart.shipping_methods && cart.shipping_methods.length > 0) {
-      for (const method of cart.shipping_methods) {
-        if (method.id) {
-          try {
-            await sdk.store.cart.deleteShippingMethod(
-              cartId,
-              method.id,
-              {},
-              authHeaders
-            )
-          } catch (err) {
-            console.warn(`Failed to delete shipping method ${method.id}:`, err)
+    if (!cart.shipping_methods?.length) return
+
+    const backendUrl =
+      process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      "http://localhost:9000"
+    const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+
+    for (const method of cart.shipping_methods) {
+      if (!method.id) continue
+      try {
+        const res = await fetch(
+          `${backendUrl}/store/carts/${cartId}/shipping-methods/${method.id}`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              "x-publishable-api-key": publishableKey,
+              ...(authHeaders as Record<string, string>),
+            },
           }
+        )
+        if (!res.ok) {
+          console.warn(
+            `Failed to delete shipping method ${method.id}:`,
+            res.status,
+            await res.text()
+          )
         }
+      } catch (err) {
+        console.warn(`Failed to delete shipping method ${method.id}:`, err)
       }
     }
   } catch (error: any) {

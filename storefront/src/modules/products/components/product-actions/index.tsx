@@ -176,11 +176,10 @@ export default function ProductActions({
           openCart()
         },
         onError: (error) => {
-          // Error toast shown automatically by mutation
           console.error('Failed to add to cart:', error)
           showToast({
             type: 'error',
-            message: 'Failed to add to cart. Please try again.',
+            message: error?.message ?? 'Failed to add to cart. Please try again.',
             duration: 4000,
           })
         },

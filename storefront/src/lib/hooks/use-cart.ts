@@ -40,8 +40,13 @@ export function useAddToCart() {
   const { trackProductAddedToCart } = useAnalytics()
 
   return useMutation({
-    mutationFn: ({ variantId, quantity }: { variantId: string; quantity: number }) =>
-      addToCartAPI({ variantId, quantity, countryCode }),
+    mutationFn: async ({ variantId, quantity }: { variantId: string; quantity: number }) => {
+      const result = await addToCartAPI({ variantId, quantity, countryCode })
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+      return result
+    },
 
     // Optimistic update - runs immediately before server call
     onMutate: async ({ variantId, quantity }) => {
@@ -112,8 +117,13 @@ export function useUpdateLineItem() {
   const { trackCartUpdated } = useAnalytics()
 
   return useMutation({
-    mutationFn: ({ lineId, quantity }: { lineId: string; quantity: number }) =>
-      updateLineItemAPI({ lineId, quantity }),
+    mutationFn: async ({ lineId, quantity }: { lineId: string; quantity: number }) => {
+      const result = await updateLineItemAPI({ lineId, quantity })
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+      return result
+    },
 
     onMutate: async ({ lineId, quantity }) => {
       await queryClient.cancelQueries({ queryKey: cartKeys.detail() })
@@ -162,7 +172,13 @@ export function useRemoveLineItem() {
   const { trackProductRemovedFromCart } = useAnalytics()
 
   return useMutation({
-    mutationFn: (lineId: string) => deleteLineItemAPI(lineId),
+    mutationFn: async (lineId: string) => {
+      const result = await deleteLineItemAPI(lineId)
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+      return result
+    },
 
     onMutate: async (lineId) => {
       await queryClient.cancelQueries({ queryKey: cartKeys.detail() })
