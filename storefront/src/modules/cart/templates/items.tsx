@@ -26,9 +26,9 @@ const ItemsTemplate = ({ items }: ItemsTemplateProps) => {
       <div className="divide-y divide-gray-100">
         {items
           ? items
-              .sort((a, b) => {
-                return (a.created_at ?? "") > (b.created_at ?? "") ? -1 : 1
-              })
+              .toSorted((a, b) =>
+                (a.created_at ?? "") > (b.created_at ?? "") ? -1 : 1
+              )
               .map((item) => {
                 return <Item key={item.id} item={item} />
               })

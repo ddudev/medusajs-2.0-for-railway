@@ -5,12 +5,7 @@ import { Suspense } from "react"
 import "styles/globals.css"
 import { ThemeProvider } from "next-themes"
 import TopLoadingBar from "@modules/common/components/top-loading-bar"
-import { PostHogProviderWrapper } from "@lib/analytics/posthog-provider"
-import { PostHogSurveys } from "@lib/analytics/posthog-surveys"
-import { WebVitalsTracker } from "@lib/analytics/web-vitals-tracker"
-import { ScrollDepthTracker } from "@lib/analytics/scroll-depth-tracker"
-import { GTMProvider } from "@lib/analytics/gtm-provider"
-import { MetaPixelProvider } from "@lib/analytics/meta-pixel-provider"
+import { DeferredAnalyticsWrapper } from "@lib/analytics/deferred-analytics-wrapper"
 import { PWAComponents } from "./pwa-components"
 import {
   CookieConsentProvider,
@@ -18,16 +13,32 @@ import {
 } from "@/components/cookie-consent"
 import { BottomBannersStack } from "@/components/bottom-banners-stack"
 
+// Fewer weights = smaller font payload and faster LCP (300/500 dropped; 400/600/700 cover normal/semibold/bold)
 const inter = Inter({
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '600', '700'],
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
   preload: true,
 })
 
+const siteName =
+  process.env.NEXT_PUBLIC_SITE_NAME || "MS Store"
+const siteDescription =
+  process.env.NEXT_PUBLIC_SITE_DESCRIPTION ||
+  "Shop online with fast delivery and secure checkout."
+
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
+  title: {
+    default: siteName,
+    template: `%s | ${siteName}`,
+  },
+  description: siteDescription,
+  openGraph: {
+    title: siteName,
+    description: siteDescription,
+  },
 }
 
 export default function RootLayout(props: { children: React.ReactNode }) {
@@ -48,16 +59,14 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="MS Store" />
         <link rel="apple-touch-icon" href="/icon512_rounded.png" />
-        {/* Resource hints for faster connections */}
+        {/* Resource hints: preconnect only to critical origins (Lighthouse: use sparingly) */}
         {backendHost && (
           <>
             <link rel="preconnect" href={backendHost} crossOrigin="anonymous" />
             <link rel="dns-prefetch" href={backendHost} />
           </>
         )}
-        {/* Preconnect to common CDNs */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         {/* DNS prefetch for image CDNs */}
         <link rel="dns-prefetch" href="https://medusa-public-images.s3.eu-west-1.amazonaws.com" />
         <link rel="dns-prefetch" href="https://bucket-production-a1ba.up.railway.app" />
@@ -73,25 +82,18 @@ export default function RootLayout(props: { children: React.ReactNode }) {
             googleConsentMode: { enabled: true },
           }}
         >
-          <GTMProvider>
-            <MetaPixelProvider>
-              <PostHogProviderWrapper>
-                <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-                  <main className="relative">
-                    <Suspense fallback={<TopLoadingBar />}>
-                      {props.children}
-                    </Suspense>
-                  </main>
-                  <Suspense fallback={null}>
-                    <PWAComponents />
-                  </Suspense>
-                  <PostHogSurveys />
-                  <WebVitalsTracker />
-                  <ScrollDepthTracker />
-                </ThemeProvider>
-              </PostHogProviderWrapper>
-            </MetaPixelProvider>
-          </GTMProvider>
+          <DeferredAnalyticsWrapper>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+              <main className="relative">
+                <Suspense fallback={<TopLoadingBar />}>
+                  {props.children}
+                </Suspense>
+              </main>
+              <Suspense fallback={null}>
+                <PWAComponents />
+              </Suspense>
+            </ThemeProvider>
+          </DeferredAnalyticsWrapper>
           <Suspense fallback={null}>
             <BottomBannersStack />
           </Suspense>

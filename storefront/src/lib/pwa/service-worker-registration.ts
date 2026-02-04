@@ -38,7 +38,7 @@ export function registerServiceWorker(
     }
   })
 
-  window.addEventListener('load', () => {
+  const doRegister = () => {
     navigator.serviceWorker
       .register('/sw.js', { scope: '/' })
       .then((registration) => {
@@ -86,7 +86,14 @@ export function registerServiceWorker(
         console.error('[PWA] Service Worker registration failed:', error)
         onError?.(error)
       })
-  })
+  }
+
+  // Run when load is complete (supports being called after load, e.g. from requestIdleCallback)
+  if (typeof document !== 'undefined' && document.readyState === 'complete') {
+    doRegister()
+  } else {
+    window.addEventListener('load', doRegister)
+  }
 }
 
 export function unregisterServiceWorker(): void {

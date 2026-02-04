@@ -7,6 +7,9 @@ import { getAuthHeaders } from "./cookies"
 
 export const retrieveOrder = cache(async function (id: string) {
   const authHeaders = await getAuthHeaders()
+  if (!authHeaders || !("authorization" in authHeaders)) {
+    throw new Error("Unauthorized")
+  }
   return sdk.store.order
     .retrieve(
       id,
@@ -22,6 +25,9 @@ export const listOrders = cache(async function (
   offset: number = 0
 ) {
   const authHeaders = await getAuthHeaders()
+  if (!authHeaders || !("authorization" in authHeaders)) {
+    throw new Error("Unauthorized")
+  }
   return sdk.store.order
     .list({ limit, offset }, { next: { tags: ["order"] }, ...authHeaders })
     .then(({ orders }) => orders)

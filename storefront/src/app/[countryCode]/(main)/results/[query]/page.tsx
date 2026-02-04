@@ -4,6 +4,7 @@ import SearchResultsTemplate from "@modules/search/templates/search-results-temp
 
 import { search } from "@modules/search/actions"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
+import { getCanonicalUrl } from "@lib/seo/utils"
 import { getTranslations, getTranslation } from "@lib/i18n/server"
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -22,13 +23,32 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   
   const title = `${searchForQuery.replace("{query}", query)} | ${siteName}`
   const description = findProducts.replace("{query}", query)
-  
+  const canonicalUrl = getCanonicalUrl(
+    `/results/${encodeURIComponent(query)}`,
+    normalizedCountryCode
+  )
+
   return {
     title,
     description,
     robots: {
       index: true,
       follow: true,
+    },
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      type: "website",
+      siteName: siteName || undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
     },
   }
 }

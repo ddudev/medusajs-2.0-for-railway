@@ -58,6 +58,9 @@ export const updateCustomer = cache(async function (
   body: HttpTypes.StoreUpdateCustomer
 ) {
   const authHeaders = await getAuthHeaders()
+  if (!authHeaders || !("authorization" in authHeaders)) {
+    throw new Error("Unauthorized")
+  }
   const updateRes = await sdk.store.customer
     .update(body, {}, authHeaders)
     .then(({ customer }) => customer)
@@ -343,6 +346,9 @@ export const updateCustomerAddress = async (
   }
 
   const authHeaders = await getAuthHeaders()
+  if (!authHeaders || !("authorization" in authHeaders)) {
+    return { success: false, error: "Unauthorized" }
+  }
   return sdk.store.customer
     .updateAddress(addressId, address, {}, authHeaders)
     .then(() => {

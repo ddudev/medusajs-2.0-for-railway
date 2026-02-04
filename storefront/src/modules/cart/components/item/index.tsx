@@ -1,6 +1,6 @@
 "use client"
 
-import { Text, clx } from "@medusajs/ui"
+import { Text } from "@medusajs/ui"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 
 import { HttpTypes } from "@medusajs/types"
@@ -57,15 +57,13 @@ const Item = ({ item, type = "full" }: ItemProps) => {
             className="w-16 h-16 object-cover rounded-lg"
           />
         </LocalizedClientLink>
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full">
-          <div className="flex-1 flex flex-col gap-1 mr-auto">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full min-w-0">
+          <div className="flex-1 flex flex-col gap-1 mr-auto min-w-0">
             <Text className="text-sm font-medium text-gray-900" data-testid="product-title">
               {item.product_title}
             </Text>
             <LineItemOptions variant={item.variant} data-testid="product-variant" />
           </div>
-          
           <div className="flex-shrink-0 text-right ml-auto">
             <LineItemPrice item={item} style="tight" />
             <div className="flex items-center gap-2 text-xs text-gray-400">

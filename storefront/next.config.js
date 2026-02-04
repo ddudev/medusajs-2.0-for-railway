@@ -63,7 +63,7 @@ const nextConfig = {
   cacheComponents: true,
   // Experimental features for better performance
   experimental: {
-    optimizePackageImports: ['@medusajs/js-sdk'],
+    optimizePackageImports: ['@medusajs/js-sdk', 'lucide-react'],
     // Enable server actions optimization
     serverActions: {
       bodySizeLimit: '2mb',

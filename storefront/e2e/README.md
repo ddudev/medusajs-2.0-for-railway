@@ -87,3 +87,13 @@ npm run test-e2e
 ```
 
 While the test suite is running, it is configured to automatically run the nextjs template during test execution.
+
+### Running only performance improvement tests
+
+To run only the performance-improvements spec (LCP preload, high-priority image, deferred analytics, font):
+
+```sh
+npx playwright test e2e/tests/public/performance-improvements.spec.ts --project="chromium public"
+```
+
+Requires the storefront to be running (or use the default webServer). These tests assert that performance optimizations (LCP preload, priority image, deferred analytics) are present in the DOM.

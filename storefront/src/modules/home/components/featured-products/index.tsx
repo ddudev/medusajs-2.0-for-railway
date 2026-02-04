@@ -8,6 +8,8 @@ interface FeaturedProductsProps {
   title?: string
   titleKey?: string
   countryCode?: string
+  /** When true, only the first product image gets priority (LCP candidate) */
+  isFirstRail?: boolean
 }
 
 export default async function FeaturedProducts({
@@ -16,6 +18,7 @@ export default async function FeaturedProducts({
   title,
   titleKey,
   countryCode = "us",
+  isFirstRail = false,
 }: FeaturedProductsProps) {
   if (!collections || collections.length === 0) {
     return null
@@ -36,19 +39,21 @@ export default async function FeaturedProducts({
         region={region}
         title={displayTitle}
         countryCode={countryCode}
+        isFirstRail={isFirstRail}
       />
     )
   }
 
-  // Otherwise show all collections
+  // Otherwise show all collections (only first rail gets isFirstRail for LCP)
   return (
     <>
-      {collections.map((collection) => (
+      {collections.map((collection, i) => (
         <ProductRail
           key={collection.id}
           collection={collection}
           region={region}
           countryCode={countryCode}
+          isFirstRail={isFirstRail && i === 0}
         />
       ))}
     </>

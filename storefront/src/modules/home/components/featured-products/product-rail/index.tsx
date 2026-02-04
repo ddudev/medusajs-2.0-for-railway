@@ -14,6 +14,8 @@ interface ProductRailProps {
   title?: string
   showViewAll?: boolean
   countryCode?: string
+  /** When true, only the first image gets priority (LCP); otherwise first 4 get priority */
+  isFirstRail?: boolean
 }
 
 export default async function ProductRail({
@@ -22,6 +24,7 @@ export default async function ProductRail({
   title,
   showViewAll = true,
   countryCode = "us",
+  isFirstRail = false,
 }: ProductRailProps) {
   const { products } = collection
 
@@ -77,7 +80,7 @@ export default async function ProductRail({
                   product={product} 
                   region={region}
                   countryCode={countryCode}
-                  priority={index < 4} // Prioritize first 4 images for LCP
+                  priority={isFirstRail ? index === 0 : index < 4} // LCP: single image on first rail; else first 4
                   pricedProduct={pricedProduct}
                 />
               </li>

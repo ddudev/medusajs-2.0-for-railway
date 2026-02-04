@@ -111,12 +111,10 @@ const CartDropdown = ({
                   </div>
                 )}
                 <div className="overflow-y-scroll max-h-[402px] px-4 grid grid-cols-1 gap-y-8 no-scrollbar p-px">
-                  {cartState.items
-                    .sort((a, b) => {
-                      return (a.created_at ?? "") > (b.created_at ?? "")
-                        ? -1
-                        : 1
-                    })
+                  {[...cartState.items]
+                    .toSorted((a, b) =>
+                      (a.created_at ?? "") > (b.created_at ?? "") ? -1 : 1
+                    )
                     .map((item) => (
                       <div
                         className="grid grid-cols-[122px_1fr] gap-x-4"

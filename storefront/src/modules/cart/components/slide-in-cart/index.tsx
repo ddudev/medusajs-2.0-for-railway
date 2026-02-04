@@ -93,12 +93,10 @@ const SlideInCart = ({ cart }: SlideInCartProps) => {
                       </div>
                     )}
                     <div className="space-y-4">
-                      {cart.items
-                        .sort((a, b) => {
-                          return (a.created_at ?? "") > (b.created_at ?? "")
-                            ? -1
-                            : 1
-                        })
+                      {[...cart.items]
+                        .toSorted((a, b) =>
+                          (a.created_at ?? "") > (b.created_at ?? "") ? -1 : 1
+                        )
                         .map((item) => (
                           <CartItem key={item.id} item={item} />
                         ))}

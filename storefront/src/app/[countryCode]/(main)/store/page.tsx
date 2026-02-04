@@ -2,6 +2,7 @@ import { Metadata } from "next"
 
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import StoreTemplate from "@modules/store/templates"
+import { getCanonicalUrl } from "@lib/seo/utils"
 import { getTranslations, getTranslation } from "@lib/i18n/server"
 
 type Params = {
@@ -26,15 +27,32 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   
   // Get translations for metadata
   const translations = await getTranslations(normalizedCountryCode)
+  const siteName = getTranslation(translations, "metadata.siteName")
   const title = getTranslation(translations, "metadata.store.title")
   const description = getTranslation(translations, "metadata.store.description")
-  
+  const canonicalUrl = getCanonicalUrl("/store", normalizedCountryCode)
+
   return {
     title,
     description,
     robots: {
       index: true,
       follow: true,
+    },
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      type: "website",
+      siteName: siteName || undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
     },
   }
 }

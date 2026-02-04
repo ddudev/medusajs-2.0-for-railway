@@ -6,6 +6,7 @@ import dynamicImport from "next/dynamic"
 import { getCollectionsWithProducts } from "@lib/data/collections"
 import { getRegion } from "@lib/data/regions"
 import { getProductsList } from "@lib/data/products"
+import { getBaseURL } from "@lib/util/env"
 import { generateOrganizationSchema } from "@lib/seo/organization-schema"
 import { generateWebsiteSchema } from "@lib/seo/website-schema"
 import { generateHreflangMetadata } from "@lib/seo/hreflang"
@@ -117,37 +118,33 @@ async function HomeContent({
 }: {
   countryCode: string
 }) {
-  // Collections metadata can be cached (doesn't include prices)
-  const collections = await getCollectionsWithProducts(countryCode)
-  const region = await getRegion(countryCode)
+  // Run independent fetches in parallel to avoid waterfall (Vercel best practice: async-parallel)
+  const [collections, region, trendingProducts, bestSellers, translations] = await Promise.all([
+    getCollectionsWithProducts(countryCode),
+    getRegion(countryCode),
+    getProductsList({ pageParam: 1, queryParams: { limit: 8 }, countryCode }),
+    getProductsList({ pageParam: 1, queryParams: { limit: 8 }, countryCode }),
+    getTranslations(countryCode),
+  ])
 
   // Early return if region is not found - region is required for product prices
   if (!region) {
     return null
   }
 
-  // Product prices are NOT cached - always fetch fresh (region-specific)
-  const trendingProducts = await getProductsList({
-    pageParam: 1,
-    queryParams: { limit: 8 },
-    countryCode,
-  })
-
-  // Product prices are NOT cached - always fetch fresh (region-specific)
-  const bestSellers = await getProductsList({
-    pageParam: 1,
-    queryParams: { limit: 8 },
-    countryCode,
-  })
-
   // Generate JSON-LD schemas for homepage
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://localhost:8000"
   const homepageUrl = getCanonicalUrl("", countryCode)
-
-  // Get translations for schema (reuse from metadata generation)
-  const translations = await getTranslations(countryCode)
   const siteName = getTranslation(translations, "metadata.siteName")
   const siteDescription = getTranslation(translations, "metadata.homepage.description")
+
+  // LCP: preload first product image (Trending rail) so browser fetches it before parsing the rest
+  const firstProduct = collections?.[0]?.products?.[0]
+  const lcpImageUrl =
+    firstProduct?.thumbnail || (firstProduct as { images?: { url?: string }[] })?.images?.[0]?.url
+  const preloadHref =
+    lcpImageUrl &&
+    `${getBaseURL()}/_next/image?url=${encodeURIComponent(lcpImageUrl)}&w=384&q=75`
 
   const organizationSchema = generateOrganizationSchema({
     name: siteName,
@@ -167,6 +164,10 @@ async function HomeContent({
 
   return (
     <>
+      {/* LCP: preload first product image so it starts loading before the rest of the page */}
+      {preloadHref && (
+        <link rel="preload" as="image" href={preloadHref} fetchPriority="high" />
+      )}
       {/* JSON-LD Structured Data */}
       <JsonLdScript id="organization-schema" data={organizationSchema} />
       <JsonLdScript id="website-schema" data={websiteSchema} />
@@ -180,13 +181,14 @@ async function HomeContent({
       {/* Advantage Boxes */}
       <AdvantageBoxes countryCode={countryCode} />
 
-      {/* Trending Products */}
+      {/* Trending Products - first rail is LCP candidate */}
       {collections && collections.length > 0 && (
         <FeaturedProducts
           collections={collections}
           region={region}
           countryCode={countryCode}
           titleKey="homepage.trending"
+          isFirstRail
         />
       )}
 
