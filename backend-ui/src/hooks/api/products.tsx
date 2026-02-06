@@ -448,6 +448,51 @@ export const useEnhanceProductWithAI = (
   })
 }
 
+export const useRetranslateProductSEO = (
+  id: string,
+  options?: UseMutationOptions<
+    HttpTypes.AdminProductResponse,
+    FetchError,
+    void
+  >
+) => {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        `${backendUrl}/admin/products/${id}/retranslate-seo`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      )
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(
+          (error as { message?: string }).message ||
+            "Failed to re-run translation & SEO"
+        )
+      }
+
+      const data = await response.json()
+      return (data as { product: HttpTypes.AdminProductResponse }).product
+    },
+    onSuccess: async (data, variables, context) => {
+      await queryClient.invalidateQueries({
+        queryKey: productsQueryKeys.lists(),
+      })
+      await queryClient.invalidateQueries({
+        queryKey: productsQueryKeys.detail(id),
+      })
+      options?.onSuccess?.(data, variables, context)
+    },
+    ...options,
+  })
+}
+
 export const useExportProducts = (
   query?: HttpTypes.AdminProductListParams,
   options?: UseMutationOptions<

@@ -848,6 +848,15 @@
           "header": "Failed to delete product"
         }
       }
+    },
+    "retranslateSEO": {
+      "action": "Re-run translation & SEO",
+      "statusRunning": "Re-running translation & SEO…",
+      "toast": {
+        "success": "Translation and SEO completed",
+        "successDescription": "Product title, description, and SEO metadata have been updated.",
+        "error": "Failed to re-run translation & SEO"
+      }
     }
   },
   "collections": {

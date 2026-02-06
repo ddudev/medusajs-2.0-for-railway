@@ -1,12 +1,12 @@
-import { GlobeEurope, PencilSquare, Trash } from "@medusajs/icons"
+import { GlobeEurope, Language, PencilSquare, Spinner, Trash } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
-import { Container, Heading, StatusBadge, toast, usePrompt } from "@medusajs/ui"
+import { Container, Heading, StatusBadge, Text, toast, usePrompt } from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
 import { ActionMenu } from "../../../../../components/common/action-menu"
 import { SectionRow } from "../../../../../components/common/section"
-import { useDeleteProduct } from "../../../../../hooks/api/products"
+import { useDeleteProduct, useRetranslateProductSEO } from "../../../../../hooks/api/products"
 import { useExtension } from "../../../../../providers/extension-provider"
 import { useFeatureFlag } from "../../../../../providers/feature-flag-provider"
 
@@ -41,6 +41,21 @@ export const ProductGeneralSection = ({
   const displays = getDisplays("product", "general")
 
   const { mutateAsync } = useDeleteProduct(product.id)
+  const {
+    mutateAsync: retranslateSEO,
+    isPending: isRetranslatingSEO,
+  } = useRetranslateProductSEO(product.id, {
+    onSuccess: () => {
+      toast.success(t("products.retranslateSEO.toast.success"), {
+        description: t("products.retranslateSEO.toast.successDescription"),
+      })
+    },
+    onError: (e) => {
+      toast.error(t("products.retranslateSEO.toast.error"), {
+        description: e.message,
+      })
+    },
+  })
 
   const handleDelete = async () => {
     const res = await prompt({
@@ -76,6 +91,14 @@ export const ProductGeneralSection = ({
           <StatusBadge color={productStatusColor(product.status)}>
             {t(`products.productStatus.${product.status}`)}
           </StatusBadge>
+          {isRetranslatingSEO && (
+            <div className="flex items-center gap-x-2 text-ui-fg-subtle">
+              <Spinner className="size-4 animate-spin" />
+              <Text size="small" className="text-ui-fg-subtle">
+                {t("products.retranslateSEO.statusRunning")}
+              </Text>
+            </div>
+          )}
           <ActionMenu
             groups={[
               {
@@ -84,6 +107,16 @@ export const ProductGeneralSection = ({
                     label: t("actions.edit"),
                     to: "edit",
                     icon: <PencilSquare />,
+                  },
+                ],
+              },
+              {
+                actions: [
+                  {
+                    label: t("products.retranslateSEO.action"),
+                    onClick: () => retranslateSEO(),
+                    icon: <Language />,
+                    disabled: isRetranslatingSEO,
                   },
                 ],
               },

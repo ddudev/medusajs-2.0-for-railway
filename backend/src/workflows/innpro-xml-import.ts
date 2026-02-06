@@ -10,6 +10,7 @@ import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils'
 import { INNPRO_XML_IMPORTER_MODULE } from '../modules/innpro-xml-importer'
 import InnProXmlImporterService from '../modules/innpro-xml-importer/service'
 import { BRAND_MODULE } from '../modules/brand'
+import { CATEGORY_EXTENSION_MODULE } from '../modules/category-extension'
 import { IS_DEV, MINIO_ENDPOINT } from '../lib/constants'
 import { MedusaProductData, SelectionFilters } from '../modules/innpro-xml-importer/types'
 import { ChatGPTService } from '../modules/innpro-xml-importer/services/chatgpt'
@@ -494,7 +495,7 @@ const optimizeDescriptionsStep = createStep(
 /**
  * Helper: Get or create category hierarchy
  * Categories in InnPro XML are hierarchical paths like "RC models/Charging/Chargers"
- * Translates each category name to Bulgarian before creating/looking up
+ * Uses CategoryExtension.original_name for stable lookup; translates to Bulgarian for display when creating.
  */
 async function getOrCreateCategoryHierarchy(
   categoryPath: string,
@@ -507,63 +508,84 @@ async function getOrCreateCategoryHierarchy(
     return null
   }
 
-  // InnPro categories use "/" as delimiter
   const delimiter = '/'
   const normalizedDelimiter = delimiter.replace(/\s+/g, '')
-  
-  // Split category path by delimiter
   const categoryNames = categoryPath
     .split(normalizedDelimiter)
     .map(name => name.trim())
     .filter(name => name.length > 0)
-  
+
   if (categoryNames.length === 0) {
     logger.warn(`Invalid category path: "${categoryPath}"`)
     return null
   }
 
   const productService: IProductModuleService = container.resolve(Modules.PRODUCT)
+  const categoryExtensionService = container.resolve(CATEGORY_EXTENSION_MODULE) as {
+    listCategoryExtensions: (args: { original_name: string }) => Promise<{ id: string }[]>
+    createCategoryExtensions: (data: { original_name: string; external_id?: string; description?: null; seo_title?: null; seo_meta_description?: null }[]) => Promise<{ id: string }[]>
+  }
+  const link = container.resolve(ContainerRegistrationKeys.LINK) as { create: (data: Record<string, Record<string, string>>) => Promise<unknown> }
+  const query = container.resolve(ContainerRegistrationKeys.QUERY) as {
+    graph: (opts: { entity: string; fields: string[]; filters?: Record<string, unknown> }) => Promise<{ data: { id: string; parent_category_id: string | null; category_extension?: { id: string }[] }[] }>
+  }
   let parentCategoryId: string | null = null
-  
-  // Process each level of the hierarchy
+
   for (let i = 0; i < categoryNames.length; i++) {
     const originalCategoryName = categoryNames[i]
-    
-    // Translate category name to Bulgarian
+    const cacheKey = `${originalCategoryName}|${parentCategoryId ?? 'null'}`
+
+    if (categoryCache.has(cacheKey)) {
+      parentCategoryId = categoryCache.get(cacheKey)!
+      logger.debug(`Found category "${originalCategoryName}" in cache (parent: ${parentCategoryId ?? 'null'})`)
+      continue
+    }
+
+    // 1) Lookup by CategoryExtension.original_name (resolve linked product_category, filter by parent)
+    try {
+      const extensions = await categoryExtensionService.listCategoryExtensions({ original_name: originalCategoryName })
+      if (extensions?.length > 0) {
+        const extensionIds = extensions.map((e: { id: string }) => e.id)
+        // Request both possible relation names (Medusa may expose link as categoryExtension or category_extension)
+        const { data: categoriesWithExtension } = await query.graph({
+          entity: 'product_category',
+          fields: ['id', 'parent_category_id', 'category_extension.id', 'categoryExtension.id'],
+        })
+        const match = categoriesWithExtension?.find(
+          (c: Record<string, unknown>) => {
+            const ext = (c.category_extension ?? c.categoryExtension) as { id: string } | { id: string }[] | undefined
+            const extId = Array.isArray(ext) ? ext[0]?.id : ext?.id
+            const hasMatchingExtension = extId && extensionIds.includes(extId)
+            const parentMatch = (c.parent_category_id === null && parentCategoryId === null) || (c.parent_category_id === parentCategoryId)
+            return hasMatchingExtension && parentMatch
+          }
+        )
+        if (match) {
+          const categoryId = match.id as string
+          categoryCache.set(cacheKey, categoryId)
+          parentCategoryId = categoryId
+          logger.debug(`Found category by extension "${originalCategoryName}" with ID ${categoryId}`)
+          continue
+        }
+      }
+    } catch (e) {
+      logger.debug(`Extension lookup failed for "${originalCategoryName}": ${e instanceof Error ? e.message : 'Unknown'}`)
+    }
+
+    // 2) Fallback: find by translated name + parent
     let categoryName = originalCategoryName
     if (chatgptService) {
       try {
-        logger.debug(`Translating category name: "${originalCategoryName}"`)
         categoryName = await chatgptService.translate(originalCategoryName, 'bg')
-        logger.debug(`Translated category name: "${originalCategoryName}" → "${categoryName}"`)
-      } catch (error) {
-        logger.warn(`Failed to translate category name "${originalCategoryName}": ${error instanceof Error ? error.message : 'Unknown'}. Using original name.`)
+      } catch {
         categoryName = originalCategoryName
       }
     }
-    
-    const cacheKey = `${categoryName}|${parentCategoryId || 'null'}`
-    
-    // Check cache first
-    if (categoryCache.has(cacheKey)) {
-      parentCategoryId = categoryCache.get(cacheKey)!
-      logger.debug(`Found category "${categoryName}" in cache with parent ${parentCategoryId || 'null'}`)
-      continue
-    }
-    
-    // Query existing category by name and parent
     try {
       const queryParams: any = { name: categoryName }
-      if (parentCategoryId !== null) {
-        queryParams.parent_category_id = parentCategoryId
-      } else {
-        // For root categories, explicitly set parent_category_id to null
-        queryParams.parent_category_id = null
-      }
+      queryParams.parent_category_id = parentCategoryId !== null ? parentCategoryId : null
       const existingCategories = await productService.listProductCategories(queryParams)
-      
       if (existingCategories && existingCategories.length > 0) {
-        // Category exists, use its ID
         const categoryId = existingCategories[0].id
         categoryCache.set(cacheKey, categoryId)
         parentCategoryId = categoryId
@@ -573,61 +595,49 @@ async function getOrCreateCategoryHierarchy(
     } catch (error) {
       logger.warn(`Error querying category "${categoryName}": ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
-    
-    // Category doesn't exist, create it
+
+    // 3) Create ProductCategory, CategoryExtension, and link
     try {
       const createdCategories = await productService.createProductCategories([
-        {
-          name: categoryName,
-          parent_category_id: parentCategoryId,
-          is_active: true,
-        },
+        { name: categoryName, parent_category_id: parentCategoryId, is_active: true },
       ])
-      
-      if (createdCategories && createdCategories.length > 0) {
-        const categoryId = createdCategories[0].id
-        categoryCache.set(cacheKey, categoryId)
-        parentCategoryId = categoryId
-        logger.info(`Created category "${categoryName}" with ID ${categoryId} (parent: ${parentCategoryId || 'null'})`)
-      } else {
-        throw new Error(`Failed to create category "${categoryName}"`)
+      if (!createdCategories?.length) throw new Error(`Failed to create category "${categoryName}"`)
+      const categoryId = createdCategories[0].id
+
+      const [createdExtension] = await categoryExtensionService.createCategoryExtensions([
+        { original_name: originalCategoryName, description: null, seo_title: null, seo_meta_description: null },
+      ])
+      if (createdExtension?.id) {
+        await link.create({
+          [Modules.PRODUCT]: { product_category_id: categoryId },
+          [CATEGORY_EXTENSION_MODULE]: { category_extension_id: createdExtension.id },
+        })
       }
+
+      categoryCache.set(cacheKey, categoryId)
+      parentCategoryId = categoryId
+      logger.info(`Created category "${categoryName}" (original: "${originalCategoryName}") with ID ${categoryId}`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      
-      // If category already exists (handle conflict), try to find it and use it
       if (errorMessage.includes('already exists') || errorMessage.includes('handle')) {
-        logger.debug(`Category "${categoryName}" already exists, attempting to find it`)
-        
         try {
-          // Try to find the existing category by name and parent
-          const queryParams: any = { name: categoryName }
-          if (parentCategoryId !== null) {
-            queryParams.parent_category_id = parentCategoryId
-          } else {
-            queryParams.parent_category_id = null
-          }
-          
+          const queryParams: any = { name: categoryName, parent_category_id: parentCategoryId !== null ? parentCategoryId : null }
           const existingCategories = await productService.listProductCategories(queryParams)
-          
-          if (existingCategories && existingCategories.length > 0) {
+          if (existingCategories?.length) {
             const categoryId = existingCategories[0].id
             categoryCache.set(cacheKey, categoryId)
             parentCategoryId = categoryId
-            logger.info(`Found existing category "${categoryName}" with ID ${categoryId} (parent: ${parentCategoryId || 'null'})`)
             continue
           }
         } catch (findError) {
-          logger.warn(`Error finding existing category "${categoryName}": ${findError instanceof Error ? findError.message : 'Unknown error'}`)
+          logger.warn(`Error finding existing category: ${findError instanceof Error ? findError.message : 'Unknown'}`)
         }
       }
-      
-      // If we couldn't recover from the error, log and return null
       logger.error(`Error creating category "${categoryName}": ${errorMessage}`)
       return null
     }
   }
-  
+
   return parentCategoryId
 }
 
@@ -648,7 +658,7 @@ const processCategoriesAndBrandsStep = createStep(
     const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-5-mini'
     const chatgptService = new ChatGPTService({ apiKey: openaiApiKey, model: openaiModel })
 
-    // Cache for category lookups (key: "categoryName|parentId" -> categoryId)
+    // Cache for category lookups (key: "originalName|parentId" -> categoryId). Uses CategoryExtension.original_name for stable lookup.
     const categoryCache = new Map<string, string>()
     const brandMap = new Map<string, string>() // brand name -> brand id
     

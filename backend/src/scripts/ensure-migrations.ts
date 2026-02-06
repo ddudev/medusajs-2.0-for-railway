@@ -305,6 +305,51 @@ export default async function ensureMigrations() {
       console.log("✅ review table already exists")
     }
 
+    // Check and create category_extension table if it doesn't exist (Category Extension module)
+    const categoryExtensionExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'category_extension'
+      );
+    `)
+
+    if (!categoryExtensionExists.rows[0]?.exists) {
+      console.log("📦 Creating category_extension table (Category Extension module)...")
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "category_extension" (
+          "id" text NOT NULL,
+          "original_name" text NOT NULL,
+          "external_id" text NULL,
+          "description" text NULL,
+          "seo_title" text NULL,
+          "seo_meta_description" text NULL,
+          "created_at" timestamptz NOT NULL DEFAULT now(),
+          "updated_at" timestamptz NOT NULL DEFAULT now(),
+          "deleted_at" timestamptz NULL,
+          CONSTRAINT "category_extension_pkey" PRIMARY KEY ("id")
+        );
+      `)
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "IDX_category_extension_original_name" 
+        ON "category_extension" ("original_name") 
+        WHERE deleted_at IS NULL;
+      `)
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "IDX_category_extension_external_id" 
+        ON "category_extension" ("external_id") 
+        WHERE deleted_at IS NULL;
+      `)
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "IDX_category_extension_deleted_at" 
+        ON "category_extension" ("deleted_at") 
+        WHERE deleted_at IS NULL;
+      `)
+      console.log("✅ category_extension table created")
+    } else {
+      console.log("✅ category_extension table already exists")
+    }
+
     // Check if product-brand link table exists
     // MedusaJS creates link tables with the pattern: {module1}_{entity1}_{module2}_{entity2}
     // For product.brand link, it's: product_product_brand_brand
@@ -323,6 +368,22 @@ export default async function ensureMigrations() {
       console.log("   Or ensure 'init-backend' runs successfully at startup")
     } else {
       console.log("✅ product_product_brand_brand link table exists")
+    }
+
+    // Check if product_category–category_extension link table exists
+    // Created by 'medusa db:sync-links'; name is truncated e.g. prod_prod_cate_cate_cate_exte*
+    const productCategoryExtensionLinkExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name LIKE 'prod_prod_cate_cate_cate_exte%'
+      );
+    `)
+    if (!productCategoryExtensionLinkExists.rows[0]?.exists) {
+      console.log("⚠️  product_category–category_extension link table not found")
+      console.log("   Run 'npx medusa db:sync-links' to create it")
+    } else {
+      console.log("✅ product_category–category_extension link table exists")
     }
 
     const requiredColumns = ['created_at', 'updated_at', 'deleted_at']

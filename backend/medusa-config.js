@@ -39,6 +39,7 @@ import { INNPRO_XML_IMPORTER_MODULE } from './src/modules/innpro-xml-importer';
 import { ECONT_SHIPPING_MODULE } from './src/modules/econt-shipping';
 import { BRAND_MODULE } from './src/modules/brand';
 import { PRODUCT_REVIEW_MODULE } from './src/modules/product-review';
+import { CATEGORY_EXTENSION_MODULE } from './src/modules/category-extension';
 
 loadEnv(process.env.NODE_ENV, process.cwd());
 
@@ -189,6 +190,10 @@ const medusaConfig = {
     {
       key: PRODUCT_REVIEW_MODULE,
       resolve: "./src/modules/product-review",
+    },
+    {
+      key: CATEGORY_EXTENSION_MODULE,
+      resolve: "./src/modules/category-extension",
     }
   ],
   plugins: [

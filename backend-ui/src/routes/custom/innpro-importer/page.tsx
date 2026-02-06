@@ -126,7 +126,7 @@ const InnProImporterPage = () => {
       } catch (err) {
         console.error('Error polling status:', err)
       }
-    }, 2000) // Poll every 2 seconds
+    }, 5000) // Poll every 5s to avoid flooding backend during long ChatGPT calls
 
     // Stop polling after 5 minutes
     setTimeout(() => clearInterval(interval), 5 * 60 * 1000)

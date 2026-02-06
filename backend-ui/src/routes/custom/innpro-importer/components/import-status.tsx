@@ -32,7 +32,7 @@ export const ImportStatus = ({ sessionId, onComplete }: ImportStatusProps) => {
       } catch (err) {
         console.error('Error checking status:', err)
       }
-    }, 2000)
+    }, 5000) // Poll every 5s during import
 
     // Stop polling after 10 minutes
     const timeout = setTimeout(() => {
