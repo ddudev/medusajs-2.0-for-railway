@@ -1,6 +1,7 @@
 import { FetchError } from "@medusajs/js-sdk"
 import { HttpTypes } from "@medusajs/types"
 import {
+  type InfiniteData,
   QueryKey,
   UseInfiniteQueryOptions,
   useMutation,
@@ -8,7 +9,6 @@ import {
   useQuery,
   UseQueryOptions,
 } from "@tanstack/react-query"
-import { InfiniteData } from "@tanstack/query-core"
 import { sdk, backendUrl } from "../../lib/client"
 import { queryClient } from "../../lib/query-client"
 import { queryKeysFactory } from "../../lib/query-key-factory"
