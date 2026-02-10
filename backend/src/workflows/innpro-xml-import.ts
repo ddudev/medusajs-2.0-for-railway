@@ -325,7 +325,9 @@ const translateProductsStep = createStep(
               // } else if (item.field === 'producer_name' && translatedProduct.metadata && (translatedProduct.metadata as any).producer) {
               //   (translatedProduct.metadata as any).producer.name = translation
               } else if (item.field === 'category_name' && translatedProduct.metadata && (translatedProduct.metadata as any).category) {
-                (translatedProduct.metadata as any).category.name = translation
+                const cat = (translatedProduct.metadata as any).category
+                if (cat.original_name === undefined) cat.original_name = cat.name
+                cat.name = translation
               // SKIP RESPONSIBLE PRODUCER - Keep original
               // } else if (item.field === 'responsible_producer_name' && translatedProduct.metadata && (translatedProduct.metadata as any).responsible_producer) {
               //   (translatedProduct.metadata as any).responsible_producer.name = translation
@@ -492,17 +494,23 @@ const optimizeDescriptionsStep = createStep(
 )
 
 
+/** Source category info: untranslated name path and external id (for extension lookup and deduplication). */
+type CategorySourceInfo = { sourcePath: string; externalId: string | null; seoTitle?: string | null; seoMetaDescription?: string | null }
+
 /**
- * Helper: Get or create category hierarchy
- * Categories in InnPro XML are hierarchical paths like "RC models/Charging/Chargers"
- * Uses CategoryExtension.original_name for stable lookup; translates to Bulgarian for display when creating.
+ * Helper: Get or create category hierarchy.
+ * Lookup relies only on external_id and original_name (no lookup by translated name).
+ * If found by external_id or original_name we use that category; no model calls.
+ * If not found we create and run the model for description/SEO.
+ * When we find by original_name and have an external_id for this segment we update the extension to set external_id.
  */
 async function getOrCreateCategoryHierarchy(
   categoryPath: string,
   container: MedusaContainer,
   categoryCache: Map<string, string>,
   logger: any,
-  chatgptService?: ChatGPTService
+  chatgptService?: ChatGPTService,
+  sourceInfo?: CategorySourceInfo
 ): Promise<string | null> {
   if (!categoryPath || categoryPath.trim().length === 0) {
     return null
@@ -514,7 +522,10 @@ async function getOrCreateCategoryHierarchy(
     .split(normalizedDelimiter)
     .map(name => name.trim())
     .filter(name => name.length > 0)
-
+  const sourceSegmentNames = (sourceInfo?.sourcePath ?? categoryPath)
+    .split(normalizedDelimiter)
+    .map(name => name.trim())
+    .filter(name => name.length > 0)
   if (categoryNames.length === 0) {
     logger.warn(`Invalid category path: "${categoryPath}"`)
     return null
@@ -522,18 +533,24 @@ async function getOrCreateCategoryHierarchy(
 
   const productService: IProductModuleService = container.resolve(Modules.PRODUCT)
   const categoryExtensionService = container.resolve(CATEGORY_EXTENSION_MODULE) as {
-    listCategoryExtensions: (args: { original_name: string }) => Promise<{ id: string }[]>
-    createCategoryExtensions: (data: { original_name: string; external_id?: string; description?: null; seo_title?: null; seo_meta_description?: null }[]) => Promise<{ id: string }[]>
+    listCategoryExtensions: (args: { original_name?: string; external_id?: string }) => Promise<{ id: string; external_id?: string | null }[]>
+    createCategoryExtensions: (data: { original_name: string; external_id?: string | null; description?: string | null; seo_title?: string | null; seo_meta_description?: string | null }[]) => Promise<{ id: string }[]>
+    updateCategoryExtensions: (data: { id: string; external_id?: string | null }[]) => Promise<unknown>
   }
-  const link = container.resolve(ContainerRegistrationKeys.LINK) as { create: (data: Record<string, Record<string, string>>) => Promise<unknown> }
+  const link = container.resolve(ContainerRegistrationKeys.LINK) as {
+    create: (data: Record<string, Record<string, string>>) => Promise<unknown>
+  }
   const query = container.resolve(ContainerRegistrationKeys.QUERY) as {
-    graph: (opts: { entity: string; fields: string[]; filters?: Record<string, unknown> }) => Promise<{ data: { id: string; parent_category_id: string | null; category_extension?: { id: string }[] }[] }>
+    graph: (opts: { entity: string; fields: string[]; filters?: Record<string, unknown> }) => Promise<{ data: { id: string; parent_category_id: string | null; category_extension?: { id: string } | { id: string }[] }[] }>
   }
   let parentCategoryId: string | null = null
 
   for (let i = 0; i < categoryNames.length; i++) {
-    const originalCategoryName = categoryNames[i]
-    const cacheKey = `${originalCategoryName}|${parentCategoryId ?? 'null'}`
+    const translatedSegment = categoryNames[i]
+    const originalCategoryName = sourceSegmentNames[i] ?? translatedSegment
+    const isLeaf = i === categoryNames.length - 1
+    const externalIdForSegment = isLeaf ? (sourceInfo?.externalId ?? null) : null
+    const cacheKey = `${translatedSegment}|${parentCategoryId ?? 'null'}`
 
     if (categoryCache.has(cacheKey)) {
       parentCategoryId = categoryCache.get(cacheKey)!
@@ -541,19 +558,43 @@ async function getOrCreateCategoryHierarchy(
       continue
     }
 
-    // 1) Lookup by CategoryExtension.original_name (resolve linked product_category, filter by parent)
     try {
+      if (externalIdForSegment) {
+        const byExternalId = await categoryExtensionService.listCategoryExtensions({ external_id: externalIdForSegment })
+        if (byExternalId?.length > 0) {
+          const extensionIds = byExternalId.map((e: { id: string }) => e.id)
+          const { data: categoriesWithExtension } = await query.graph({
+            entity: 'product_category',
+            fields: ['id', 'parent_category_id', 'category_extension.id'],
+          })
+          const match = categoriesWithExtension?.find(
+            (c: Record<string, unknown>) => {
+              const ext = c.category_extension as { id: string } | { id: string }[] | undefined
+              const extId = Array.isArray(ext) ? ext[0]?.id : ext?.id
+              const hasMatch = extId && extensionIds.includes(extId)
+              const parentMatch = (c.parent_category_id === null && parentCategoryId === null) || (c.parent_category_id === parentCategoryId)
+              return hasMatch && parentMatch
+            }
+          )
+          if (match) {
+            const categoryId = match.id as string
+            categoryCache.set(cacheKey, categoryId)
+            parentCategoryId = categoryId
+            logger.debug(`Found category by external_id "${externalIdForSegment}" with ID ${categoryId}`)
+            continue
+          }
+        }
+      }
       const extensions = await categoryExtensionService.listCategoryExtensions({ original_name: originalCategoryName })
       if (extensions?.length > 0) {
         const extensionIds = extensions.map((e: { id: string }) => e.id)
-        // Request both possible relation names (Medusa may expose link as categoryExtension or category_extension)
         const { data: categoriesWithExtension } = await query.graph({
           entity: 'product_category',
-          fields: ['id', 'parent_category_id', 'category_extension.id', 'categoryExtension.id'],
+          fields: ['id', 'parent_category_id', 'category_extension.id'],
         })
         const match = categoriesWithExtension?.find(
           (c: Record<string, unknown>) => {
-            const ext = (c.category_extension ?? c.categoryExtension) as { id: string } | { id: string }[] | undefined
+            const ext = c.category_extension as { id: string } | { id: string }[] | undefined
             const extId = Array.isArray(ext) ? ext[0]?.id : ext?.id
             const hasMatchingExtension = extId && extensionIds.includes(extId)
             const parentMatch = (c.parent_category_id === null && parentCategoryId === null) || (c.parent_category_id === parentCategoryId)
@@ -562,9 +603,18 @@ async function getOrCreateCategoryHierarchy(
         )
         if (match) {
           const categoryId = match.id as string
+          const ext = match.category_extension as { id: string } | { id: string }[] | undefined
+          const extId = Array.isArray(ext) ? ext[0]?.id : ext?.id
+          if (extId && externalIdForSegment) {
+            const extRecord = extensions.find((e: { id: string; external_id?: string | null }) => e.id === extId)
+            if (extRecord && extRecord.external_id == null) {
+              await categoryExtensionService.updateCategoryExtensions([{ id: extId, external_id: externalIdForSegment }])
+              logger.debug(`Set external_id "${externalIdForSegment}" on extension ${extId} (found by original_name)`)
+            }
+          }
           categoryCache.set(cacheKey, categoryId)
           parentCategoryId = categoryId
-          logger.debug(`Found category by extension "${originalCategoryName}" with ID ${categoryId}`)
+          logger.debug(`Found category by original_name "${originalCategoryName}" with ID ${categoryId}`)
           continue
         }
       }
@@ -572,31 +622,15 @@ async function getOrCreateCategoryHierarchy(
       logger.debug(`Extension lookup failed for "${originalCategoryName}": ${e instanceof Error ? e.message : 'Unknown'}`)
     }
 
-    // 2) Fallback: find by translated name + parent
-    let categoryName = originalCategoryName
-    if (chatgptService) {
+    let categoryName = translatedSegment.trim().replace(/\s+/g, ' ')
+    if (chatgptService && !sourceInfo) {
       try {
         categoryName = await chatgptService.translate(originalCategoryName, 'bg')
+        categoryName = categoryName?.trim() ?? categoryName
       } catch {
-        categoryName = originalCategoryName
+        categoryName = translatedSegment.trim().replace(/\s+/g, ' ')
       }
     }
-    try {
-      const queryParams: any = { name: categoryName }
-      queryParams.parent_category_id = parentCategoryId !== null ? parentCategoryId : null
-      const existingCategories = await productService.listProductCategories(queryParams)
-      if (existingCategories && existingCategories.length > 0) {
-        const categoryId = existingCategories[0].id
-        categoryCache.set(cacheKey, categoryId)
-        parentCategoryId = categoryId
-        logger.debug(`Found existing category "${categoryName}" with ID ${categoryId}`)
-        continue
-      }
-    } catch (error) {
-      logger.warn(`Error querying category "${categoryName}": ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-
-    // 3) Create ProductCategory, CategoryExtension, and link
     try {
       const createdCategories = await productService.createProductCategories([
         { name: categoryName, parent_category_id: parentCategoryId, is_active: true },
@@ -604,9 +638,23 @@ async function getOrCreateCategoryHierarchy(
       if (!createdCategories?.length) throw new Error(`Failed to create category "${categoryName}"`)
       const categoryId = createdCategories[0].id
 
-      const [createdExtension] = await categoryExtensionService.createCategoryExtensions([
-        { original_name: originalCategoryName, description: null, seo_title: null, seo_meta_description: null },
-      ])
+      const fullPath = categoryNames.slice(0, i + 1).join('/')
+      let generatedDesc: string | null = null
+      if (chatgptService) {
+        try {
+          generatedDesc = await chatgptService.generateCategoryDescription(fullPath) || null
+        } catch (e) {
+          logger.debug(`Category description generation failed for "${fullPath}": ${e instanceof Error ? e.message : 'Unknown'}`)
+        }
+      }
+      const extPayload = {
+        original_name: originalCategoryName,
+        external_id: externalIdForSegment,
+        description: generatedDesc,
+        seo_title: categoryName,
+        seo_meta_description: generatedDesc,
+      }
+      const [createdExtension] = await categoryExtensionService.createCategoryExtensions([extPayload])
       if (createdExtension?.id) {
         await link.create({
           [Modules.PRODUCT]: { product_category_id: categoryId },
@@ -616,7 +664,7 @@ async function getOrCreateCategoryHierarchy(
 
       categoryCache.set(cacheKey, categoryId)
       parentCategoryId = categoryId
-      logger.info(`Created category "${categoryName}" (original: "${originalCategoryName}") with ID ${categoryId}`)
+      logger.info(`Created category "${categoryName}" (original: "${originalCategoryName}", external_id: ${extPayload.external_id ?? 'null'}) with ID ${categoryId}`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       if (errorMessage.includes('already exists') || errorMessage.includes('handle')) {
@@ -658,54 +706,50 @@ const processCategoriesAndBrandsStep = createStep(
     const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-5-mini'
     const chatgptService = new ChatGPTService({ apiKey: openaiApiKey, model: openaiModel })
 
-    // Cache for category lookups (key: "originalName|parentId" -> categoryId). Uses CategoryExtension.original_name for stable lookup.
+    // Cache for category lookups (key: "translatedSegment|parentId" -> categoryId). Extension uses original_name and external_id.
     const categoryCache = new Map<string, string>()
     const brandMap = new Map<string, string>() // brand name -> brand id
-    
-    // First pass: collect all unique categories and brands
-    const uniqueCategories = new Set<string>()
-    const uniqueBrands = new Set<string>()
-    
+
+    // Build map: translated path -> { sourcePath, externalId }
+    const categoryEntries = new Map<string, { sourcePath: string; externalId: string | null }>()
     for (const product of input.products) {
-      const categoryName = product.metadata?.category?.name
-      const brandName = product.metadata?.producer?.name
-      
-      // Debug first 3 products
-      if (uniqueCategories.size + uniqueBrands.size < 6) {
-        logger.info(`🔍 Product category/brand check: title="${product.title}", categoryName="${categoryName}", brandName="${brandName}", hasMetadata=${!!product.metadata}`)
-      }
-      
-      if (categoryName) {
-        uniqueCategories.add(categoryName)
-      }
-      if (brandName) {
-        uniqueBrands.add(brandName)
-      }
+      const cat = product.metadata?.category
+      if (!cat?.name) continue
+      const translatedPath = cat.name
+      if (categoryEntries.has(translatedPath)) continue
+      const sourcePath = cat.original_name ?? cat.name
+      const externalId = cat.id != null ? String(cat.id) : null
+      categoryEntries.set(translatedPath, { sourcePath, externalId })
     }
-    
-    logger.info(`Processing ${uniqueCategories.size} unique categories and ${uniqueBrands.size} unique brands`)
+    const uniqueBrands = new Set<string>()
+    for (const product of input.products) {
+      const brandName = product.metadata?.producer?.name
+      if (brandName) uniqueBrands.add(brandName)
+    }
+
+    logger.info(`Processing ${categoryEntries.size} unique categories and ${uniqueBrands.size} unique brands`)
     logger.info(`Translating categories to Bulgarian using ChatGPT with model ${openaiModel}`)
-    
-    // Process all categories (create hierarchy if needed, with translation)
-    for (const categoryPath of uniqueCategories) {
+
+    // Process all categories (create hierarchy; extension gets source original_name and external_id)
+    for (const [translatedPath, { sourcePath, externalId }] of categoryEntries) {
       try {
         const categoryId = await getOrCreateCategoryHierarchy(
-          categoryPath,
+          translatedPath,
           container,
           categoryCache,
           logger,
-          chatgptService // Pass ChatGPT service
+          chatgptService,
+          { sourcePath, externalId }
         )
-        
+
         if (categoryId) {
-          // Store in cache with full path as key for easy lookup
-          categoryCache.set(categoryPath, categoryId)
-          logger.debug(`Mapped category path "${categoryPath}" to ID ${categoryId}`)
+          categoryCache.set(translatedPath, categoryId)
+          logger.debug(`Mapped category path "${translatedPath}" (source: "${sourcePath}", external_id: ${externalId ?? 'null'}) to ID ${categoryId}`)
         } else {
-          logger.warn(`Failed to get or create category: "${categoryPath}"`)
+          logger.warn(`Failed to get or create category: "${translatedPath}"`)
         }
       } catch (error) {
-        logger.warn(`Error processing category "${categoryPath}": ${error instanceof Error ? error.message : 'Unknown'}`)
+        logger.warn(`Error processing category "${translatedPath}": ${error instanceof Error ? error.message : 'Unknown'}`)
       }
     }
 

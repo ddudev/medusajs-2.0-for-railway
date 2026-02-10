@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Button, Input, Select, Textarea, toast } from "@medusajs/ui"
+import { Button, Heading, Input, Select, Textarea, toast } from "@medusajs/ui"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { z } from "zod"
@@ -9,7 +9,10 @@ import { Form } from "../../../../../components/common/form"
 import { HandleInput } from "../../../../../components/inputs/handle-input"
 import { RouteDrawer, useRouteModal } from "../../../../../components/modals"
 import { KeyboundForm } from "../../../../../components/utilities/keybound-form"
-import { useUpdateProductCategory } from "../../../../../hooks/api/categories"
+import {
+  useUpdateProductCategory,
+  useUpdateProductCategoryExtension,
+} from "../../../../../hooks/api/categories"
 import { useDocumentDirection } from "../../../../../hooks/use-document-direction"
 
 const EditCategorySchema = z.object({
@@ -18,6 +21,12 @@ const EditCategorySchema = z.object({
   description: z.string().optional(),
   status: z.enum(["active", "inactive"]),
   visibility: z.enum(["public", "internal"]),
+  // Extension fields (optional)
+  original_name: z.string().optional(),
+  external_id: z.string().nullable().optional(),
+  extension_description: z.string().nullable().optional(),
+  seo_title: z.string().nullable().optional(),
+  seo_meta_description: z.string().nullable().optional(),
 })
 
 type EditCategoryFormProps = {
@@ -28,6 +37,7 @@ export const EditCategoryForm = ({ category }: EditCategoryFormProps) => {
   const { t } = useTranslation()
   const { handleSuccess } = useRouteModal()
   const direction = useDocumentDirection()
+  const ext = "category_extension" in category ? (category as { category_extension?: Record<string, unknown> }).category_extension : undefined
   const form = useForm<z.infer<typeof EditCategorySchema>>({
     defaultValues: {
       name: category.name,
@@ -35,30 +45,42 @@ export const EditCategoryForm = ({ category }: EditCategoryFormProps) => {
       description: category.description || "",
       status: category.is_active ? "active" : "inactive",
       visibility: category.is_internal ? "internal" : "public",
+      original_name: (ext as { original_name?: string } | undefined)?.original_name ?? "",
+      external_id: (ext as { external_id?: string | null } | undefined)?.external_id ?? null,
+      extension_description: (ext as { description?: string | null } | undefined)?.description ?? null,
+      seo_title: (ext as { seo_title?: string | null } | undefined)?.seo_title ?? null,
+      seo_meta_description: (ext as { seo_meta_description?: string | null } | undefined)?.seo_meta_description ?? null,
     },
     resolver: zodResolver(EditCategorySchema),
   })
 
-  const { mutateAsync, isPending } = useUpdateProductCategory(category.id)
+  const { mutateAsync: updateCategory, isPending: isUpdatingCategory } =
+    useUpdateProductCategory(category.id)
+  const { mutateAsync: updateExtension, isPending: isUpdatingExtension } =
+    useUpdateProductCategoryExtension(category.id)
+  const isPending = isUpdatingCategory || isUpdatingExtension
+
   const handleSubmit = form.handleSubmit(async (data) => {
-    await mutateAsync(
-      {
+    try {
+      await updateCategory({
         name: data.name,
         description: data.description,
         handle: data.handle,
         is_active: data.status === "active",
         is_internal: data.visibility === "internal",
-      },
-      {
-        onSuccess: () => {
-          toast.success(t("categories.edit.successToast"))
-          handleSuccess()
-        },
-        onError: (error) => {
-          toast.error(error.message)
-        },
-      }
-    )
+      })
+      await updateExtension({
+        original_name: data.original_name ?? "",
+        external_id: data.external_id ?? null,
+        description: data.extension_description ?? null,
+        seo_title: data.seo_title ?? null,
+        seo_meta_description: data.seo_meta_description ?? null,
+      })
+      toast.success(t("categories.edit.successToast"))
+      handleSuccess()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save")
+    }
   })
 
   return (
@@ -183,6 +205,93 @@ export const EditCategoryForm = ({ category }: EditCategoryFormProps) => {
                   )
                 }}
               />
+            </div>
+            <div className="border-ui-border-base mt-4 border-t pt-4">
+              <Heading level="h3" className="mb-3">
+                {t("categories.fields.extension.title", "Extension")}
+              </Heading>
+              <div className="flex flex-col gap-y-4">
+                <Form.Field
+                  control={form.control}
+                  name="original_name"
+                  render={({ field }) => (
+                    <Form.Item>
+                      <Form.Label optional>
+                        {t("categories.fields.extension.originalName", "Original name")}
+                      </Form.Label>
+                      <Form.Control>
+                        <Input autoComplete="off" {...field} value={field.value ?? ""} />
+                      </Form.Control>
+                      <Form.ErrorMessage />
+                    </Form.Item>
+                  )}
+                />
+                <Form.Field
+                  control={form.control}
+                  name="external_id"
+                  render={({ field }) => (
+                    <Form.Item>
+                      <Form.Label optional>
+                        {t("categories.fields.extension.externalId", "External ID")}
+                      </Form.Label>
+                      <Form.Control>
+                        <Input
+                          autoComplete="off"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value || null)}
+                        />
+                      </Form.Control>
+                      <Form.ErrorMessage />
+                    </Form.Item>
+                  )}
+                />
+                <Form.Field
+                  control={form.control}
+                  name="extension_description"
+                  render={({ field }) => (
+                    <Form.Item>
+                      <Form.Label optional>
+                        {t("categories.fields.extension.description", "Extension description")}
+                      </Form.Label>
+                      <Form.Control>
+                        <Textarea {...field} value={field.value ?? ""} />
+                      </Form.Control>
+                      <Form.ErrorMessage />
+                    </Form.Item>
+                  )}
+                />
+                <Form.Field
+                  control={form.control}
+                  name="seo_title"
+                  render={({ field }) => (
+                    <Form.Item>
+                      <Form.Label optional>
+                        {t("categories.fields.extension.seoTitle", "SEO title")}
+                      </Form.Label>
+                      <Form.Control>
+                        <Input autoComplete="off" {...field} value={field.value ?? ""} />
+                      </Form.Control>
+                      <Form.ErrorMessage />
+                    </Form.Item>
+                  )}
+                />
+                <Form.Field
+                  control={form.control}
+                  name="seo_meta_description"
+                  render={({ field }) => (
+                    <Form.Item>
+                      <Form.Label optional>
+                        {t("categories.fields.extension.seoMetaDescription", "SEO meta description")}
+                      </Form.Label>
+                      <Form.Control>
+                        <Textarea {...field} value={field.value ?? ""} />
+                      </Form.Control>
+                      <Form.ErrorMessage />
+                    </Form.Item>
+                  )}
+                />
+              </div>
             </div>
           </div>
         </RouteDrawer.Body>

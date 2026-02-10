@@ -9,8 +9,16 @@ import {
   useMutation,
   useQuery,
 } from "@tanstack/react-query"
-import { sdk } from "../../lib/client"
+import { backendUrl, sdk } from "../../lib/client"
 import { queryClient } from "../../lib/query-client"
+
+export interface CategoryExtensionPayload {
+  original_name?: string
+  external_id?: string | null
+  description?: string | null
+  seo_title?: string | null
+  seo_meta_description?: string | null
+}
 import { queryKeysFactory } from "../../lib/query-key-factory"
 import { productsQueryKeys } from "./products"
 import { useInfiniteList } from "../use-infinite-list"
@@ -124,6 +132,37 @@ export const useUpdateProductCategory = (
         queryKey: categoriesQueryKeys.detail(id),
       })
 
+      options?.onSuccess?.(data, variables, context)
+    },
+    ...options,
+  })
+}
+
+/**
+ * Update only the category extension (custom endpoint; avoids strict body validation on main update).
+ */
+export const useUpdateProductCategoryExtension = (
+  id: string,
+  options?: UseMutationOptions<{ success: boolean }, Error, CategoryExtensionPayload>
+) => {
+  return useMutation({
+    mutationFn: async (payload: CategoryExtensionPayload) => {
+      const url = `${backendUrl.replace(/\/$/, "")}/admin/product-categories/${id}/extension`
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        credentials: "include",
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }))
+        throw new Error(err?.message ?? "Failed to update category extension")
+      }
+      return res.json()
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: categoriesQueryKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: categoriesQueryKeys.detail(id) })
       options?.onSuccess?.(data, variables, context)
     },
     ...options,

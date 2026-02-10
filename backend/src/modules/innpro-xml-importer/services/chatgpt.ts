@@ -234,8 +234,23 @@ export class ChatGPTService {
           throw abortError
         }
         clearTimeout(timeoutId)
-        const resp = rawResponse as { output_text?: string; output?: Array<{ content?: Array<{ text?: string }> }> }
-        const content = resp.output_text ?? resp.output?.[0]?.content?.[0]?.text ?? ''
+        const resp = rawResponse as {
+          output_text?: string
+          output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>
+        }
+        let content = resp.output_text ?? ''
+        if (!content && Array.isArray(resp.output)) {
+          for (const item of resp.output) {
+            const parts = item?.content
+            if (!Array.isArray(parts)) continue
+            for (const part of parts) {
+              if (part?.text) content += part.text
+            }
+          }
+        }
+        if (!content && resp.output?.[0]?.content?.[0]?.text) {
+          content = resp.output[0].content[0].text
+        }
         console.log(`[CHATGPT] Responses API: ${content.length} chars`)
         if (!content && !options._retry) {
           console.warn('[CHATGPT] Responses API returned empty output_text')
@@ -445,6 +460,38 @@ Bulgarian title:`
   }
 
   /**
+   * Generate a short SEO-friendly category description from the category path (name and parents).
+   * Used for category_extension.description and seo_meta_description (same text).
+   * Path is the full translated path e.g. "Гейминг" or "Гейминг/Подложки за мишка".
+   * Returns 1–2 sentences, max ~160 chars, in the same language as the path.
+   */
+  async generateCategoryDescription(categoryPath: string): Promise<string> {
+    if (!categoryPath || categoryPath.trim().length === 0) {
+      return ''
+    }
+    const path = categoryPath.trim()
+    const prompt = `Generate a SHORT SEO-friendly category description for an e-commerce store.
+
+Category path (name and parent hierarchy): ${path}
+
+RULES:
+- Write 1–2 sentences only, max 160 characters total (suitable for meta description).
+- Use the same language as the category path (e.g. Bulgarian if path is in Bulgarian).
+- Describe what products or topics this category covers in a way that helps shoppers and search engines.
+- No quotes, no prefix like "Description:" — output only the description text.
+
+Category description:`
+    try {
+      const response = await this.callChatGPT(prompt, { max_completion_tokens: 300 })
+      const cleaned = this.cleanResponse(response)
+      return cleaned.length > 160 ? cleaned.slice(0, 157) + '...' : cleaned
+    } catch (error) {
+      console.error('[CHATGPT] generateCategoryDescription failed:', error)
+      return ''
+    }
+  }
+
+  /**
    * Analyze product images using vision model (GPT-4 Vision)
    */
   async analyzeProductImages(images: { url: string; alt?: string }[]): Promise<ImageAnalysisResult> {
@@ -484,6 +531,27 @@ Bulgarian title:`
   }
 
   /**
+   * Extract metaTitle and metaDescription from truncated or malformed JSON (e.g. API cut off mid-string).
+   */
+  private extractMetaTagsFromPartial(
+    response: string,
+    productInfo: { productName: string; originalDescription: string }
+  ): { metaTitle: string; metaDescription: string } | null {
+    const trim = (s: string, max: number) => (s ?? '').trim().slice(0, max) || null
+    let metaTitle: string | null = null
+    let metaDescription: string | null = null
+    const metaTitleMatch = response.match(/"metaTitle"\s*:\s*"((?:[^"\\]|\\.)*)"?/)
+    if (metaTitleMatch) metaTitle = trim(metaTitleMatch[1].replace(/\\"/g, '"'), 60)
+    const metaDescMatch = response.match(/"metaDescription"\s*:\s*"((?:[^"\\]|\\.)*)"?/)
+    if (metaDescMatch) metaDescription = trim(metaDescMatch[1].replace(/\\"/g, '"'), 160)
+    if (metaTitle == null && metaDescription == null) return null
+    return {
+      metaTitle: metaTitle || productInfo.productName.substring(0, 60),
+      metaDescription: metaDescription || productInfo.originalDescription.substring(0, 160)
+    }
+  }
+
+  /**
    * Generate meta tags using prompt template
    */
   async generateMetaTags(productInfo: {
@@ -499,9 +567,9 @@ Bulgarian title:`
       originalDescription: productInfo.originalDescription.substring(0, 500)
     })
 
-    // Higher token cap reduces "length" retries; 2 min timeout for reasoning models
+    // Higher token cap so reasoning models have room for thinking + full JSON (avoids truncation)
     const response = await this.callChatGPT(prompt, {
-      max_completion_tokens: 2500,
+      max_completion_tokens: 4096,
       timeout: 120000,
       responseFormat: 'json_object',
     })
@@ -520,9 +588,9 @@ Bulgarian title:`
         metaTitle: (parsed.metaTitle ?? '').toString().trim() || productInfo.productName.substring(0, 60),
         metaDescription: (parsed.metaDescription ?? '').toString().trim() || productInfo.originalDescription.substring(0, 160)
       }
-    } catch (error) {
-      console.error('[CHATGPT] Failed to parse meta tags response:', error)
-      console.error('[CHATGPT] Raw response:', response.substring(0, 1000))
+    } catch {
+      const fallback = this.extractMetaTagsFromPartial(response, productInfo)
+      if (fallback) return fallback
       return {
         metaTitle: productInfo.productName.substring(0, 60),
         metaDescription: productInfo.originalDescription.substring(0, 160)

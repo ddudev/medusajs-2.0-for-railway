@@ -372,7 +372,9 @@ const translateProductsStep = createStep(
               // } else if (item.field === 'producer_name' && translatedProduct.metadata && (translatedProduct.metadata as any).producer) {
               //   (translatedProduct.metadata as any).producer.name = translation
               } else if (item.field === 'category_name' && translatedProduct.metadata && (translatedProduct.metadata as any).category) {
-                (translatedProduct.metadata as any).category.name = translation
+                const cat = (translatedProduct.metadata as any).category
+                if (cat.original_name === undefined) cat.original_name = cat.name
+                cat.name = translation
               // SKIP RESPONSIBLE PRODUCER - Keep original
               // } else if (item.field === 'responsible_producer_name' && translatedProduct.metadata && (translatedProduct.metadata as any).responsible_producer) {
               //   (translatedProduct.metadata as any).responsible_producer.name = translation
@@ -539,47 +541,83 @@ const optimizeDescriptionsStep = createStep(
 )
 
 
+/** Source category info: untranslated name path and external id (for extension lookup and deduplication). */
+type CategorySourceInfo = { sourcePath: string; externalId: string | null; seoTitle?: string | null; seoMetaDescription?: string | null }
+
+/** Slug for handle: lowercase, spaces to hyphens, remove commas (matches Medusa-style handle). */
+function slugifyForHandle(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/,/g, '')
+    .replace(/[^a-z0-9\u0400-\u04ff-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'category'
+}
+
 /**
- * Helper: Get or create category hierarchy
- * Uses CategoryExtension.original_name for stable lookup; translates to Bulgarian for display when creating.
+ * Helper: Get or create category hierarchy.
+ * Existence check uses original_name OR external_id (either match with correct parent is enough).
+ * - When we have external_id for this segment (leaf): try external_id first; if no match, try original_name.
+ * - When we have no external_id (e.g. parent segment): try original_name only.
+ * If found we use that category and assign products to it; no model calls.
+ * If not found we create the category and run the model for description/SEO.
+ * When we find by original_name and have an external_id for this segment we update the extension to set external_id.
  */
 async function getOrCreateCategoryHierarchy(
   categoryPath: string,
   container: MedusaContainer,
   categoryCache: Map<string, string>,
   logger: any,
-  ollamaService?: OllamaService
+  ollamaService?: OllamaService,
+  sourceInfo?: CategorySourceInfo
 ): Promise<string | null> {
   if (!categoryPath || categoryPath.trim().length === 0) {
     return null
   }
 
   const delimiter = '/'
-  const normalizedDelimiter = delimiter.replace(/\s+/g, '')
   const categoryNames = categoryPath
-    .split(normalizedDelimiter)
+    .split(delimiter)
     .map(name => name.trim())
     .filter(name => name.length > 0)
-
+  const sourceSegmentNames = (sourceInfo?.sourcePath ?? categoryPath)
+    .split(delimiter)
+    .map(name => name.trim())
+    .filter(name => name.length > 0)
   if (categoryNames.length === 0) {
     logger.warn(`Invalid category path: "${categoryPath}"`)
     return null
   }
+  // Align segment counts (e.g. if source has fewer segments, pad with last; if more, trim)
+  while (sourceSegmentNames.length < categoryNames.length) {
+    sourceSegmentNames.push(sourceSegmentNames[sourceSegmentNames.length - 1] ?? categoryNames[categoryNames.length - 1]!)
+  }
+  if (sourceSegmentNames.length > categoryNames.length) {
+    sourceSegmentNames.length = categoryNames.length
+  }
 
   const productService: IProductModuleService = container.resolve(Modules.PRODUCT)
   const categoryExtensionService = container.resolve(CATEGORY_EXTENSION_MODULE) as {
-    listCategoryExtensions: (args: { original_name: string }) => Promise<{ id: string }[]>
-    createCategoryExtensions: (data: { original_name: string; description?: null; seo_title?: null; seo_meta_description?: null }[]) => Promise<{ id: string }[]>
+    listCategoryExtensions: (args: { original_name?: string; external_id?: string }) => Promise<{ id: string; external_id?: string | null }[]>
+    createCategoryExtensions: (data: { original_name: string; external_id?: string | null; description?: string | null; seo_title?: string | null; seo_meta_description?: string | null }[]) => Promise<{ id: string }[]>
+    updateCategoryExtensions: (data: { id: string; external_id?: string | null }[]) => Promise<unknown>
   }
-  const link = container.resolve(ContainerRegistrationKeys.LINK) as { create: (data: Record<string, Record<string, string>>) => Promise<unknown> }
+  const link = container.resolve(ContainerRegistrationKeys.LINK) as {
+    create: (data: Record<string, Record<string, string>>) => Promise<unknown>
+  }
   const query = container.resolve(ContainerRegistrationKeys.QUERY) as {
-    graph: (opts: { entity: string; fields: string[]; filters?: Record<string, unknown> }) => Promise<{ data: { id: string; parent_category_id: string | null; category_extension?: { id: string }[] }[] }>
+    graph: (opts: { entity: string; fields: string[]; filters?: Record<string, unknown> }) => Promise<{ data: Array<Record<string, unknown>> }>
   }
   let parentCategoryId: string | null = null
 
   for (let i = 0; i < categoryNames.length; i++) {
-    const originalCategoryName = categoryNames[i]
-    const cacheKey = `${originalCategoryName}|${parentCategoryId ?? 'null'}`
+    const translatedSegment = categoryNames[i]
+    const originalCategoryName = sourceSegmentNames[i] ?? translatedSegment
+    const isLeaf = i === categoryNames.length - 1
+    const externalIdForSegment = isLeaf ? (sourceInfo?.externalId ?? null) : null
+    const cacheKey = `${translatedSegment}|${parentCategoryId ?? 'null'}`
 
     if (categoryCache.has(cacheKey)) {
       parentCategoryId = categoryCache.get(cacheKey)!
@@ -588,6 +626,32 @@ async function getOrCreateCategoryHierarchy(
     }
 
     try {
+      if (externalIdForSegment) {
+        const byExternalId = await categoryExtensionService.listCategoryExtensions({ external_id: externalIdForSegment })
+        if (byExternalId?.length > 0) {
+          const extensionIds = byExternalId.map((e: { id: string }) => e.id)
+          const { data: categoriesWithExtension } = await query.graph({
+            entity: 'product_category',
+            fields: ['id', 'parent_category_id', 'category_extension.id', 'categoryExtension.id'],
+          })
+          const match = categoriesWithExtension?.find(
+            (c: Record<string, unknown>) => {
+              const ext = (c.category_extension ?? c.categoryExtension) as { id: string } | { id: string }[] | undefined
+              const extId = Array.isArray(ext) ? ext[0]?.id : ext?.id
+              const hasMatch = extId && extensionIds.includes(extId)
+              const parentMatch = (c.parent_category_id === null && parentCategoryId === null) || (c.parent_category_id === parentCategoryId)
+              return hasMatch && parentMatch
+            }
+          )
+          if (match) {
+            const categoryId = match.id as string
+            categoryCache.set(cacheKey, categoryId)
+            parentCategoryId = categoryId
+            logger.debug(`Found category by external_id "${externalIdForSegment}" with ID ${categoryId}`)
+            continue
+          }
+        }
+      }
       const extensions = await categoryExtensionService.listCategoryExtensions({ original_name: originalCategoryName })
       if (extensions?.length > 0) {
         const extensionIds = extensions.map((e: { id: string }) => e.id)
@@ -606,9 +670,18 @@ async function getOrCreateCategoryHierarchy(
         )
         if (match) {
           const categoryId = match.id as string
+          const ext = (match.category_extension ?? match.categoryExtension) as { id: string } | { id: string }[] | undefined
+          const extId = Array.isArray(ext) ? ext[0]?.id : ext?.id
+          if (extId && externalIdForSegment) {
+            const extRecord = extensions.find((e: { id: string; external_id?: string | null }) => e.id === extId)
+            if (extRecord && extRecord.external_id == null) {
+              await categoryExtensionService.updateCategoryExtensions([{ id: extId, external_id: externalIdForSegment }])
+              logger.debug(`Set external_id "${externalIdForSegment}" on extension ${extId} (found by original_name)`)
+            }
+          }
           categoryCache.set(cacheKey, categoryId)
           parentCategoryId = categoryId
-          logger.debug(`Found category by extension "${originalCategoryName}" with ID ${categoryId}`)
+          logger.debug(`Found category by original_name "${originalCategoryName}" with ID ${categoryId}`)
           continue
         }
       }
@@ -616,29 +689,7 @@ async function getOrCreateCategoryHierarchy(
       logger.debug(`Extension lookup failed for "${originalCategoryName}": ${e instanceof Error ? e.message : 'Unknown'}`)
     }
 
-    let categoryName = originalCategoryName
-    if (ollamaService) {
-      try {
-        categoryName = originalCategoryName
-      } catch {
-        categoryName = originalCategoryName
-      }
-    }
-    try {
-      const queryParams: any = { name: categoryName }
-      queryParams.parent_category_id = parentCategoryId !== null ? parentCategoryId : null
-      const existingCategories = await productService.listProductCategories(queryParams)
-      if (existingCategories && existingCategories.length > 0) {
-        const categoryId = existingCategories[0].id
-        categoryCache.set(cacheKey, categoryId)
-        parentCategoryId = categoryId
-        logger.debug(`Found existing category "${categoryName}" with ID ${categoryId}`)
-        continue
-      }
-    } catch (error) {
-      logger.warn(`Error querying category "${categoryName}": ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-
+    const categoryName = translatedSegment.trim().replace(/\s+/g, ' ')
     try {
       const createdCategories = await productService.createProductCategories([
         { name: categoryName, parent_category_id: parentCategoryId, is_active: true },
@@ -646,9 +697,23 @@ async function getOrCreateCategoryHierarchy(
       if (!createdCategories?.length) throw new Error(`Failed to create category "${categoryName}"`)
       const categoryId = createdCategories[0].id
 
-      const [createdExtension] = await categoryExtensionService.createCategoryExtensions([
-        { original_name: originalCategoryName, description: null, seo_title: null, seo_meta_description: null },
-      ])
+      const fullPath = categoryNames.slice(0, i + 1).join('/')
+      let generatedDesc: string | null = null
+      if (ollamaService) {
+        try {
+          generatedDesc = await ollamaService.generateCategoryDescription(fullPath) || null
+        } catch (e) {
+          logger.debug(`Category description generation failed for "${fullPath}": ${e instanceof Error ? e.message : 'Unknown'}`)
+        }
+      }
+      const extPayload = {
+        original_name: originalCategoryName,
+        external_id: externalIdForSegment,
+        description: generatedDesc,
+        seo_title: categoryName,
+        seo_meta_description: generatedDesc,
+      }
+      const [createdExtension] = await categoryExtensionService.createCategoryExtensions([extPayload])
       if (createdExtension?.id) {
         await link.create({
           [Modules.PRODUCT]: { product_category_id: categoryId },
@@ -658,7 +723,7 @@ async function getOrCreateCategoryHierarchy(
 
       categoryCache.set(cacheKey, categoryId)
       parentCategoryId = categoryId
-      logger.info(`Created category "${categoryName}" (original: "${originalCategoryName}") with ID ${categoryId}`)
+      logger.info(`Created category "${categoryName}" (original: "${originalCategoryName}", external_id: ${extPayload.external_id ?? 'null'}) with ID ${categoryId}`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       if (errorMessage.includes('already exists') || errorMessage.includes('handle')) {
@@ -700,49 +765,67 @@ const processCategoriesAndBrandsStep = createStep(
     const ollamaModel = input.ollamaModel || process.env.OLLAMA_MODEL || 'gemma3:latest'
     const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
 
-    // Cache for category lookups (key: "originalName|parentId" -> categoryId). Uses CategoryExtension.original_name for stable lookup.
+    // Cache for category lookups (key: "translatedSegment|parentId" -> categoryId). Extension uses original_name and external_id.
     const categoryCache = new Map<string, string>()
     const brandMap = new Map<string, string>() // brand name -> brand id
-    
-    // First pass: collect all unique categories and brands
-    const uniqueCategories = new Set<string>()
-    const uniqueBrands = new Set<string>()
-    
+
+    // Build map: translated path -> { sourcePath, externalId }. Prefer longest path per external_id so we never
+    // create a leaf as top-level when it should be a child (e.g. avoid creating "Инструменти..." top-level when
+    // we also have "RC модели/Инструменти..." — process only the full path and attach the child to the parent).
+    const categoryEntries = new Map<string, { sourcePath: string; externalId: string | null }>()
+    const pathByExternalId = new Map<string, string>() // external_id -> path with most segments
     for (const product of input.products) {
-      const categoryName = product.metadata?.category?.name
-      const brandName = product.metadata?.producer?.name
-      
-      if (categoryName) {
-        uniqueCategories.add(categoryName)
+      const cat = product.metadata?.category
+      if (!cat?.name) continue
+      const translatedPath = (cat.name as string).trim().replace(/\s*\/\s*/g, '/') // normalize slash
+      const sourcePath = (cat.original_name ?? cat.name) as string
+      const externalId = cat.id != null ? String(cat.id) : null
+      const segments = translatedPath.split('/').filter(Boolean).length
+      if (externalId) {
+        const existing = pathByExternalId.get(externalId)
+        const existingSegments = existing ? existing.split('/').filter(Boolean).length : 0
+        if (segments > existingSegments) pathByExternalId.set(externalId, translatedPath)
       }
-      if (brandName) {
-        uniqueBrands.add(brandName)
+      if (!categoryEntries.has(translatedPath)) categoryEntries.set(translatedPath, { sourcePath, externalId })
+    }
+    // For each external_id, keep only the longest path in categoryEntries (drop shorter paths that share the same external_id)
+    if (pathByExternalId.size) {
+      for (const [path, entry] of categoryEntries.entries()) {
+        if (entry.externalId && pathByExternalId.get(entry.externalId) !== path) {
+          categoryEntries.delete(path)
+        }
       }
     }
-    
-    logger.info(`Processing ${uniqueCategories.size} unique categories and ${uniqueBrands.size} unique brands`)
+    const uniqueBrands = new Set<string>()
+    for (const product of input.products) {
+      const brandName = product.metadata?.producer?.name
+      if (brandName) uniqueBrands.add(brandName)
+    }
+
+    logger.info(`Processing ${categoryEntries.size} unique categories and ${uniqueBrands.size} unique brands`)
     logger.info(`Translating categories to Bulgarian using Ollama at ${ollamaUrl} with model ${ollamaModel}`)
-    
-    // Process all categories (create hierarchy if needed, with translation)
-    for (const categoryPath of uniqueCategories) {
+
+    // Process all categories (create hierarchy; extension gets source original_name and external_id)
+    for (const [translatedPath, { sourcePath, externalId }] of categoryEntries) {
       try {
         const categoryId = await getOrCreateCategoryHierarchy(
-          categoryPath,
+          translatedPath,
           container,
           categoryCache,
           logger,
-          ollamaService // Pass Ollama service
+          ollamaService,
+          { sourcePath, externalId }
         )
-        
+
         if (categoryId) {
-          // Store in cache with full path as key for easy lookup
-          categoryCache.set(categoryPath, categoryId)
-          logger.debug(`Mapped category path "${categoryPath}" to ID ${categoryId}`)
+          categoryCache.set(translatedPath, categoryId)
+          if (externalId) categoryCache.set(`external_id:${externalId}`, categoryId)
+          logger.debug(`Mapped category path "${translatedPath}" (source: "${sourcePath}", external_id: ${externalId ?? 'null'}) to ID ${categoryId}`)
         } else {
-          logger.warn(`Failed to get or create category: "${categoryPath}"`)
+          logger.warn(`Failed to get or create category: "${translatedPath}"`)
         }
       } catch (error) {
-        logger.warn(`Error processing category "${categoryPath}": ${error instanceof Error ? error.message : 'Unknown'}`)
+        logger.warn(`Error processing category "${translatedPath}": ${error instanceof Error ? error.message : 'Unknown'}`)
       }
     }
 
@@ -770,13 +853,16 @@ const processCategoriesAndBrandsStep = createStep(
 
     // Attach category and brand IDs to products
     const productsWithRelations = input.products.map((product) => {
-      const categoryPath = product.metadata?.category?.name
+      const categoryPath = product.metadata?.category?.name as string | undefined
+      const categoryExternalId = product.metadata?.category?.id != null ? String(product.metadata.category.id) : null
       const brandName = product.metadata?.producer?.name
 
-      // Get category ID from cache (using full path as key)
+      // Get category ID from cache (full path first; then by external_id so leaf-only paths resolve to the same category)
       const categoryId = categoryPath && categoryCache.has(categoryPath)
         ? categoryCache.get(categoryPath)!
-        : null
+        : categoryExternalId && categoryCache.has(`external_id:${categoryExternalId}`)
+          ? categoryCache.get(`external_id:${categoryExternalId}`)!
+          : null
 
       const categories = categoryId ? [{ id: categoryId }] : undefined
 

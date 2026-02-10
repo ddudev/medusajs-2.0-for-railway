@@ -6,7 +6,8 @@ import {
   updateProductCategoriesWorkflow,
 } from "@medusajs/medusa/core-flows"
 import type { IProductModuleService } from "@medusajs/framework/types"
-import { CATEGORY_EXTENSION_MODULE } from "../../../../modules/category-extension"
+import { attachCategoryExtension } from "../attach-category-extension"
+import { persistCategoryExtension } from "../persist-category-extension"
 
 /**
  * Recursively collect all descendant category IDs (depth-first, children before parent)
@@ -55,37 +56,6 @@ const DEFAULT_CATEGORY_FIELDS = [
   "*category_children",
 ]
 
-/** Attach linked CategoryExtension (original_name, external_id, etc.) to category. Uses Link.list + CategoryExtension module so we never pass link fields to ProductCategoryRepository. */
-async function attachCategoryExtension(
-  scope: { resolve: (key: string) => unknown },
-  categoryId: string,
-  category: Record<string, unknown>
-): Promise<void> {
-  try {
-    const link = scope.resolve(ContainerRegistrationKeys.LINK) as {
-      list: (args: Record<string, Record<string, string>>) => Promise<Array<Record<string, Record<string, string>>>>
-    }
-    const links = await link.list({
-      [Modules.PRODUCT]: { product_category_id: categoryId },
-      [CATEGORY_EXTENSION_MODULE]: {},
-    })
-    const first = links?.[0] as Record<string, { category_extension_id?: string }> | undefined
-    const extensionId = first?.[CATEGORY_EXTENSION_MODULE]?.category_extension_id
-    if (!extensionId) return
-
-    const categoryExtensionService = scope.resolve(CATEGORY_EXTENSION_MODULE) as {
-      listCategoryExtensions: (args: { id: string[] }) => Promise<Array<Record<string, unknown>>>
-    }
-    const extensions = await categoryExtensionService.listCategoryExtensions({ id: [extensionId] })
-    const extension = extensions?.[0]
-    if (extension) {
-      category.category_extension = extension
-    }
-  } catch {
-    // Extension is optional; category still returned without it
-  }
-}
-
 export const GET = async (
   req: MedusaRequest,
   res: MedusaResponse
@@ -114,14 +84,44 @@ export const GET = async (
   res.json({ product_category: category })
 }
 
+// ProductCategory fields only – workflow does not accept category_extension
+const CATEGORY_UPDATE_KEYS = [
+  "name",
+  "description",
+  "handle",
+  "is_active",
+  "is_internal",
+  "rank",
+  "parent_category_id",
+  "metadata",
+] as const
+
 export const POST = async (
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> => {
   const { id } = req.params
+  const body = (req as any).validatedBody ?? req.body ?? {}
+  // category_extension is stripped by middleware before framework validation; read from custom
+  const categoryExtension =
+    (req as any).customCategoryExtension ??
+    (body.category_extension as Record<string, unknown> | undefined)
+  const updatePayload: Record<string, unknown> = {}
+  for (const key of CATEGORY_UPDATE_KEYS) {
+    if (key in body) updatePayload[key] = body[key]
+  }
   await updateProductCategoriesWorkflow(req.scope).run({
-    input: { selector: { id }, update: (req as any).validatedBody },
+    input: { selector: { id }, update: updatePayload },
   })
+  if (categoryExtension != null && typeof categoryExtension === "object") {
+    await persistCategoryExtension(req.scope, id, {
+      original_name: categoryExtension.original_name as string | undefined,
+      external_id: categoryExtension.external_id as string | null | undefined,
+      description: categoryExtension.description as string | null | undefined,
+      seo_title: categoryExtension.seo_title as string | null | undefined,
+      seo_meta_description: categoryExtension.seo_meta_description as string | null | undefined,
+    })
+  }
   const requestedFields = (req as any).queryConfig?.fields ?? DEFAULT_CATEGORY_FIELDS
   const fields = Array.isArray(requestedFields)
     ? [...new Set([...DEFAULT_CATEGORY_FIELDS, ...requestedFields])]

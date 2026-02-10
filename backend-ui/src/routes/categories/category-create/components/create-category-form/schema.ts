@@ -6,6 +6,12 @@ export const CreateCategoryDetailsSchema = z.object({
   handle: z.string().optional(),
   status: z.enum(["active", "inactive"]),
   visibility: z.enum(["public", "internal"]),
+  // Extension (optional)
+  original_name: z.string().optional(),
+  external_id: z.string().nullable().optional(),
+  extension_description: z.string().nullable().optional(),
+  seo_title: z.string().nullable().optional(),
+  seo_meta_description: z.string().nullable().optional(),
 })
 
 export type CreateCategorySchema = z.infer<typeof CreateCategorySchema>

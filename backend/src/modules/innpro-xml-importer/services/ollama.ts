@@ -265,6 +265,38 @@ Bulgarian title:`
   }
 
   /**
+   * Generate a short SEO-friendly category description from the category path (name and parents).
+   * Used for category_extension.description and seo_meta_description (same text).
+   * Path is the full translated path e.g. "Гейминг" or "Гейминг/Подложки за мишка".
+   * Returns 1–2 sentences, max ~160 chars, in the same language as the path.
+   */
+  async generateCategoryDescription(categoryPath: string): Promise<string> {
+    if (!categoryPath || categoryPath.trim().length === 0) {
+      return ''
+    }
+    const path = categoryPath.trim()
+    const prompt = `Generate a SHORT SEO-friendly category description for an e-commerce store.
+
+Category path (name and parent hierarchy): ${path}
+
+RULES:
+- Write 1–2 sentences only, max 160 characters total (suitable for meta description).
+- Use the same language as the category path (e.g. Bulgarian if path is in Bulgarian).
+- Describe what products or topics this category covers in a way that helps shoppers and search engines.
+- No quotes, no prefix like "Description:" — output only the description text.
+
+Category description:`
+    try {
+      const response = await this.callOllama(prompt, { temperature: 0.5, num_predict: 300 })
+      const cleaned = this.cleanResponse(response)
+      return cleaned.length > 160 ? cleaned.slice(0, 157) + '...' : cleaned
+    } catch (error) {
+      console.error('[OLLAMA] generateCategoryDescription failed:', error)
+      return ''
+    }
+  }
+
+  /**
    * Convert image URL to base64
    */
   private async imageUrlToBase64(url: string): Promise<string> {

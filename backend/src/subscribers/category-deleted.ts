@@ -28,12 +28,12 @@ export default async function categoryDeletedHandler({
 
     const { data: categories } = await query.graph({
       entity: "product_category",
-      fields: ["id", "category_extension.id", "categoryExtension.id"],
+      fields: ["id", "category_extension.id"],
       filters: { id: categoryId },
     })
 
     const category = categories?.[0] as Record<string, unknown> | undefined
-    const ext = (category?.category_extension ?? category?.categoryExtension) as { id: string } | { id: string }[] | undefined
+    const ext = category?.category_extension as { id: string } | { id: string }[] | undefined
     const extensionId = Array.isArray(ext) ? ext[0]?.id : ext?.id
 
     if (!extensionId) {

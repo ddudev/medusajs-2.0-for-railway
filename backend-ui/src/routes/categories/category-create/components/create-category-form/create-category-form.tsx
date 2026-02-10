@@ -10,6 +10,7 @@ import {
 } from "../../../../../components/modals"
 import { KeyboundForm } from "../../../../../components/utilities/keybound-form"
 import { useCreateProductCategory } from "../../../../../hooks/api/categories"
+import { backendUrl } from "../../../../../lib/client"
 import { transformNullableFormData } from "../../../../../lib/form-helpers"
 import { CreateCategoryDetails } from "./create-category-details"
 import { CreateCategoryNesting } from "./create-category-nesting"
@@ -44,13 +45,18 @@ export const CreateCategoryForm = ({
       visibility: "public",
       rank: parentCategoryId ? 0 : null,
       parent_category_id: parentCategoryId,
+      original_name: "",
+      external_id: null,
+      extension_description: null,
+      seo_title: null,
+      seo_meta_description: null,
     },
     resolver: zodResolver(CreateCategorySchema),
   })
 
   const handleTabChange = (tab: Tab) => {
     if (tab === Tab.ORGANIZE) {
-      const { name, handle, description, status, visibility } = form.getValues()
+      const { name, handle, description, status, visibility, original_name, external_id, extension_description, seo_title, seo_meta_description } = form.getValues()
 
       const result = CreateCategoryDetailsSchema.safeParse({
         name,
@@ -58,6 +64,11 @@ export const CreateCategoryForm = ({
         description,
         status,
         visibility,
+        original_name,
+        external_id,
+        extension_description,
+        seo_title,
+        seo_meta_description,
       })
 
       if (!result.success) {
@@ -78,15 +89,33 @@ export const CreateCategoryForm = ({
     setActiveTab(tab)
   }
 
-  const { mutateAsync, isPending } = useCreateProductCategory()
+  const { mutateAsync: createCategory, isPending } = useCreateProductCategory()
 
   const handleSubmit = form.handleSubmit((data) => {
-    const { visibility, status, parent_category_id, rank, name, ...rest } = data
+    const {
+      visibility,
+      status,
+      parent_category_id,
+      rank,
+      name,
+      original_name,
+      external_id,
+      extension_description,
+      seo_title,
+      seo_meta_description,
+      ...rest
+    } = data
     const parsedData = transformNullableFormData(rest, false)
+    const hasExtension =
+      (original_name !== undefined && original_name !== "") ||
+      external_id !== undefined ||
+      extension_description !== undefined ||
+      seo_title !== undefined ||
+      seo_meta_description !== undefined
 
     setShouldFreeze(true)
 
-    mutateAsync(
+    createCategory(
       {
         name: name,
         ...parsedData,
@@ -96,13 +125,31 @@ export const CreateCategoryForm = ({
         is_internal: visibility === "internal",
       },
       {
-        onSuccess: ({ product_category }) => {
+        onSuccess: async ({ product_category }) => {
+          if (hasExtension && product_category?.id) {
+            try {
+              const url = `${backendUrl.replace(/\/$/, "")}/admin/product-categories/${product_category.id}/extension`
+              await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  original_name: original_name ?? "",
+                  external_id: external_id ?? null,
+                  description: extension_description ?? null,
+                  seo_title: seo_title ?? null,
+                  seo_meta_description: seo_meta_description ?? null,
+                }),
+                credentials: "include",
+              })
+            } catch {
+              // Extension save failed; category was created
+            }
+          }
           toast.success(
             t("categories.create.successToast", {
               name: product_category.name,
             })
           )
-
           handleSuccess(`/categories/${product_category.id}`)
         },
         onError: (error) => {

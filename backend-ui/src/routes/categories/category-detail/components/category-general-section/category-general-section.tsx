@@ -88,6 +88,55 @@ export const CategoryGeneralSection = ({
           /{category.handle}
         </Text>
       </div>
+      {"category_extension" in category && category.category_extension && (
+        <div className="border-ui-border-base px-6 py-4">
+          <Heading level="h3" className="mb-3">
+            {t("categories.fields.extension.title", "Extension")}
+          </Heading>
+          <div className="text-ui-fg-subtle grid grid-cols-2 gap-3">
+            {"original_name" in category.category_extension && (
+              <>
+                <Text size="small" leading="compact" weight="plus">
+                  {t("categories.fields.extension.originalName", "Original name")}
+                </Text>
+                <Text size="small" leading="compact">
+                  {(category.category_extension as { original_name?: string }).original_name ?? "-"}
+                </Text>
+              </>
+            )}
+            {"external_id" in category.category_extension && (
+              <>
+                <Text size="small" leading="compact" weight="plus">
+                  {t("categories.fields.extension.externalId", "External ID")}
+                </Text>
+                <Text size="small" leading="compact">
+                  {(category.category_extension as { external_id?: string | null }).external_id ?? "-"}
+                </Text>
+              </>
+            )}
+            {"seo_title" in category.category_extension && (
+              <>
+                <Text size="small" leading="compact" weight="plus">
+                  {t("categories.fields.extension.seoTitle", "SEO title")}
+                </Text>
+                <Text size="small" leading="compact">
+                  {(category.category_extension as { seo_title?: string | null }).seo_title ?? "-"}
+                </Text>
+              </>
+            )}
+            {"seo_meta_description" in category.category_extension && (
+              <>
+                <Text size="small" leading="compact" weight="plus">
+                  {t("categories.fields.extension.seoMetaDescription", "SEO meta description")}
+                </Text>
+                <Text size="small" leading="compact" className="line-clamp-2">
+                  {(category.category_extension as { seo_meta_description?: string | null }).seo_meta_description ?? "-"}
+                </Text>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </Container>
   )
 }

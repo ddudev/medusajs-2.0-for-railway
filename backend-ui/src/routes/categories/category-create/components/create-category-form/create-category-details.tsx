@@ -1,4 +1,4 @@
-import { Heading, Input, Select, Text, Textarea } from "@medusajs/ui"
+import { Heading, Input, Select, Separator, Text, Textarea } from "@medusajs/ui"
 import { UseFormReturn } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 
@@ -136,6 +136,92 @@ export const CreateCategoryDetails = ({ form }: CreateCategoryDetailsProps) => {
                 </Form.Item>
               )
             }}
+          />
+        </div>
+        <Separator className="my-4" />
+        <Heading level="h3" className="mb-3">
+          {t("categories.fields.extension.title", "Extension (optional)")}
+        </Heading>
+        <div className="flex flex-col gap-y-4">
+          <Form.Field
+            control={form.control}
+            name="original_name"
+            render={({ field }) => (
+              <Form.Item>
+                <Form.Label optional>
+                  {t("categories.fields.extension.originalName", "Original name")}
+                </Form.Label>
+                <Form.Control>
+                  <Input autoComplete="off" {...field} value={field.value ?? ""} />
+                </Form.Control>
+                <Form.ErrorMessage />
+              </Form.Item>
+            )}
+          />
+          <Form.Field
+            control={form.control}
+            name="external_id"
+            render={({ field }) => (
+              <Form.Item>
+                <Form.Label optional>
+                  {t("categories.fields.extension.externalId", "External ID")}
+                </Form.Label>
+                <Form.Control>
+                  <Input
+                    autoComplete="off"
+                    {...field}
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                  />
+                </Form.Control>
+                <Form.ErrorMessage />
+              </Form.Item>
+            )}
+          />
+          <Form.Field
+            control={form.control}
+            name="extension_description"
+            render={({ field }) => (
+              <Form.Item>
+                <Form.Label optional>
+                  {t("categories.fields.extension.description", "Extension description")}
+                </Form.Label>
+                <Form.Control>
+                  <Textarea {...field} value={field.value ?? ""} />
+                </Form.Control>
+                <Form.ErrorMessage />
+              </Form.Item>
+            )}
+          />
+          <Form.Field
+            control={form.control}
+            name="seo_title"
+            render={({ field }) => (
+              <Form.Item>
+                <Form.Label optional>
+                  {t("categories.fields.extension.seoTitle", "SEO title")}
+                </Form.Label>
+                <Form.Control>
+                  <Input autoComplete="off" {...field} value={field.value ?? ""} />
+                </Form.Control>
+                <Form.ErrorMessage />
+              </Form.Item>
+            )}
+          />
+          <Form.Field
+            control={form.control}
+            name="seo_meta_description"
+            render={({ field }) => (
+              <Form.Item>
+                <Form.Label optional>
+                  {t("categories.fields.extension.seoMetaDescription", "SEO meta description")}
+                </Form.Label>
+                <Form.Control>
+                  <Textarea {...field} value={field.value ?? ""} />
+                </Form.Control>
+                <Form.ErrorMessage />
+              </Form.Item>
+            )}
           />
         </div>
       </div>
