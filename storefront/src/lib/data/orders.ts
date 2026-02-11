@@ -5,16 +5,20 @@ import medusaError from "@lib/util/medusa-error"
 import { cache } from "react"
 import { getAuthHeaders } from "./cookies"
 
+/**
+ * Retrieve a single order by id.
+ * Works with or without auth: guests can load the order confirmation page after checkout
+ * (Medusa store Get Order by ID does not require authentication; order id is the secret).
+ * Logged-in customers can also use this; auth headers are passed when available.
+ */
 export const retrieveOrder = cache(async function (id: string) {
   const authHeaders = await getAuthHeaders()
-  if (!authHeaders || !("authorization" in authHeaders)) {
-    throw new Error("Unauthorized")
-  }
+  const headers = authHeaders && "authorization" in authHeaders ? authHeaders : {}
   return sdk.store.order
     .retrieve(
       id,
       { fields: "*payment_collections.payments" },
-      { next: { tags: ["order"] }, ...authHeaders }
+      { next: { tags: ["order"] }, ...headers }
     )
     .then(({ order }) => order)
     .catch((err) => medusaError(err))

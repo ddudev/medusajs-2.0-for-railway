@@ -65,6 +65,28 @@ export function trackMetaAddToCart(params: {
 }
 
 /**
+ * Track view cart (ViewCart)
+ * Fired when user views the cart page or opens cart drawer
+ */
+export function trackMetaViewCart(params: {
+  content_ids: string[]
+  content_category?: string
+  currency: string
+  value: number
+  num_items: number
+  contents?: MetaContent[]
+}) {
+  trackMetaEvent('ViewCart', {
+    content_ids: params.content_ids,
+    content_category: params.content_category,
+    currency: params.currency,
+    value: params.value,
+    num_items: params.num_items,
+    contents: params.contents,
+  })
+}
+
+/**
  * Track checkout initiation (InitiateCheckout)
  */
 export function trackMetaInitiateCheckout(params: {

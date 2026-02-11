@@ -4,6 +4,7 @@ import OrderCompletedTemplate from "@modules/order/templates/order-completed-tem
 import { notFound } from "next/navigation"
 import { enrichLineItems } from "@lib/data/cart"
 import { retrieveOrder } from "@lib/data/orders"
+import { OrderConfirmedTracker } from "@lib/analytics/order-confirmed-tracker"
 import { HttpTypes } from "@medusajs/types"
 
 type Props = {
@@ -133,5 +134,39 @@ export default async function OrderConfirmedPage({ params }: Props) {
     console.error("Failed to track order confirmation:", error)
   }
 
-  return <OrderCompletedTemplate order={order} />
+  // Client-side purchase event for GTM + Meta Pixel + PostHog (thank-you page view)
+  const shippingAddress = order.shipping_address
+  const billingAddress = order.billing_address
+  const purchasePayload = {
+    transaction_id: order.id,
+    value: order.total ? Number(order.total) : 0,
+    currency: order.currency_code || "EUR",
+    tax: order.tax_total ? Number(order.tax_total) : undefined,
+    shipping: order.shipping_total ? Number(order.shipping_total) : undefined,
+    customer_id: order.customer_id || undefined,
+    items: (order.items || []).map((item: any) => ({
+      item_id: item.product_id || item.variant_id || "",
+      item_name: item.title || item.product_title || "",
+      item_variant: item.variant_id,
+      price: item.unit_price ? Number(item.unit_price) : 0,
+      quantity: item.quantity || 0,
+      product_id: item.product_id,
+      variant_id: item.variant_id,
+    })),
+    email: order.email || undefined,
+    phone: shippingAddress?.phone || billingAddress?.phone || undefined,
+    first_name: shippingAddress?.first_name || billingAddress?.first_name || undefined,
+    last_name: shippingAddress?.last_name || billingAddress?.last_name || undefined,
+    city: shippingAddress?.city || billingAddress?.city || undefined,
+    region: shippingAddress?.province || billingAddress?.province || undefined,
+    postal_code: shippingAddress?.postal_code || billingAddress?.postal_code || undefined,
+    country: shippingAddress?.country_code || billingAddress?.country_code || undefined,
+  }
+
+  return (
+    <>
+      <OrderConfirmedTracker order={purchasePayload} />
+      <OrderCompletedTemplate order={order} />
+    </>
+  )
 }

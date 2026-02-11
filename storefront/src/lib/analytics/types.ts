@@ -64,4 +64,6 @@ export interface UserProperties {
   average_order_value?: number
   last_order_date?: string
   customer_segment?: 'new' | 'returning' | 'vip'
+  /** Set when identifying a guest (no logged-in customer) for lifecycle/retention. */
+  is_guest?: boolean
 }

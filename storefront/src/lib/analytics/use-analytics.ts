@@ -19,6 +19,7 @@ import {
 import {
   trackMetaViewContent,
   trackMetaAddToCart,
+  trackMetaViewCart,
   trackMetaInitiateCheckout,
   trackMetaAddPaymentInfo,
   trackMetaSearch,
@@ -240,7 +241,7 @@ export function useAnalytics() {
   const trackCartViewed = (properties: CartEventProperties) => {
     // PostHog
     trackEvent('cart_viewed', properties)
-    
+
     // GTM - view_cart
     if (properties.items && properties.items.length > 0) {
       trackGTMViewCart({
@@ -252,6 +253,21 @@ export function useAnalytics() {
           item_variant: item.variant_id,
           price: item.price,
           quantity: item.quantity,
+        })),
+      })
+    }
+
+    // Meta - ViewCart
+    if (properties.items && properties.items.length > 0) {
+      trackMetaViewCart({
+        content_ids: properties.items.map(item => item.variant_id || item.product_id),
+        currency: properties.currency,
+        value: properties.cart_value,
+        num_items: properties.item_count,
+        contents: properties.items.map(item => ({
+          id: item.variant_id || item.product_id,
+          quantity: item.quantity,
+          item_price: item.price,
         })),
       })
     }

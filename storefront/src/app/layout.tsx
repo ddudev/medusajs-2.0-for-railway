@@ -6,8 +6,11 @@ import "styles/globals.css"
 import { ThemeProvider } from "next-themes"
 import TopLoadingBar from "@modules/common/components/top-loading-bar"
 import { DeferredAnalyticsWrapper } from "@lib/analytics/deferred-analytics-wrapper"
+import { PostHogIdentifyOnLogin } from "@lib/analytics/posthog-identify-on-login"
 import { FirstTouchOriginCapture } from "@modules/common/components/first-touch-origin-capture"
 import { PWAComponents } from "./pwa-components"
+import { retrieveCart } from "@lib/data/cart"
+import { getCustomer } from "@lib/data/customer"
 import {
   CookieConsentProvider,
   CookieSettings,
@@ -42,10 +45,17 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout(props: { children: React.ReactNode }) {
+/** Fetches customer + cart inside Suspense so layout does not block navigation. */
+async function AnalyticsIdentity() {
+  const customer = await getCustomer().catch(() => null)
+  const cart = await retrieveCart().catch(() => null)
+  return <PostHogIdentifyOnLogin customer={customer} cart={cart} />
+}
+
+export default async function RootLayout(props: { children: React.ReactNode }) {
   const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
   const backendHost = backendUrl ? new URL(backendUrl).origin : ""
-  
+
   return (
     <html lang="en" data-mode="light" className={inter.variable} suppressHydrationWarning>
       <head>
@@ -84,6 +94,9 @@ export default function RootLayout(props: { children: React.ReactNode }) {
           }}
         >
           <DeferredAnalyticsWrapper>
+            <Suspense fallback={null}>
+              <AnalyticsIdentity />
+            </Suspense>
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
               <main className="relative">
                 <Suspense fallback={<TopLoadingBar />}>

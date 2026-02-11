@@ -28,14 +28,22 @@ const SlideInCart = ({ cart }: SlideInCartProps) => {
       return acc + item.quantity
     }, 0) || 0
 
-  // Track cart viewed when drawer opens
+  // Track cart viewed when drawer opens (Google, Meta, PostHog)
   useEffect(() => {
     if (isCartOpen && cart && cart.items && cart.items.length > 0) {
+      const items = cart.items.map((item) => ({
+        product_id: item.product_id || '',
+        variant_id: item.variant_id || '',
+        quantity: item.quantity,
+        price: item.unit_price ? Number(item.unit_price) : 0,
+      }))
+
       trackCartViewed({
         cart_value: cart.total ? Number(cart.total) : 0,
         item_count: totalItems,
         currency: cart.currency_code || 'EUR',
         cart_id: cart.id,
+        items,
       })
     }
   }, [isCartOpen, cart, totalItems, trackCartViewed])

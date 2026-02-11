@@ -156,9 +156,11 @@ const Shipping: React.FC<ShippingProps> = ({
         </Heading>
         <div data-testid="delivery-options-container">
           <div className="pb-8">
-            <RadioGroup value={selectedShippingMethod?.id} onChange={set}>
+            {/* @ts-expect-error - Headless UI RadioGroup type incompatibility with React 19 */}
+            <RadioGroup value={selectedShippingMethod?.id ?? ""} onChange={set}>
               {availableShippingMethods?.map((option) => {
                 return (
+                  // @ts-expect-error - Headless UI RadioGroup.Option type incompatibility with React 19
                   <RadioGroup.Option
                     key={option.id}
                     value={option.id}
