@@ -1,4 +1,4 @@
-import { Heading, Input, Select, Separator, Text, Textarea } from "@medusajs/ui"
+import { Divider, Heading, Input, Select, Text, Textarea } from "@medusajs/ui"
 import { UseFormReturn } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 
@@ -138,7 +138,7 @@ export const CreateCategoryDetails = ({ form }: CreateCategoryDetailsProps) => {
             }}
           />
         </div>
-        <Separator className="my-4" />
+        <Divider className="my-4" />
         <Heading level="h3" className="mb-3">
           {t("categories.fields.extension.title", "Extension (optional)")}
         </Heading>
