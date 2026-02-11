@@ -69,6 +69,10 @@ const useSettingRoutes = (): INavItem[] => {
         label: t("econt.title"),
         to: "/settings/econt",
       },
+      {
+        label: "Analytics",
+        to: "/settings/analytics",
+      },
       ...(isTranslationsEnabled
         ? [
             {

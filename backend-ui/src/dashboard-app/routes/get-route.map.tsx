@@ -1087,6 +1087,14 @@ export function getRouteMap({
               },
             },
             {
+              path: "analytics",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/settings/analytics"),
+              handle: {
+                breadcrumb: () => "Analytics",
+              },
+            },
+            {
               path: "users",
               errorElement: <ErrorBoundary />,
               element: <Outlet />,

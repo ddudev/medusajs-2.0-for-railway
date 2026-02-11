@@ -216,6 +216,37 @@ export default async function ensureMigrations() {
       console.log("✅ econt_settings table already exists")
     }
 
+    // Check and create analytics_settings table if it doesn't exist
+    const analyticsSettingsExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'analytics_settings'
+      );
+    `)
+
+    if (!analyticsSettingsExists.rows[0]?.exists) {
+      console.log("📦 Creating analytics_settings table...")
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "analytics_settings" (
+          "id" text NOT NULL,
+          "posthog_dashboard_embed_url" text NULL,
+          "created_at" timestamptz NOT NULL DEFAULT now(),
+          "updated_at" timestamptz NOT NULL DEFAULT now(),
+          "deleted_at" timestamptz NULL,
+          CONSTRAINT "analytics_settings_pkey" PRIMARY KEY ("id")
+        );
+      `)
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "IDX_analytics_settings_deleted_at" 
+        ON "analytics_settings" ("deleted_at") 
+        WHERE "deleted_at" IS NULL;
+      `)
+      console.log("✅ analytics_settings table created")
+    } else {
+      console.log("✅ analytics_settings table already exists")
+    }
+
     // Check and create brand table if it doesn't exist
     const brandExists = await pool.query(`
       SELECT EXISTS (

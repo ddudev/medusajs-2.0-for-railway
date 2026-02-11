@@ -57,18 +57,6 @@ export default defineConfig(({ mode }) => {
       sources.push(MEDUSA_PROJECT)
       console.error('✅ Backend medusa-config.js found, added to sources for plugin discovery:', medusaConfigPath)
     }
-    
-    // Check plugin locations
-    const backendNodeModules = path.join(MEDUSA_PROJECT, 'node_modules')
-    const agiloPluginPath = path.join(backendNodeModules, '@agilo/medusa-analytics-plugin')
-    const adminUiPluginPath = path.join(backendUiDir, 'node_modules', '@agilo/medusa-analytics-plugin')
-    
-    if (fs.existsSync(agiloPluginPath)) {
-      console.error('✅ Agilo Analytics plugin found in backend node_modules')
-    }
-    if (fs.existsSync(adminUiPluginPath)) {
-      console.error('✅ Agilo Analytics plugin found in admin UI node_modules')
-    }
   }
   
   // Log for debugging (will show in Railway build logs and dev server)
@@ -112,7 +100,7 @@ export default defineConfig(({ mode }) => {
       __JWT_TOKEN_STORAGE_KEY__: JSON.stringify(env.VITE_MEDUSA_JWT_TOKEN_STORAGE_KEY || undefined),
     },
     optimizeDeps: {
-      include: ["@agilo/medusa-analytics-plugin/admin"],
+      include: [],
     },
     server: {
       open: true,

@@ -1,12 +1,15 @@
+import AnalyticsApiService from "../../api/admin/analytics/analytics-service"
 import { MCPTool } from "./types"
 
 export default class AnalyticsMcpService {
   protected readonly query_: any
   protected readonly logger_: any
+  protected readonly analyticsService_: AnalyticsApiService
 
   constructor({ query, logger }: { query: any; logger: any }) {
     this.query_ = query
     this.logger_ = logger
+    this.analyticsService_ = new AnalyticsApiService({ query, logger })
   }
 
   /**
@@ -248,6 +251,127 @@ export default class AnalyticsMcpService {
           },
           required: []
         }
+      },
+      // Dashboard analytics (delegate to AnalyticsApiService)
+      {
+        name: "get_cart_metrics",
+        description: "Get cart summary (abandoned, completed, value breakdown) for the last N days",
+        inputSchema: {
+          type: "object",
+          properties: {
+            days: { type: "number", description: "Number of days (default: 30)" }
+          },
+          required: []
+        }
+      },
+      {
+        name: "get_orders_by_status",
+        description: "Get order counts and totals grouped by status for a date range",
+        inputSchema: {
+          type: "object",
+          properties: {
+            start_date: { type: "string", description: "Start date (ISO 8601 YYYY-MM-DD)" },
+            end_date: { type: "string", description: "End date (ISO 8601 YYYY-MM-DD)" }
+          },
+          required: []
+        }
+      },
+      {
+        name: "get_refunds_summary",
+        description: "Get refunds summary (count, total amount) for a date range",
+        inputSchema: {
+          type: "object",
+          properties: {
+            start_date: { type: "string", description: "Start date (ISO 8601 YYYY-MM-DD)" },
+            end_date: { type: "string", description: "End date (ISO 8601 YYYY-MM-DD)" }
+          },
+          required: []
+        }
+      },
+      {
+        name: "get_sales_summary",
+        description: "Get sales summary (revenue, orders, AOV) for a date range",
+        inputSchema: {
+          type: "object",
+          properties: {
+            start_date: { type: "string", description: "Start date (ISO 8601 YYYY-MM-DD)" },
+            end_date: { type: "string", description: "End date (ISO 8601 YYYY-MM-DD)" }
+          },
+          required: []
+        }
+      },
+      {
+        name: "get_customer_origin_breakdown",
+        description: "Get customer and cart counts by first-touch origin (metadata.origin_type)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            start_date: { type: "string", description: "Start date (ISO 8601 YYYY-MM-DD)" },
+            end_date: { type: "string", description: "End date (ISO 8601 YYYY-MM-DD)" }
+          },
+          required: []
+        }
+      },
+      {
+        name: "get_regions_popularity",
+        description: "Get order/revenue breakdown by region for a date range",
+        inputSchema: {
+          type: "object",
+          properties: {
+            start_date: { type: "string", description: "Start date (ISO 8601 YYYY-MM-DD)" },
+            end_date: { type: "string", description: "End date (ISO 8601 YYYY-MM-DD)" }
+          },
+          required: []
+        }
+      },
+      {
+        name: "get_sales_channel_popularity",
+        description: "Get order/revenue breakdown by sales channel for a date range",
+        inputSchema: {
+          type: "object",
+          properties: {
+            start_date: { type: "string", description: "Start date (ISO 8601 YYYY-MM-DD)" },
+            end_date: { type: "string", description: "End date (ISO 8601 YYYY-MM-DD)" }
+          },
+          required: []
+        }
+      },
+      {
+        name: "get_payment_provider_popularity",
+        description: "Get order/revenue breakdown by payment provider for a date range",
+        inputSchema: {
+          type: "object",
+          properties: {
+            start_date: { type: "string", description: "Start date (ISO 8601 YYYY-MM-DD)" },
+            end_date: { type: "string", description: "End date (ISO 8601 YYYY-MM-DD)" }
+          },
+          required: []
+        }
+      },
+      {
+        name: "get_promotions_summary",
+        description: "Get promotions/discounts summary (top discounts, usage) for a date range",
+        inputSchema: {
+          type: "object",
+          properties: {
+            start_date: { type: "string", description: "Start date (ISO 8601 YYYY-MM-DD)" },
+            end_date: { type: "string", description: "End date (ISO 8601 YYYY-MM-DD)" }
+          },
+          required: []
+        }
+      },
+      {
+        name: "get_products_summary",
+        description: "Get products summary (top variants, products sold count, out-of-stock) for a date range",
+        inputSchema: {
+          type: "object",
+          properties: {
+            start_date: { type: "string", description: "Start date (ISO 8601 YYYY-MM-DD)" },
+            end_date: { type: "string", description: "End date (ISO 8601 YYYY-MM-DD)" },
+            limit: { type: "number", description: "Max top variants to return (default: 10)" }
+          },
+          required: []
+        }
       }
     ]
   }
@@ -303,6 +427,28 @@ export default class AnalyticsMcpService {
           return await this.getInventoryStatus(params)
         case "get_low_stock_products":
           return await this.getLowStockProducts(params)
+
+        // Dashboard analytics (AnalyticsApiService)
+        case "get_cart_metrics":
+          return await this.analyticsService_.getCartSummary({ days: params.days })
+        case "get_orders_by_status":
+          return await this.analyticsService_.getOrdersByStatus({ start_date: params.start_date, end_date: params.end_date })
+        case "get_refunds_summary":
+          return await this.analyticsService_.getRefundsSummary({ start_date: params.start_date, end_date: params.end_date })
+        case "get_sales_summary":
+          return await this.analyticsService_.getSalesSummary({ start_date: params.start_date, end_date: params.end_date })
+        case "get_customer_origin_breakdown":
+          return await this.analyticsService_.getCustomerOriginBreakdown({ start_date: params.start_date, end_date: params.end_date })
+        case "get_regions_popularity":
+          return await this.analyticsService_.getRegionsPopularity({ start_date: params.start_date, end_date: params.end_date })
+        case "get_sales_channel_popularity":
+          return await this.analyticsService_.getSalesChannelPopularity({ start_date: params.start_date, end_date: params.end_date })
+        case "get_payment_provider_popularity":
+          return await this.analyticsService_.getPaymentProviderPopularity({ start_date: params.start_date, end_date: params.end_date })
+        case "get_promotions_summary":
+          return await this.analyticsService_.getPromotionsSummary({ start_date: params.start_date, end_date: params.end_date })
+        case "get_products_summary":
+          return await this.analyticsService_.getProductsSummary({ start_date: params.start_date, end_date: params.end_date, limit: params.limit })
         
         default:
           throw new Error(`Unknown tool: ${toolName}`)

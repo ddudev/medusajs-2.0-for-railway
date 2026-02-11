@@ -125,6 +125,14 @@ export async function signup(_currentState: unknown, formData: FormData) {
     const customerCacheTag = "customer"
     revalidateTag(customerCacheTag, "default")
 
+    // Attach first-touch origin to new customer (first-touch only; backend skips if already set)
+    try {
+      const { sendCustomerOriginToBackend } = await import("./customer-origin")
+      await sendCustomerOriginToBackend({ customer_id: createdCustomer.id })
+    } catch (error) {
+      console.warn("Failed to send customer origin after signup:", error)
+    }
+
     // Transfer any existing guest cart to the customer
     try {
       await transferCart()

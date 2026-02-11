@@ -6,14 +6,14 @@ const widgetModule = { widgets: [
   
 ] }
     import RouteComponent0 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/analytics/page.tsx"
-import RouteComponent1 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/brands/page.tsx"
-import RouteComponent2 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/econt-settings/page.tsx"
-import RouteComponent3 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/analytics-chat/page.tsx"
+import RouteComponent1 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/analytics-chat/page.tsx"
+import RouteComponent2 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/brands/page.tsx"
+import RouteComponent3 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/econt-settings/page.tsx"
 import RouteComponent4 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/push-notifications/page.tsx"
 import RouteComponent5 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/reviews/page.tsx"
-import RouteComponent6 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/innpro-importer/page.tsx"
+import RouteComponent6 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/econt-settings/components/econt-settings-page.tsx"
 import RouteComponent7 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/xml-importer/page.tsx"
-import RouteComponent8 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/econt-settings/components/econt-settings-page.tsx"
+import RouteComponent8 from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/innpro-importer/page.tsx"
 
 const routeModule = { routes: [
     {
@@ -22,15 +22,15 @@ const routeModule = { routes: [
   },
 {
     Component: RouteComponent1,
-    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/brands"
+    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/analytics-chat"
   },
 {
     Component: RouteComponent2,
-    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/econt-settings"
+    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/brands"
   },
 {
     Component: RouteComponent3,
-    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/analytics-chat"
+    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/econt-settings"
   },
 {
     Component: RouteComponent4,
@@ -42,7 +42,7 @@ const routeModule = { routes: [
   },
 {
     Component: RouteComponent6,
-    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/innpro-importer"
+    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/econt-settings/components/econt-settings-page.tsx"
   },
 {
     Component: RouteComponent7,
@@ -50,18 +50,18 @@ const routeModule = { routes: [
   },
 {
     Component: RouteComponent8,
-    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/econt-settings/components/econt-settings-page.tsx"
+    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/innpro-importer"
   }
 ]
  }
     import { config as RouteConfig0 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/analytics/page.tsx"
-import { config as RouteConfig1 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/analytics-chat/page.tsx"
-import { config as RouteConfig2 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/brands/page.tsx"
+import { config as RouteConfig1 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/brands/page.tsx"
+import { config as RouteConfig2 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/analytics-chat/page.tsx"
 import { config as RouteConfig3 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/reviews/page.tsx"
 import { config as RouteConfig4 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/push-notifications/page.tsx"
 import { config as RouteConfig5 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/econt-settings/page.tsx"
-import { config as RouteConfig6 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/innpro-importer/page.tsx"
-import { config as RouteConfig7 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/xml-importer/page.tsx"
+import { config as RouteConfig6 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/xml-importer/page.tsx"
+import { config as RouteConfig7 } from "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/innpro-importer/page.tsx"
 
 const menuItemModule = { menuItems: [
     {
@@ -75,7 +75,7 @@ const menuItemModule = { menuItems: [
 {
     label: RouteConfig1.label,
     icon: RouteConfig1.icon,
-    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/analytics-chat",
+    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/brands",
     nested: undefined,
     rank: undefined,
     translationNs: undefined
@@ -83,7 +83,7 @@ const menuItemModule = { menuItems: [
 {
     label: RouteConfig2.label,
     icon: RouteConfig2.icon,
-    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/brands",
+    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/analytics-chat",
     nested: undefined,
     rank: undefined,
     translationNs: undefined
@@ -114,16 +114,16 @@ const menuItemModule = { menuItems: [
   },
 {
     label: RouteConfig6.label,
-    icon: RouteConfig6.icon,
-    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/innpro-importer",
+    icon: undefined,
+    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/xml-importer",
     nested: undefined,
     rank: undefined,
     translationNs: undefined
   },
 {
     label: RouteConfig7.label,
-    icon: undefined,
-    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/xml-importer",
+    icon: RouteConfig7.icon,
+    path: "/home/deyan/dev/medusajs-2.0-for-railway/backend-ui/routes/custom/innpro-importer",
     nested: undefined,
     rank: undefined,
     translationNs: undefined

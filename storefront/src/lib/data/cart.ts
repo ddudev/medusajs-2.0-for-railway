@@ -6,6 +6,7 @@ import { HttpTypes } from "@medusajs/types"
 import { omit } from "lodash"
 import { revalidateTag } from "next/cache"
 import { redirect } from "next/navigation"
+import { sendCustomerOriginToBackend } from "./customer-origin"
 import { getAuthHeaders, getCartId, removeCartId, setCartId } from "./cookies"
 import { getProductsById } from "./products"
 import { getRegion } from "./regions"
@@ -63,6 +64,7 @@ export async function getOrSetCart(countryCode: string) {
         console.warn("Failed to set cart ID cookie, but cart was created:", err)
       })
       revalidateTag("cart", "max")
+      await sendCustomerOriginToBackend({ cart_id: cart.id }).catch(() => {})
     }
 
     if (cart && cart?.region_id !== region.id) {
@@ -75,6 +77,9 @@ export async function getOrSetCart(countryCode: string) {
       )
       revalidateTag("cart", "max")
     }
+
+    // Attach first-touch origin to cart metadata (idempotent; backend merges)
+    await sendCustomerOriginToBackend({ cart_id: cart.id }).catch(() => {})
 
     return cart
   } catch (error: any) {
@@ -650,6 +655,11 @@ export async function placeOrder() {
     const order = cartRes.order
     const countryCode =
       order.shipping_address?.country_code?.toLowerCase()
+    
+    // Attach first-touch origin to customer (first-touch only; backend skips if already set)
+    if (order.customer_id) {
+      await sendCustomerOriginToBackend({ customer_id: order.customer_id }).catch(() => {})
+    }
     
     // Track purchase completion (server-side)
     try {

@@ -40,6 +40,7 @@ import { ECONT_SHIPPING_MODULE } from './src/modules/econt-shipping';
 import { BRAND_MODULE } from './src/modules/brand';
 import { PRODUCT_REVIEW_MODULE } from './src/modules/product-review';
 import { CATEGORY_EXTENSION_MODULE } from './src/modules/category-extension';
+import { ANALYTICS_SETTINGS_MODULE } from './src/modules/analytics-settings';
 
 loadEnv(process.env.NODE_ENV, process.cwd());
 
@@ -194,13 +195,13 @@ const medusaConfig = {
     {
       key: CATEGORY_EXTENSION_MODULE,
       resolve: "./src/modules/category-extension",
+    },
+    {
+      key: ANALYTICS_SETTINGS_MODULE,
+      resolve: "./src/modules/analytics-settings",
     }
   ],
   plugins: [
-    {
-      resolve: '@agilo/medusa-analytics-plugin',
-      options: {},
-    },
     ...(MEILISEARCH_HOST && MEILISEARCH_ADMIN_KEY ? [{
       resolve: '@rokmohar/medusa-plugin-meilisearch',
       options: {

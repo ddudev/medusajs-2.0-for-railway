@@ -6,6 +6,7 @@ import "styles/globals.css"
 import { ThemeProvider } from "next-themes"
 import TopLoadingBar from "@modules/common/components/top-loading-bar"
 import { DeferredAnalyticsWrapper } from "@lib/analytics/deferred-analytics-wrapper"
+import { FirstTouchOriginCapture } from "@modules/common/components/first-touch-origin-capture"
 import { PWAComponents } from "./pwa-components"
 import {
   CookieConsentProvider,
@@ -90,6 +91,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
                 </Suspense>
               </main>
               <Suspense fallback={null}>
+                <FirstTouchOriginCapture />
                 <PWAComponents />
               </Suspense>
             </ThemeProvider>

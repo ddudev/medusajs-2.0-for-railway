@@ -92,6 +92,35 @@ export const removeCartId = async () => {
   }
 }
 
+/** Cookie name for first-touch attribution (set by client, read by server). */
+export const FIRST_TOUCH_ORIGIN_COOKIE = "first_touch_origin"
+
+export interface FirstTouchOrigin {
+  origin_type?: string
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  utm_term?: string
+  utm_content?: string
+  gclid?: string
+  fbclid?: string
+  referrer?: string
+}
+
+export const getFirstTouchOrigin = async (): Promise<FirstTouchOrigin | null> => {
+  noStore()
+  try {
+    const cookieStore = await cookies()
+    const value = cookieStore.get(FIRST_TOUCH_ORIGIN_COOKIE)?.value
+    if (!value) return null
+    const parsed = JSON.parse(value) as FirstTouchOrigin
+    if (typeof parsed !== "object" || parsed === null) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
 export const getLastViewedProductIds = async (): Promise<string[]> => {
   // Prevent static generation - cookies are user-specific
   noStore()

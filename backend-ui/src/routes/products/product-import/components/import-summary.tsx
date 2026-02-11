@@ -32,7 +32,7 @@ const Stat = ({
   description: string
 }) => {
   return (
-    <div className="flex flex-1 flex-col justify-center">
+    <div className="flex flex-1 flex-col justify-center p-4">
       <Text size="xlarge" className="font-sans font-medium">
         {title}
       </Text>
