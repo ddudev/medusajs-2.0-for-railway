@@ -1,6 +1,5 @@
 import { getBaseURL } from "@lib/util/env"
 import { Metadata } from "next"
-import { Inter } from "next/font/google"
 import { Suspense } from "react"
 import "styles/globals.css"
 import { ThemeProvider } from "next-themes"
@@ -16,15 +15,9 @@ import {
   CookieSettings,
 } from "@/components/cookie-consent"
 import { BottomBannersStack } from "@/components/bottom-banners-stack"
+import { QueryProvider } from "@lib/query/provider"
 
-// Fewer weights = smaller font payload and faster LCP (300/500 dropped; 400/600/700 cover normal/semibold/bold)
-const inter = Inter({
-  weight: ['400', '600', '700'],
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-  preload: true,
-})
+// Inter is loaded via <link> in head; Tailwind font-sans uses Inter (see tailwind.config.js)
 
 const siteName =
   process.env.NEXT_PUBLIC_SITE_NAME || "MS Store"
@@ -57,8 +50,23 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const backendHost = backendUrl ? new URL(backendUrl).origin : ""
 
   return (
-    <html lang="en" data-mode="light" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" data-mode="light" className="font-sans" suppressHydrationWarning>
       <head>
+        {/* Inter: 400, 600, 700 (loaded via link to avoid Turbopack next/font build errors) */}
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+        />
         {/* Prevent CSS caching in development to fix HMR issues */}
         {process.env.NODE_ENV === 'development' && (
           <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -86,34 +94,36 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         )}
       </head>
       <body>
-        <CookieConsentProvider
-          config={{
-            consentVersion: "1.0.0",
-            privacyPolicyUrl: "/privacy",
-            googleConsentMode: { enabled: true },
-          }}
-        >
-          <DeferredAnalyticsWrapper>
-            <Suspense fallback={null}>
-              <AnalyticsIdentity />
-            </Suspense>
-            <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-              <main className="relative">
-                <Suspense fallback={<TopLoadingBar />}>
-                  {props.children}
-                </Suspense>
-              </main>
+        <QueryProvider>
+          <CookieConsentProvider
+            config={{
+              consentVersion: "1.0.0",
+              privacyPolicyUrl: "/privacy",
+              googleConsentMode: { enabled: true },
+            }}
+          >
+            <DeferredAnalyticsWrapper>
               <Suspense fallback={null}>
-                <FirstTouchOriginCapture />
-                <PWAComponents />
+                <AnalyticsIdentity />
               </Suspense>
-            </ThemeProvider>
-          </DeferredAnalyticsWrapper>
-          <Suspense fallback={null}>
-            <BottomBannersStack />
-          </Suspense>
-          <CookieSettings />
-        </CookieConsentProvider>
+              <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+                <main className="relative">
+                  <Suspense fallback={<TopLoadingBar />}>
+                    {props.children}
+                  </Suspense>
+                </main>
+                <Suspense fallback={null}>
+                  <FirstTouchOriginCapture />
+                  <PWAComponents />
+                </Suspense>
+              </ThemeProvider>
+            </DeferredAnalyticsWrapper>
+            <Suspense fallback={null}>
+              <BottomBannersStack />
+            </Suspense>
+            <CookieSettings />
+          </CookieConsentProvider>
+        </QueryProvider>
       </body>
     </html>
   )

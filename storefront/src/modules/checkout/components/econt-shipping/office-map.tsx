@@ -154,10 +154,7 @@ const OfficeMap: React.FC<OfficeMapProps> = ({
         officesWithCoords.forEach((office) => {
           if (office.latitude && office.longitude) {
             const isSelected = office.office_code === selectedOfficeCode
-            
-            // Debug: log coordinates to check values
-            console.log(`Office ${office.name}: lat=${office.latitude}, lng=${office.longitude}`)
-            
+
             // Use coordinates as-is (Leaflet expects [lat, lng])
             const lat = office.latitude
             const lng = office.longitude

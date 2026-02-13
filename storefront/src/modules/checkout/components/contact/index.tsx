@@ -2,16 +2,15 @@
 
 import { Heading } from "@medusajs/ui"
 import { HttpTypes } from "@medusajs/types"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import Input from "@modules/common/components/input"
-import { updateContactInfo } from "@lib/data/cart"
 import Divider from "@modules/common/components/divider"
 import ErrorMessage from "../error-message"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { useAnalytics } from "@lib/analytics/use-analytics"
-import { useRef } from "react"
-import { useCheckoutCart } from "@lib/context/checkout-cart-context"
+import { useCheckoutContactSlice, useCheckoutActions } from "@lib/context/checkout-cart-context"
 import { trackContactInfoCapture } from "@lib/analytics/lead-capture"
+import { updateContactInfo } from "@lib/data/cart"
 
 const Contact = ({
   cart: initialCart,
@@ -22,7 +21,25 @@ const Contact = ({
 }) => {
   const { t } = useTranslation()
   const { trackCheckoutStepCompleted, trackCheckoutContactCompleted } = useAnalytics()
-  const { cart, updateCartData } = useCheckoutCart()
+  const slice = useCheckoutContactSlice()
+  const { updateCartData } = useCheckoutActions()
+  const cart = useMemo(
+    () =>
+      slice
+        ? ({
+            id: slice.cartId,
+            email: slice.email,
+            shipping_address: slice.shippingAddress,
+          } as HttpTypes.StoreCart)
+        : initialCart,
+    [
+      slice?.cartId,
+      slice?.email,
+      slice?.shippingAddress,
+      slice,
+      initialCart,
+    ]
+  )
   
   // Initialize with empty strings to prevent uncontrolled to controlled warning
   const [formData, setFormData] = useState<Record<string, any>>({

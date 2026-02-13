@@ -126,7 +126,7 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
         if (cart.id) {
           saveEcontCartData(cart.id, {
             shipping_to: detectedType,
-          } as EcontData).catch(console.error)
+          } as EcontData).catch(() => {})
         }
       }
     } else {
@@ -205,8 +205,8 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
           // Don't call setShippingMethod here - it causes infinite loops
           // MedusaJS will automatically recalculate prices when cart metadata changes
           // The Shipping component will fetch updated methods when cart changes
-        } catch (error) {
-          console.error("Error saving Econt data:", error)
+        } catch {
+          // Save failed; user can retry
         } finally {
           setIsLoading(false)
         }

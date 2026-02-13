@@ -155,7 +155,7 @@ const StripePaymentButton = ({
     }
 
     // Use shipping address for billing (Bulgaria requirement - billing always same as shipping)
-    await stripe
+    stripe
       .confirmCardPayment(session.data.client_secret as string, {
         payment_method: {
           card: cardElement,
@@ -186,9 +186,11 @@ const StripePaymentButton = ({
             (pi && pi.status === "succeeded")
           ) {
             onPaymentCompleted()
+            return
           }
 
           setErrorMessage(error.message || null)
+          setSubmitting(false)
           return
         }
 
@@ -199,7 +201,11 @@ const StripePaymentButton = ({
           return onPaymentCompleted()
         }
 
-        return
+        setSubmitting(false)
+      })
+      .catch((err) => {
+        setErrorMessage(err?.message ?? "Payment failed. Please try again.")
+        setSubmitting(false)
       })
   }
 

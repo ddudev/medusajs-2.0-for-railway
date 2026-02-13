@@ -9,21 +9,34 @@ import Radio from "@modules/common/components/radio"
 import ErrorMessage from "@modules/checkout/components/error-message"
 import EcontShipping from "@modules/checkout/components/econt-shipping"
 // Removed step navigation imports - single-page checkout
-import { useEffect, useState, useRef, useMemo } from "react"
+import React, { useEffect, useState, useRef, useMemo } from "react"
 import { setShippingMethod } from "@lib/data/cart"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 import { sdk } from "@lib/config"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { useAnalytics } from "@lib/analytics/use-analytics"
-import { useCheckoutCart } from "@lib/context/checkout-cart-context"
+import { useCheckoutShippingSlice, useCheckoutActions } from "@lib/context/checkout-cart-context"
 
 type ShippingProps = {
   cart: HttpTypes.StoreCart
   availableShippingMethods: HttpTypes.StoreCartShippingOption[] | null
 }
 
-const Shipping: React.FC<ShippingProps> = ({
+/** Skip re-render when only non-shipping cart fields changed (e.g. payment_collection) */
+function shippingPropsEqual(
+  prev: ShippingProps,
+  next: ShippingProps
+): boolean {
+  return (
+    prev.cart?.id === next.cart?.id &&
+    prev.cart?.shipping_methods === next.cart?.shipping_methods &&
+    prev.cart?.region_id === next.cart?.region_id &&
+    prev.availableShippingMethods === next.availableShippingMethods
+  )
+}
+
+const ShippingInner: React.FC<ShippingProps> = ({
   cart: initialCart,
   availableShippingMethods: initialShippingMethods,
 }) => {
@@ -32,8 +45,33 @@ const Shipping: React.FC<ShippingProps> = ({
   const [availableShippingMethods, setAvailableShippingMethods] = useState<HttpTypes.StoreCartShippingOption[] | null>(initialShippingMethods)
   const { t } = useTranslation()
   const { trackCheckoutShippingMethodSelected, trackCheckoutStepCompleted } = useAnalytics()
-  const { cart: contextCart, updateCartData } = useCheckoutCart()
-  const cart = contextCart || initialCart
+  const slice = useCheckoutShippingSlice()
+  const { updateCartData } = useCheckoutActions()
+  const cart = useMemo(
+    () =>
+      slice
+        ? ({
+            id: slice.cartId,
+            shipping_methods: slice.shippingMethods,
+            region_id: slice.regionId,
+            items: slice.items,
+            currency_code: slice.currencyCode,
+            total: slice.total,
+            metadata: slice.metadata,
+          } as HttpTypes.StoreCart)
+        : initialCart,
+    [
+      slice?.cartId,
+      slice?.shippingMethods,
+      slice?.regionId,
+      slice?.items,
+      slice?.currencyCode,
+      slice?.total,
+      slice?.metadata,
+      slice,
+      initialCart,
+    ]
+  )
 
   const selectedShippingMethod = availableShippingMethods?.find(
     // To do: remove the previously selected shipping method instead of using the last one
@@ -223,4 +261,5 @@ const Shipping: React.FC<ShippingProps> = ({
   )
 }
 
+const Shipping = React.memo(ShippingInner, shippingPropsEqual)
 export default Shipping

@@ -55,7 +55,6 @@ export async function POST(
     
     return NextResponse.json(data)
   } catch (error: any) {
-    console.error("Error proxying Econt cart data request:", error)
     return NextResponse.json(
       { message: error.message || "Failed to save Econt data" },
       { status: 500 }

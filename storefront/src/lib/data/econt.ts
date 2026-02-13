@@ -98,27 +98,19 @@ export async function getEcontOffices(cityId: number): Promise<EcontOffice[]> {
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.error(`[getEcontOffices] API error for city_id=${cityId}:`, errorText)
     throw new Error(`Failed to fetch offices: ${errorText || response.statusText}`)
   }
 
   const data = await response.json()
-  console.log(`[getEcontOffices] Response for city_id=${cityId}:`, {
-    hasOffices: !!data.offices,
-    officesCount: Array.isArray(data.offices) ? data.offices.length : 0,
-    dataStructure: Object.keys(data),
-  })
-  
-  // Handle both { offices: [...] } and direct array response
+
   if (Array.isArray(data)) {
     return data
   }
-  
+
   if (data.offices && Array.isArray(data.offices)) {
     return data.offices
   }
-  
-  console.warn(`[getEcontOffices] Unexpected response structure:`, data)
+
   return []
 }
 

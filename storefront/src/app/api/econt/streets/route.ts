@@ -57,7 +57,6 @@ export async function GET(request: NextRequest) {
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error: any) {
-    console.error("Error proxying Econt streets request:", error)
     return NextResponse.json(
       { message: error.message || "Failed to fetch streets" },
       { status: 500 }

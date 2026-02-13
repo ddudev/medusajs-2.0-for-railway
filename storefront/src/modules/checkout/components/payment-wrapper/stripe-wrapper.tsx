@@ -5,38 +5,29 @@ import { Elements } from "@stripe/react-stripe-js"
 import { HttpTypes } from "@medusajs/types"
 
 type StripeWrapperProps = {
-  paymentSession: HttpTypes.StorePaymentSession
-  stripeKey?: string
+  paymentSession: HttpTypes.StorePaymentSession | null
+  stripeKey?: string | null
   stripePromise: Promise<Stripe | null> | null
   children: React.ReactNode
 }
 
+/**
+ * Always renders the same tree (Elements → children) so Contact/Shipping/Payment/Review
+ * never remount when the user selects Stripe. Options start as {} and update to
+ * { clientSecret } when Stripe is selected; @stripe/react-stripe-js applies
+ * options updates via elements.update(), so useStripe/useElements stay available.
+ */
 const StripeWrapper: React.FC<StripeWrapperProps> = ({
   paymentSession,
   stripeKey,
   stripePromise,
   children,
 }) => {
-  const options: StripeElementsOptions = {
-    clientSecret: paymentSession!.data?.client_secret as string | undefined,
-  }
+  const clientSecret = paymentSession?.data?.client_secret as string | undefined
+  const options: StripeElementsOptions = clientSecret ? { clientSecret } : {}
 
-  if (!stripeKey) {
-    throw new Error(
-      "Stripe key is missing. Set NEXT_PUBLIC_STRIPE_KEY environment variable."
-    )
-  }
-
-  if (!stripePromise) {
-    throw new Error(
-      "Stripe promise is missing. Make sure you have provided a valid Stripe key."
-    )
-  }
-
-  if (!paymentSession?.data?.client_secret) {
-    throw new Error(
-      "Stripe client secret is missing. Cannot initialize Stripe."
-    )
+  if (!stripeKey || !stripePromise) {
+    return <>{children}</>
   }
 
   return (

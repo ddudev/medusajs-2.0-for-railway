@@ -16,7 +16,7 @@ import { StripeContext } from "@modules/checkout/components/payment-wrapper"
 import { initiatePaymentSession } from "@lib/data/cart"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { useAnalytics } from "@lib/analytics/use-analytics"
-import { useCheckoutCart } from "@lib/context/checkout-cart-context"
+import { useCheckoutPaymentSlice, useCheckoutActions } from "@lib/context/checkout-cart-context"
 import { sdk } from "@lib/config"
 
 const Payment = ({
@@ -28,9 +28,34 @@ const Payment = ({
 }) => {
   const { t } = useTranslation()
   const { trackCheckoutPaymentMethodSelected, trackCheckoutStepCompleted } = useAnalytics()
-  const { cart: contextCart, updateCartData } = useCheckoutCart()
-  const cart = contextCart || initialCart
-  
+  const slice = useCheckoutPaymentSlice()
+  const { updateCartData } = useCheckoutActions()
+  const cart = useMemo(
+    () =>
+      slice
+        ? ({
+            id: slice.cartId,
+            payment_collection: slice.paymentCollection,
+            shipping_methods: slice.hasShipping ? [{}] : [],
+            items: slice.items,
+            currency_code: slice.currencyCode,
+            total: slice.total,
+            gift_cards: slice.giftCards,
+          } as any)
+        : initialCart,
+    [
+      slice?.cartId,
+      slice?.paymentCollection,
+      slice?.hasShipping,
+      slice?.items,
+      slice?.currencyCode,
+      slice?.total,
+      slice?.giftCards,
+      slice,
+      initialCart,
+    ]
+  )
+
   // Memoize activeSession to prevent recalculation on every render
   const activeSession = useMemo(() => {
     return cart.payment_collection?.payment_sessions?.find(
@@ -168,26 +193,25 @@ const Payment = ({
                     )
                   })}
               </RadioGroup>
-            {/* Conditionally show Stripe card input only when Stripe payment method is selected */}
+            {/* Stripe card input – Elements provider is in Wrapper when Stripe is selected */}
             {isStripeFunc(selectedPaymentMethod) && stripeReady && (
-                <div className="mt-5 transition-all duration-150 ease-in-out">
-                  <Text className="txt-medium-plus text-ui-fg-base mb-1">
+              <div className="mt-5 transition-all duration-150 ease-in-out">
+                <Text className="txt-medium-plus text-ui-fg-base mb-1">
                   {t("checkout.enterCardDetails")}
-                  </Text>
-
-                  <CardElement
-                    options={useOptions as StripeCardElementOptions}
-                    onChange={(e) => {
-                      setCardBrand(
-                        e.brand &&
-                          e.brand.charAt(0).toUpperCase() + e.brand.slice(1)
-                      )
-                      setError(e.error?.message || null)
-                      setCardComplete(e.complete)
-                    }}
-                  />
-                </div>
-              )}
+                </Text>
+                <CardElement
+                  options={useOptions as StripeCardElementOptions}
+                  onChange={(e) => {
+                    setCardBrand(
+                      e.brand &&
+                        e.brand.charAt(0).toUpperCase() + e.brand.slice(1)
+                    )
+                    setError(e.error?.message || null)
+                    setCardComplete(e.complete)
+                  }}
+                />
+              </div>
+            )}
             </>
           )}
 

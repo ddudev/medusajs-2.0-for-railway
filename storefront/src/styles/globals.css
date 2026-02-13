@@ -50,6 +50,8 @@ input:-webkit-autofill:active {
 /* Theme CSS Variables - Can be overridden for client customization */
 /* Shadcn/Radix variables - mapped from existing theme for consistent UI */
 :root {
+  /* Inter loaded via link in layout.tsx (avoids next/font Turbopack build issues) */
+  --font-inter: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Ubuntu, sans-serif;
   /* Shadcn base (maps to existing theme) */
   --background: #F9FAFB;
   --foreground: #1F2937;
@@ -209,7 +211,7 @@ body {
 
   input:focus~label,
   input:not(:placeholder-shown)~label {
-    @apply -translate-y-2 text-xsmall-regular;
+    @apply -translate-y-2 text-[10px] leading-4 font-normal;
   }
 
   input:focus~label {
