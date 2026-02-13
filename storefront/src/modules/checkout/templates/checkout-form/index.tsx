@@ -33,17 +33,14 @@ export default async function CheckoutForm({
         <Contact cart={cart} customer={customer} />
       </div>
 
-      {/* TODO: Uncomment when needed - Shipping Address Section
-        Only show when Econt Address/Door is selected (not for Econt Office)
-        For Econt Office, shipping address is not required
-      */}
-      {/* <div>
-        <Addresses cart={cart} customer={customer} />
-      </div> */}
-
-      {/* Shipping Method Section - Econt integration */}
+      {/* Shipping Method Section - method selection only; Econt UI lives in Addresses */}
       <div>
         <Shipping cart={cart} availableShippingMethods={shippingMethods} />
+      </div>
+
+      {/* Shipping Address: saved-address selector + manual/Econt fields; driven by selected method */}
+      <div>
+        <Addresses cart={cart} customer={customer} availableShippingMethods={shippingMethods} />
       </div>
 
       {/* Payment + Review wrapped in Stripe Elements only — Contact/Shipping stay outside so they don't remount when Stripe is selected */}

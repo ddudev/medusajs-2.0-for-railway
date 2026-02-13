@@ -7,8 +7,7 @@ import { Button, Heading, Text, clx } from "@medusajs/ui"
 import Divider from "@modules/common/components/divider"
 import Radio from "@modules/common/components/radio"
 import ErrorMessage from "@modules/checkout/components/error-message"
-import EcontShipping from "@modules/checkout/components/econt-shipping"
-// Removed step navigation imports - single-page checkout
+// Econt UI moved to Addresses section; shipping here is method selection only
 import React, { useEffect, useState, useRef, useMemo } from "react"
 import { setShippingMethod } from "@lib/data/cart"
 import { convertToLocale } from "@lib/util/money"
@@ -243,13 +242,6 @@ const ShippingInner: React.FC<ShippingProps> = ({
               })}
             </RadioGroup>
           </div>
-
-          {/* Show Econt shipping fields if Econt shipping method is selected */}
-          {selectedShippingMethod?.name?.toLowerCase().includes("econt") && (
-            <div className="mt-6">
-              <EcontShipping cart={cart} shippingMethod={selectedShippingMethod} />
-            </div>
-          )}
 
           <ErrorMessage
             error={error}

@@ -11,6 +11,7 @@ import { enrichLineItems, retrieveCart } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import { getCustomer } from "@lib/data/customer"
 import { CheckoutCartProvider } from "@lib/context/checkout-cart-context"
+import { QueryProvider } from "@lib/query/provider"
 
 // Lazy load checkout summary (heavy component)
 const CheckoutSummary = dynamicImport(
@@ -53,19 +54,21 @@ async function CheckoutContent() {
   const customer = await getCustomer()
 
   return (
-    <CheckoutCartProvider initialCart={cart}>
-      <div className="">
-        <CheckoutTracker cart={cart} />
-        <div className="flex flex-col lg:flex-row">
-          <Wrapper cart={cart}>
-            <CheckoutForm cart={cart} customer={customer} />
-          </Wrapper>
-          <Suspense fallback={<SuspenseLoading />}>
-            <CheckoutSummary cart={cart} />
-          </Suspense>
+    <QueryProvider>
+      <CheckoutCartProvider initialCart={cart}>
+        <div className="">
+          <CheckoutTracker cart={cart} />
+          <div className="flex flex-col lg:flex-row">
+            <Wrapper cart={cart}>
+              <CheckoutForm cart={cart} customer={customer} />
+            </Wrapper>
+            <Suspense fallback={<SuspenseLoading />}>
+              <CheckoutSummary cart={cart} />
+            </Suspense>
+          </div>
         </div>
-      </div>
-    </CheckoutCartProvider>
+      </CheckoutCartProvider>
+    </QueryProvider>
   )
 }
 

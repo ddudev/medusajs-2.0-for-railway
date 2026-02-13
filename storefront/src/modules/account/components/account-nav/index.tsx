@@ -1,14 +1,25 @@
 "use client"
 
-import { clx } from "@medusajs/ui"
-import { ArrowRightOnRectangle } from "@medusajs/icons"
+import { useState } from "react"
 import { useParams, usePathname } from "next/navigation"
+import { ArrowRightOnRectangle } from "@medusajs/icons"
+import { LayoutDashboard, Menu } from "lucide-react"
 
-import ChevronDown from "@modules/common/icons/chevron-down"
+import { Button } from "@/components/ui/button"
+import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
+import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import User from "@modules/common/icons/user"
 import MapPin from "@modules/common/icons/map-pin"
 import Package from "@modules/common/icons/package"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { HttpTypes } from "@medusajs/types"
 import { signout } from "@lib/data/customer"
 
@@ -17,178 +28,164 @@ const AccountNav = ({
 }: {
   customer: HttpTypes.StoreCustomer | null
 }) => {
+  const { t } = useTranslation()
   const route = usePathname()
   const { countryCode } = useParams() as { countryCode: string }
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const handleLogout = async () => {
     await signout(countryCode)
   }
 
+  const navLinks = [
+    { href: "/account", label: t("account.nav.overview"), testId: "overview-link" },
+    { href: "/account/profile", label: t("account.nav.profile"), testId: "profile-link" },
+    { href: "/account/addresses", label: t("account.nav.addresses"), testId: "addresses-link" },
+    { href: "/account/orders", label: t("account.nav.orders"), testId: "orders-link" },
+  ]
+
+  const isActive = (href: string) => route.split(countryCode)[1] === href
+
+  const navItemClass = (href: string) =>
+    cn(
+      "flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+      "hover:bg-accent hover:text-accent-foreground",
+      {
+        "bg-accent text-accent-foreground": isActive(href),
+        "text-muted-foreground": !isActive(href),
+      }
+    )
+
   return (
-    <div>
-      <div className="small:hidden" data-testid="mobile-account-nav">
-        {route !== `/${countryCode}/account` ? (
-          <LocalizedClientLink
-            href="/account"
-            className="flex items-center gap-x-2 text-small-regular py-2"
-            data-testid="account-main-link"
-          >
-            <>
-              <ChevronDown className="transform rotate-90" />
-              <span>Account</span>
-            </>
-          </LocalizedClientLink>
-        ) : (
-          <>
-            <div className="text-xl-semi mb-4 px-8">
-              Hello {customer?.first_name}
-            </div>
-            <div className="text-base-regular">
-              <ul>
-                <li>
-                  <LocalizedClientLink
-                    href="/account/profile"
-                    className="flex items-center justify-between py-4 border-b border-gray-200 px-8"
-                    data-testid="profile-link"
-                  >
-                    <>
-                      <div className="flex items-center gap-x-2">
-                        <User size={20} />
-                        <span>Profile</span>
-                      </div>
-                      <ChevronDown className="transform -rotate-90" />
-                    </>
-                  </LocalizedClientLink>
-                </li>
-                <li>
-                  <LocalizedClientLink
-                    href="/account/addresses"
-                    className="flex items-center justify-between py-4 border-b border-gray-200 px-8"
-                    data-testid="addresses-link"
-                  >
-                    <>
-                      <div className="flex items-center gap-x-2">
-                        <MapPin size={20} />
-                        <span>Addresses</span>
-                      </div>
-                      <ChevronDown className="transform -rotate-90" />
-                    </>
-                  </LocalizedClientLink>
-                </li>
-                <li>
-                  <LocalizedClientLink
-                    href="/account/orders"
-                    className="flex items-center justify-between py-4 border-b border-gray-200 px-8"
-                    data-testid="orders-link"
-                  >
-                    <div className="flex items-center gap-x-2">
-                      <Package size={20} />
-                      <span>Orders</span>
-                    </div>
-                    <ChevronDown className="transform -rotate-90" />
-                  </LocalizedClientLink>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    className="flex items-center justify-between py-4 border-b border-gray-200 px-8 w-full"
-                    onClick={handleLogout}
-                    data-testid="logout-button"
-                  >
-                    <div className="flex items-center gap-x-2">
-                      <ArrowRightOnRectangle />
-                      <span>Log out</span>
-                    </div>
-                    <ChevronDown className="transform -rotate-90" />
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </>
-        )}
+    <>
+      {/* Mobile: Sheet trigger + drawer */}
+      <div className="small:hidden w-full" data-testid="mobile-account-nav">
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              data-testid="account-menu-trigger"
+            >
+              <Menu className="h-4 w-4" />
+              {t("account.nav.menuOpen")}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[280px] sm:w-[320px]">
+            <SheetHeader>
+              <SheetTitle>{t("account.nav.title")}</SheetTitle>
+            </SheetHeader>
+            <nav className="flex flex-col gap-0.5 pt-6">
+              {navLinks.map(({ href, label, testId }) => (
+                <LocalizedClientLink
+                  key={href}
+                  href={href}
+                  className={navItemClass(href)}
+                  data-testid={testId}
+                  onClick={() => setSheetOpen(false)}
+                >
+                  {href === "/account" && (
+                    <LayoutDashboard className="h-4 w-4 shrink-0" />
+                  )}
+                  {href === "/account/profile" && (
+                    <User size={20} className="shrink-0" />
+                  )}
+                  {href === "/account/addresses" && (
+                    <MapPin size={20} className="shrink-0" />
+                  )}
+                  {href === "/account/orders" && (
+                    <Package size={20} className="shrink-0" />
+                  )}
+                  {label}
+                </LocalizedClientLink>
+              ))}
+              <Separator className="my-2" />
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium",
+                  "text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                )}
+                onClick={() => {
+                  setSheetOpen(false)
+                  handleLogout()
+                }}
+                data-testid="logout-button"
+              >
+                <ArrowRightOnRectangle />
+                {t("account.nav.logOut")}
+              </button>
+            </nav>
+          </SheetContent>
+        </Sheet>
       </div>
-      <div className="hidden small:block" data-testid="account-nav">
-        <div>
-          <div className="pb-4">
-            <h3 className="text-base-semi">Account</h3>
-          </div>
-          <div className="text-base-regular">
-            <ul className="flex mb-0 justify-start items-start flex-col gap-y-4">
-              <li>
-                <AccountNavLink
-                  href="/account"
-                  route={route!}
-                  data-testid="overview-link"
-                >
-                  Overview
-                </AccountNavLink>
-              </li>
-              <li>
-                <AccountNavLink
-                  href="/account/profile"
-                  route={route!}
-                  data-testid="profile-link"
-                >
-                  Profile
-                </AccountNavLink>
-              </li>
-              <li>
-                <AccountNavLink
-                  href="/account/addresses"
-                  route={route!}
-                  data-testid="addresses-link"
-                >
-                  Addresses
-                </AccountNavLink>
-              </li>
-              <li>
-                <AccountNavLink
-                  href="/account/orders"
-                  route={route!}
-                  data-testid="orders-link"
-                >
-                  Orders
-                </AccountNavLink>
-              </li>
-              <li className="text-grey-700">
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  data-testid="logout-button"
-                >
-                  Log out
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
+
+      {/* Desktop: Sidebar */}
+      <div className="hidden small:block w-full" data-testid="account-nav">
+        <h3 className="text-base font-semibold text-foreground">{t("account.nav.title")}</h3>
+        <Separator className="my-4" />
+        <ul className="flex flex-col gap-0.5">
+          {navLinks.map(({ href, label, testId }) => (
+            <li key={href}>
+              <AccountNavLink
+                href={href}
+                data-testid={testId}
+                className={navItemClass(href)}
+              >
+                {href === "/account" && (
+                  <LayoutDashboard className="h-4 w-4 shrink-0" />
+                )}
+                {href === "/account/profile" && (
+                  <User size={20} className="shrink-0" />
+                )}
+                {href === "/account/addresses" && (
+                  <MapPin size={20} className="shrink-0" />
+                )}
+                {href === "/account/orders" && (
+                  <Package size={20} className="shrink-0" />
+                )}
+                {label}
+              </AccountNavLink>
+            </li>
+          ))}
+          <li>
+            <button
+              type="button"
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium",
+                "text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              )}
+              onClick={handleLogout}
+              data-testid="logout-button"
+            >
+              <ArrowRightOnRectangle />
+              {t("account.nav.logOut")}
+            </button>
+          </li>
+        </ul>
       </div>
-    </div>
+    </>
   )
 }
 
 type AccountNavLinkProps = {
   href: string
-  route: string
   children: React.ReactNode
+  className?: string
   "data-testid"?: string
 }
 
-const AccountNavLink = ({
+function AccountNavLink({
   href,
-  route,
   children,
+  className,
   "data-testid": dataTestId,
-}: AccountNavLinkProps) => {
-  const { countryCode }: { countryCode: string } = useParams()
-
-  const active = route.split(countryCode)[1] === href
+}: AccountNavLinkProps) {
   return (
     <LocalizedClientLink
       href={href}
-      className={clx("text-ui-fg-subtle hover:text-ui-fg-base", {
-        "text-ui-fg-base font-semibold": active,
-      })}
+      className={className}
       data-testid={dataTestId}
     >
       {children}

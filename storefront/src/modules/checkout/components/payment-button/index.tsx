@@ -12,6 +12,7 @@ import { placeOrder } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import { isManual, isPaypal, isStripe } from "@lib/constants"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
+import { isEcontOfficeShippingMethod } from "@modules/checkout/lib/is-econt-office"
 
 // Lazy load Stripe payment request component (heavy)
 const StripePaymentRequest = dynamic(
@@ -30,10 +31,10 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
 }) => {
   const { t } = useTranslation()
   // Check if Econt Office is selected (doesn't require shipping address)
-  const selectedShippingMethod = cart.shipping_methods?.[0]
-  const isEcontOffice = selectedShippingMethod?.name?.toLowerCase().includes("econt") && 
-                        selectedShippingMethod?.name?.toLowerCase().includes("office")
-  
+  // Use at(-1) for selected method; support Bulgarian "офис" and data.id "econt-office"
+  const selectedShippingMethod = cart.shipping_methods?.at(-1)
+  const isEcontOffice = isEcontOfficeShippingMethod(selectedShippingMethod)
+
   // Shipping address is optional for Econt Office, required for other methods
   // Billing address is always set to shipping address (Bulgaria requirement)
   // For Econt Office, we can complete without shipping_address
@@ -52,7 +53,9 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
   //   return <GiftCardPaymentButton />
   // }
 
-  const paymentSession = cart.payment_collection?.payment_sessions?.[0]
+  const paymentSession = cart.payment_collection?.payment_sessions?.find(
+    (s) => s.status === "pending"
+  )
 
   switch (true) {
     case isStripe(paymentSession?.provider_id):
@@ -131,7 +134,8 @@ const StripePaymentButton = ({
     (s) => s.status === "pending"
   )
 
-  const disabled = !stripe || !elements ? true : false
+  const disabled = !stripe || !elements
+  const paymentFormReady = Boolean(stripe && elements)
 
   const handlePayment = async () => {
     setSubmitting(true)
@@ -239,7 +243,9 @@ const StripePaymentButton = ({
         className="w-full"
         data-testid={dataTestId}
       >
-        {t("checkout.placeOrder")}
+        {!paymentFormReady && !submitting
+          ? t("checkout.preparingPayment")
+          : t("checkout.placeOrder")}
       </Button>
       <ErrorMessage
         error={errorMessage}

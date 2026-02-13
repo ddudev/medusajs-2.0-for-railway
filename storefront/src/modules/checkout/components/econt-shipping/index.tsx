@@ -12,13 +12,16 @@ type EcontShippingProps = {
   cart: HttpTypes.StoreCart
   shippingMethod?: HttpTypes.StoreCartShippingOption | null
   onDataChange?: (data: EcontData | null) => void
+  /** When provided (e.g. from Addresses section), fixes OFFICE vs DOOR from selected method */
+  initialShippingTo?: "OFFICE" | "DOOR"
 }
 
-const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onDataChange }) => {
+const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onDataChange, initialShippingTo }) => {
   const router = useRouter()
   
-  // Auto-detect shipping type from fulfillment option or shipping method name
+  // Auto-detect shipping type from fulfillment option or shipping method name (or use initialShippingTo from parent)
   const detectShippingType = (): "OFFICE" | "DOOR" => {
+    if (initialShippingTo) return initialShippingTo
     if (!shippingMethod) {
       return "OFFICE" // Default
     }

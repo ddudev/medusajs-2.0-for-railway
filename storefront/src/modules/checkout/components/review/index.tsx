@@ -7,6 +7,7 @@ import CheckoutSummaryDropdown from "../checkout-summary-dropdown"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { useCheckoutCart } from "@lib/context/checkout-cart-context"
 import DiscountCode from "../discount-code"
+import { isEcontOfficeShippingMethod } from "@modules/checkout/lib/is-econt-office"
 
 const Review = ({ cart: initialCart }: { cart: any }) => {
   const { t } = useTranslation()
@@ -18,13 +19,13 @@ const Review = ({ cart: initialCart }: { cart: any }) => {
     cart?.gift_cards && cart?.gift_cards?.length > 0 && cart?.total === 0
 
   // Check if Econt Office is selected (doesn't require shipping address)
-  const selectedShippingMethod = cart.shipping_methods?.[0]
-  const isEcontOffice = selectedShippingMethod?.name?.toLowerCase().includes("econt") && 
-                        selectedShippingMethod?.name?.toLowerCase().includes("office")
-  
+  // Use at(-1) for selected method; support Bulgarian "офис" and data.id "econt-office"
+  const selectedShippingMethod = cart.shipping_methods?.at(-1)
+  const isEcontOffice = isEcontOfficeShippingMethod(selectedShippingMethod)
+
   // Shipping address is optional for Econt Office
   const previousStepsCompleted =
-    cart.shipping_methods.length > 0 &&
+    (cart.shipping_methods?.length ?? 0) > 0 &&
     (cart.payment_collection || paidByGiftcard) &&
     (isEcontOffice || cart.shipping_address) // Shipping address only required for non-Econt Office methods
 

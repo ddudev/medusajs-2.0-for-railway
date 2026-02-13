@@ -2,6 +2,7 @@
 
 import React, { useEffect, useActionState } from "react"
 
+import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import Input from "@modules/common/components/input"
 
 import AccountInfo from "../account-info"
@@ -12,31 +13,26 @@ type MyInformationProps = {
   customer: HttpTypes.StoreCustomer
 }
 
-const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
+const ProfilePhone: React.FC<MyInformationProps> = ({ customer }) => {
+  const { t } = useTranslation()
   const [successState, setSuccessState] = React.useState(false)
 
   const updateCustomerPhone = async (
     _currentState: Record<string, unknown>,
     formData: FormData
   ) => {
-    const customer = {
+    const payload = {
       phone: formData.get("phone") as string,
     }
 
     try {
-      await updateCustomer(customer)
-      
-      // Track phone update as lead capture
-      if (customer.phone) {
-        trackPhoneCapture({
-          phone: customer.phone,
-          source: 'account',
-        })
-      }
-      
+      await updateCustomer(payload)
       return { success: true, error: null }
-    } catch (error: any) {
-      return { success: false, error: error.toString() }
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      }
     }
   }
 
@@ -56,8 +52,8 @@ const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
   return (
     <form action={formAction} className="w-full">
       <AccountInfo
-        label="Phone"
-        currentInfo={`${customer.phone}`}
+        label={t("account.profile.phone")}
+        currentInfo={customer.phone ?? "—"}
         isSuccess={successState}
         isError={!!state.error}
         errorMessage={state.error}
@@ -66,10 +62,10 @@ const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
       >
         <div className="grid grid-cols-1 gap-y-2">
           <Input
-            label="Phone"
+            label={t("account.profile.phone")}
             name="phone"
-            type="phone"
-            autoComplete="phone"
+            type="tel"
+            autoComplete="tel"
             required
             defaultValue={customer.phone ?? ""}
             data-testid="phone-input"
@@ -80,4 +76,4 @@ const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
   )
 }
 
-export default ProfileEmail
+export default ProfilePhone

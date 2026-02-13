@@ -4,6 +4,7 @@ import { Suspense } from "react"
 import { connection } from "next/server"
 
 import AddressBook from "@modules/account/components/address-book"
+import AddressesPageHeader from "@modules/account/components/addresses-page-header"
 import SuspenseLoading from "@modules/common/components/suspense-loading"
 
 import { getRegion } from "@lib/data/regions"
@@ -46,14 +47,8 @@ async function AddressesContent({
   }
 
   return (
-    <div className="w-full" data-testid="addresses-page-wrapper">
-      <div className="mb-8 flex flex-col gap-y-4">
-        <h1 className="text-2xl-semi">Shipping Addresses</h1>
-        <p className="text-base-regular">
-          View and update your shipping addresses, you can add as many as you
-          like. Saving your addresses will make them available during checkout.
-        </p>
-      </div>
+    <div className="w-full max-w-4xl" data-testid="addresses-page-wrapper">
+      <AddressesPageHeader />
       <AddressBook customer={customer} region={region} />
     </div>
   )

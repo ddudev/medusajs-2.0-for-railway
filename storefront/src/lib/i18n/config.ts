@@ -23,6 +23,7 @@ export interface TranslationKeys {
   about?: Record<string, any>
   footer?: Record<string, any>
   login?: Record<string, any>
+  account?: Record<string, any>
 }
 
 /**

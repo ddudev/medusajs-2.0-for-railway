@@ -7,6 +7,7 @@ import { revalidateTag } from "next/cache"
 import { redirect } from "next/navigation"
 import { cache } from "react"
 import { getAuthHeaders, removeAuthToken, setAuthToken } from "./cookies"
+import compareAddresses from "@lib/util/compare-addresses"
 
 // User-specific data - accesses cookies, should NOT be cached
 // Always dynamic - must be wrapped in Suspense when used
@@ -290,11 +291,67 @@ export async function signout(countryCode: string) {
   redirect(`/${countryCode}/account`)
 }
 
+function parseEcontFromFormData(formData: FormData): Record<string, unknown> | undefined {
+  const raw = formData.get("econt_json")
+  if (!raw || typeof raw !== "string") return undefined
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    return Object.keys(parsed).length > 0 ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Saves the cart's shipping address to the customer's saved addresses if the customer
+ * is logged in and the address does not already exist (avoids duplicates).
+ * Called after setAddresses in checkout.
+ */
+export async function saveAddressFromCartWithoutDuplicate(
+  cart: { shipping_address?: HttpTypes.StoreCartAddress | null } | null
+): Promise<void> {
+  const addr = cart?.shipping_address
+  if (!addr?.address_1) return
+
+  const customer = await getCustomer()
+  if (!customer) return
+
+  const existing = (customer.addresses || []).find((a) => compareAddresses(a, addr))
+  if (existing) return
+
+  const authHeaders = await getAuthHeaders()
+  if (!authHeaders || !("authorization" in authHeaders)) return
+
+  const withMeta = addr as typeof addr & { metadata?: { econt?: unknown } }
+  const payload: Record<string, unknown> = {
+    first_name: addr.first_name ?? "",
+    last_name: addr.last_name ?? "",
+    company: addr.company ?? "",
+    address_1: addr.address_1 ?? "",
+    address_2: addr.address_2 ?? "",
+    city: addr.city ?? "",
+    postal_code: addr.postal_code ?? "",
+    province: addr.province ?? "",
+    country_code: (addr.country_code ?? "bg").toLowerCase(),
+    phone: addr.phone ?? "",
+  }
+  if (withMeta.metadata?.econt) {
+    payload.metadata = { econt: withMeta.metadata.econt }
+  }
+
+  await sdk.store.customer.createAddress(
+    payload as Parameters<typeof sdk.store.customer.createAddress>[0],
+    {},
+    authHeaders
+  )
+  revalidateTag("customer", "default")
+}
+
 export const addCustomerAddress = async (
   _currentState: unknown,
   formData: FormData
 ): Promise<any> => {
-  const address = {
+  const address: Record<string, unknown> = {
     first_name: formData.get("first_name") as string,
     last_name: formData.get("last_name") as string,
     company: formData.get("company") as string,
@@ -306,10 +363,14 @@ export const addCustomerAddress = async (
     country_code: formData.get("country_code") as string,
     phone: formData.get("phone") as string,
   }
+  const econt = parseEcontFromFormData(formData)
+  if (econt) {
+    address.metadata = { econt }
+  }
 
   const authHeaders = await getAuthHeaders()
   return sdk.store.customer
-    .createAddress(address, {}, authHeaders)
+    .createAddress(address as Parameters<typeof sdk.store.customer.createAddress>[0], {}, authHeaders)
     .then(({ customer }) => {
       revalidateTag("customer", "default")
       return { success: true, error: null }
@@ -340,7 +401,7 @@ export const updateCustomerAddress = async (
 ): Promise<any> => {
   const addressId = currentState.addressId as string
 
-  const address = {
+  const address: Record<string, unknown> = {
     first_name: formData.get("first_name") as string,
     last_name: formData.get("last_name") as string,
     company: formData.get("company") as string,
@@ -352,13 +413,17 @@ export const updateCustomerAddress = async (
     country_code: formData.get("country_code") as string,
     phone: formData.get("phone") as string,
   }
+  const econt = parseEcontFromFormData(formData)
+  if (econt) {
+    address.metadata = { econt }
+  }
 
   const authHeaders = await getAuthHeaders()
   if (!authHeaders || !("authorization" in authHeaders)) {
     return { success: false, error: "Unauthorized" }
   }
   return sdk.store.customer
-    .updateAddress(addressId, address, {}, authHeaders)
+    .updateAddress(addressId, address as Parameters<typeof sdk.store.customer.updateAddress>[1], {}, authHeaders)
     .then(() => {
       revalidateTag("customer", "default")
       return { success: true, error: null }

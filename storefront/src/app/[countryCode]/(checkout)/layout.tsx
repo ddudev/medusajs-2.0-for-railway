@@ -1,7 +1,6 @@
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import ChevronDown from "@modules/common/icons/chevron-down"
 import MedusaCTA from "@modules/layout/components/medusa-cta"
-import { QueryProvider } from "@lib/query/provider"
 import { ToastContainer } from "@modules/common/components/toast-container"
 
 export default function CheckoutLayout({
@@ -10,8 +9,8 @@ export default function CheckoutLayout({
   children: React.ReactNode
 }) {
   return (
-    <QueryProvider>
-      <div className="w-full bg-white relative small:min-h-screen">
+    <>
+    <div className="w-full bg-white relative small:min-h-screen">
         <div className="h-16 bg-background-base border-b ">
           <nav className="flex h-full items-center content-container justify-between">
             <LocalizedClientLink
@@ -57,6 +56,6 @@ export default function CheckoutLayout({
         </div>
       </div>
       <ToastContainer />
-    </QueryProvider>
+    </>
   )
 }

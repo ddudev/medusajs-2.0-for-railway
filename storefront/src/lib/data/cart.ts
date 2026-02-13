@@ -586,9 +586,70 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
     } as any
 
     await updateCart(data)
+    const updatedCart = await retrieveCart()
+    const { saveAddressFromCartWithoutDuplicate } = await import("./customer")
+    await saveAddressFromCartWithoutDuplicate(updatedCart).catch(() => {})
     return null // Success
   } catch (e: any) {
     return e.message
+  }
+}
+
+/** Payload for updating only shipping address (e.g. from selector or debounced manual fields). */
+export type UpdateCartShippingAddressPayload = {
+  address_1?: string
+  address_2?: string
+  city?: string
+  postal_code?: string
+  province?: string
+  country_code?: string
+  company?: string
+  first_name?: string
+  last_name?: string
+  phone?: string
+}
+
+/**
+ * Updates the cart's shipping (and billing) address without a form submit.
+ * Merges payload with existing cart.shipping_address (preserves contact from cart).
+ * Call when user selects a saved address or when manual address fields change (debounced).
+ * Returns updated cart so client can sync context.
+ */
+export async function updateCartShippingAddress(
+  payload: UpdateCartShippingAddressPayload
+): Promise<{ error: string | null; cart?: HttpTypes.StoreCart | null }> {
+  try {
+    const cart = await retrieveCart()
+    if (!cart) return { error: "Cart not found" }
+
+    const defaultCountryCode =
+      cart.region?.countries?.[0]?.iso_2?.toLowerCase() || "bg"
+
+    const shippingAddress = {
+      ...(cart.shipping_address || {}),
+      address_1: payload.address_1 ?? cart.shipping_address?.address_1 ?? "",
+      address_2: payload.address_2 ?? cart.shipping_address?.address_2 ?? "",
+      city: payload.city ?? cart.shipping_address?.city ?? "",
+      postal_code: payload.postal_code ?? cart.shipping_address?.postal_code ?? "",
+      province: payload.province ?? cart.shipping_address?.province ?? "",
+      country_code: (payload.country_code ?? cart.shipping_address?.country_code ?? defaultCountryCode).toLowerCase(),
+      company: payload.company ?? cart.shipping_address?.company ?? "",
+      first_name: payload.first_name ?? cart.shipping_address?.first_name ?? "",
+      last_name: payload.last_name ?? cart.shipping_address?.last_name ?? "",
+      phone: payload.phone ?? cart.shipping_address?.phone ?? "",
+    } as HttpTypes.StoreCartAddress
+
+    const data: HttpTypes.StoreUpdateCart = {
+      shipping_address: shippingAddress,
+      billing_address: shippingAddress,
+    }
+    await updateCart(data)
+    const updatedCart = await retrieveCart()
+    const { saveAddressFromCartWithoutDuplicate } = await import("./customer")
+    await saveAddressFromCartWithoutDuplicate(updatedCart).catch(() => {})
+    return { error: null, cart: updatedCart }
+  } catch (e: any) {
+    return { error: e?.message ?? "Failed to update address" }
   }
 }
 
@@ -604,9 +665,11 @@ export async function placeOrder() {
   }
 
   // Check if Econt Office is selected (doesn't require shipping address)
-  const selectedShippingMethod = cart.shipping_methods?.[0]
-  const isEcontOffice = selectedShippingMethod?.name?.toLowerCase().includes("econt") && 
-                        selectedShippingMethod?.name?.toLowerCase().includes("office")
+  const selectedShippingMethod = cart.shipping_methods?.at(-1)
+  const { isEcontOfficeShippingMethod } = await import(
+    "@modules/checkout/lib/is-econt-office"
+  )
+  const isEcontOffice = isEcontOfficeShippingMethod(selectedShippingMethod)
 
   // For Econt Office, create minimal shipping address from contact info if not present
   // This ensures Medusa validation passes while not requiring full address

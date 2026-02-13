@@ -1,21 +1,27 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
-import { PencilSquare as Edit, Trash } from "@medusajs/icons"
-import { Button, Heading, Text, clx } from "@medusajs/ui"
+import { useCallback, useEffect, useState, useActionState } from "react"
+import { Loader2, Pencil, Trash2 } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import useToggleState from "@lib/hooks/use-toggle-state"
-import CountrySelect from "@modules/checkout/components/country-select"
-import Input from "@modules/common/components/input"
-import Modal from "@modules/common/components/modal"
-import Spinner from "@modules/common/icons/spinner"
-import { useActionState } from "react"
-import { SubmitButton } from "@modules/checkout/components/submit-button"
-import { HttpTypes } from "@medusajs/types"
+import type { EcontData } from "@lib/data/econt"
 import {
   deleteCustomerAddress,
   updateCustomerAddress,
 } from "@lib/data/customer"
+import CountrySelect from "@modules/checkout/components/country-select"
+import { SubmitButton } from "@modules/checkout/components/submit-button"
+import Input from "@modules/common/components/input"
+import Modal from "@modules/common/components/modal"
+import { HttpTypes } from "@medusajs/types"
+import { cn } from "@/lib/utils"
+import { EcontAddressBlock } from "./econt-address-block"
+
+const isBulgariaRegion = (region: HttpTypes.StoreRegion) =>
+  region.countries?.some((c) => c.iso_2?.toLowerCase() === "bg") ?? false
 
 type EditAddressProps = {
   region: HttpTypes.StoreRegion
@@ -28,9 +34,18 @@ const EditAddress: React.FC<EditAddressProps> = ({
   address,
   isActive = false,
 }) => {
+  const { t } = useTranslation()
   const [removing, setRemoving] = useState(false)
   const [successState, setSuccessState] = useState(false)
+  const [econtData, setEcontData] = useState<EcontData | null>(null)
   const { state, open, close: closeModal } = useToggleState(false)
+
+  const initialEcont = (address as { metadata?: { econt?: EcontData } })
+    ?.metadata?.econt ?? null
+
+  useEffect(() => {
+    if (state) setEcontData(initialEcont ?? null)
+  }, [state, initialEcont])
 
   const [formState, formAction] = useActionState(updateCustomerAddress, {
     success: false,
@@ -44,17 +59,16 @@ const EditAddress: React.FC<EditAddressProps> = ({
   }
 
   useEffect(() => {
-    if (successState) {
-      close()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (successState) close()
   }, [successState])
 
   useEffect(() => {
-    if (formState.success) {
-      setSuccessState(true)
-    }
+    if (formState.success) setSuccessState(true)
   }, [formState])
+
+  const handleEcontChange = useCallback((data: EcontData | null) => {
+    setEcontData(data)
+  }, [])
 
   const removeAddress = async () => {
     setRemoving(true)
@@ -62,136 +76,156 @@ const EditAddress: React.FC<EditAddressProps> = ({
     setRemoving(false)
   }
 
+  const showEcont = isBulgariaRegion(region)
+
   return (
     <>
-      <div
-        className={clx(
-          "border rounded-rounded p-5 min-h-[220px] h-full w-full flex flex-col justify-between transition-colors",
-          {
-            "border-gray-900": isActive,
-          }
+      <Card
+        className={cn(
+          "flex min-h-[220px] w-full flex-col justify-between transition-colors",
+          isActive && "ring-2 ring-primary"
         )}
         data-testid="address-container"
       >
-        <div className="flex flex-col">
-          <Heading
-            className="text-left text-base-semi"
-            data-testid="address-name"
-          >
-            {address.first_name} {address.last_name}
-          </Heading>
-          {address.company && (
-            <Text
-              className="txt-compact-small text-ui-fg-base"
-              data-testid="address-company"
+        <CardContent className="flex flex-col justify-between gap-4 p-5">
+          <div className="flex flex-col">
+            <p
+              className="text-base font-semibold text-foreground"
+              data-testid="address-name"
             >
-              {address.company}
-            </Text>
-          )}
-          <Text className="flex flex-col text-left text-base-regular mt-2">
-            <span data-testid="address-address">
-              {address.address_1}
-              {address.address_2 && <span>, {address.address_2}</span>}
-            </span>
-            <span data-testid="address-postal-city">
-              {address.postal_code}, {address.city}
-            </span>
-            <span data-testid="address-province-country">
-              {address.province && `${address.province}, `}
-              {address.country_code?.toUpperCase()}
-            </span>
-          </Text>
-        </div>
-        <div className="flex items-center gap-x-4">
-          <button
-            className="text-small-regular text-ui-fg-base flex items-center gap-x-2"
-            onClick={open}
-            data-testid="address-edit-button"
-          >
-            <Edit />
-            Edit
-          </button>
-          <button
-            className="text-small-regular text-ui-fg-base flex items-center gap-x-2"
-            onClick={removeAddress}
-            data-testid="address-delete-button"
-          >
-            {removing ? <Spinner size={16} className="shrink-0" /> : <Trash />}
-            Remove
-          </button>
-        </div>
-      </div>
+              {address.first_name} {address.last_name}
+            </p>
+            {address.company && (
+              <p
+                className="text-sm text-muted-foreground"
+                data-testid="address-company"
+              >
+                {address.company}
+              </p>
+            )}
+            <div className="mt-2 flex flex-col text-sm text-muted-foreground">
+              <span data-testid="address-address">
+                {address.address_1}
+                {address.address_2 && `, ${address.address_2}`}
+              </span>
+              <span data-testid="address-postal-city">
+                {address.postal_code}, {address.city}
+              </span>
+              <span data-testid="address-province-country">
+                {address.province && `${address.province}, `}
+                {address.country_code?.toUpperCase()}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-foreground"
+              onClick={open}
+              data-testid="address-edit-button"
+            >
+              <Pencil className="h-4 w-4" />
+              {t("account.addresses.edit")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-destructive hover:text-destructive"
+              onClick={removeAddress}
+              disabled={removing}
+              data-testid="address-delete-button"
+            >
+              {removing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              {t("account.addresses.remove")}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      <Modal isOpen={state} close={close} data-testid="edit-address-modal">
+      <Modal
+        isOpen={state}
+        close={close}
+        data-testid="edit-address-modal"
+        size="large"
+      >
         <Modal.Title>
-          <Heading className="mb-2">Edit address</Heading>
+          <h2 className="text-lg font-semibold">
+            {t("account.addresses.editAddress")}
+          </h2>
         </Modal.Title>
         <form action={formAction}>
           <Modal.Body>
-            <div className="grid grid-cols-1 gap-y-2">
+            <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-x-2">
                 <Input
-                  label="First name"
+                  label={t("account.addresses.firstName")}
                   name="first_name"
                   required
                   autoComplete="given-name"
-                  defaultValue={address.first_name || undefined}
+                  defaultValue={address.first_name ?? undefined}
                   data-testid="first-name-input"
                 />
                 <Input
-                  label="Last name"
+                  label={t("account.addresses.lastName")}
                   name="last_name"
                   required
                   autoComplete="family-name"
-                  defaultValue={address.last_name || undefined}
+                  defaultValue={address.last_name ?? undefined}
                   data-testid="last-name-input"
                 />
               </div>
               <Input
-                label="Company"
+                label={t("account.addresses.company")}
                 name="company"
                 autoComplete="organization"
-                defaultValue={address.company || undefined}
+                defaultValue={address.company ?? undefined}
                 data-testid="company-input"
               />
               <Input
-                label="Address"
+                label={t("account.addresses.address")}
                 name="address_1"
                 required
                 autoComplete="address-line1"
-                defaultValue={address.address_1 || undefined}
+                defaultValue={address.address_1 ?? undefined}
                 data-testid="address-1-input"
               />
               <Input
-                label="Apartment, suite, etc."
+                label={t("account.addresses.apartmentSuite")}
                 name="address_2"
                 autoComplete="address-line2"
-                defaultValue={address.address_2 || undefined}
+                defaultValue={address.address_2 ?? undefined}
                 data-testid="address-2-input"
               />
               <div className="grid grid-cols-[144px_1fr] gap-x-2">
                 <Input
-                  label="Postal code"
+                  label={t("account.addresses.postalCode")}
                   name="postal_code"
                   required
                   autoComplete="postal-code"
-                  defaultValue={address.postal_code || undefined}
+                  defaultValue={address.postal_code ?? undefined}
                   data-testid="postal-code-input"
                 />
                 <Input
-                  label="City"
+                  label={t("account.addresses.city")}
                   name="city"
                   required
                   autoComplete="locality"
-                  defaultValue={address.city || undefined}
+                  defaultValue={address.city ?? undefined}
                   data-testid="city-input"
                 />
               </div>
               <Input
-                label="Province / State"
+                label={t("account.addresses.provinceState")}
                 name="province"
                 autoComplete="address-level1"
-                defaultValue={address.province || undefined}
+                defaultValue={address.province ?? undefined}
                 data-testid="state-input"
               />
               <CountrySelect
@@ -199,35 +233,51 @@ const EditAddress: React.FC<EditAddressProps> = ({
                 region={region}
                 required
                 autoComplete="country"
-                defaultValue={address.country_code || undefined}
+                defaultValue={address.country_code ?? undefined}
                 data-testid="country-select"
               />
               <Input
-                label="Phone"
+                label={t("account.addresses.phone")}
                 name="phone"
-                autoComplete="phone"
-                defaultValue={address.phone || undefined}
+                autoComplete="tel"
+                defaultValue={address.phone ?? undefined}
                 data-testid="phone-input"
               />
+              {showEcont && (
+                <EcontAddressBlock
+                  initialData={initialEcont}
+                  onDataChange={handleEcontChange}
+                />
+              )}
+              {showEcont && (
+                <input
+                  type="hidden"
+                  name="econt_json"
+                  value={JSON.stringify(econtData ?? {})}
+                  readOnly
+                />
+              )}
             </div>
             {formState.error && (
-              <div className="text-rose-500 text-small-regular py-2">
+              <div className="text-destructive py-2 text-sm">
                 {formState.error}
               </div>
             )}
           </Modal.Body>
           <Modal.Footer>
-            <div className="flex gap-3 mt-6">
+            <div className="mt-6 flex gap-3">
               <Button
-                type="reset"
+                type="button"
                 variant="secondary"
                 onClick={close}
                 className="h-10"
                 data-testid="cancel-button"
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
-              <SubmitButton data-testid="save-button">Save</SubmitButton>
+              <SubmitButton data-testid="save-button">
+                {t("common.save")}
+              </SubmitButton>
             </div>
           </Modal.Footer>
         </form>
