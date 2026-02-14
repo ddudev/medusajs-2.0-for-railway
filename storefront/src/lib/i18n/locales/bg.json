@@ -191,6 +191,7 @@
     "review": "Преглед",
     "placeOrder": "Направи поръчка",
     "preparingPayment": "Подготвяне на формата за плащане…",
+    "stripeNotConfiguredHint": "Ако бутонът остане неактивен, задайте NEXT_PUBLIC_STRIPE_KEY в средата за изграждане при внедряване (не само по време на изпълнение).",
     "orderSummary": "Резюме на поръчката",
     "shippingMethod": "Начин на доставка",
     "waitingForInput": "Изберете данни за доставка",

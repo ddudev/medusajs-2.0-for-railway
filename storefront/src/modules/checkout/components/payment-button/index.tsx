@@ -242,11 +242,18 @@ const StripePaymentButton = ({
         isLoading={submitting}
         className="w-full"
         data-testid={dataTestId}
+        data-place-order-disabled={disabled || notReady ? (disabled && !paymentFormReady ? "stripe-not-ready" : "steps-incomplete") : undefined}
+        aria-describedby={disabled && !paymentFormReady ? "stripe-hint" : undefined}
       >
         {!paymentFormReady && !submitting
           ? t("checkout.preparingPayment")
           : t("checkout.placeOrder")}
       </Button>
+      {disabled && !paymentFormReady && (
+        <p id="stripe-hint" className="text-small-regular text-ui-fg-muted mt-2">
+          {t("checkout.stripeNotConfiguredHint")}
+        </p>
+      )}
       <ErrorMessage
         error={errorMessage}
         data-testid="stripe-payment-error-message"

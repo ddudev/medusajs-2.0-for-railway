@@ -190,6 +190,7 @@
     "review": "Review",
     "placeOrder": "Place order",
     "preparingPayment": "Preparing payment form…",
+    "stripeNotConfiguredHint": "If the button stays disabled, set NEXT_PUBLIC_STRIPE_KEY in your deployment build environment (not only at runtime).",
     "orderSummary": "Order Summary",
     "shippingMethod": "Shipping Method",
     "waitingForInput": "Select delivery details",
