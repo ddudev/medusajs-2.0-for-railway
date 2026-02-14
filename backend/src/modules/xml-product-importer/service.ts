@@ -986,16 +986,16 @@ class XmlProductImporterService extends MedusaService({
   }
 
   /**
-   * Get or create category hierarchy from a delimited category path
-   * Creates categories level by level if they don't exist
-   * Returns the ID of the leaf (last) category
+   * Resolve category hierarchy from a delimited category path (get-only; does not create categories).
+   * Use InnPro import workflow to create categories; this importer only assigns products to existing categories.
+   * Returns the ID of the leaf category, or null if any segment is not found.
    */
   async getOrCreateCategoryHierarchy(
     categoryPath: string,
     delimiter: string,
     container: MedusaContainer,
     categoryCache?: Map<string, string>
-  ): Promise<string> {
+  ): Promise<string | null> {
     this.logger_.info(`Processing category hierarchy: "${categoryPath}" with delimiter: "${delimiter}"`)
     
     // Normalize delimiter by removing spaces (e.g., " > " → ">")
@@ -1082,61 +1082,12 @@ class XmlProductImporterService extends MedusaService({
         this.logger_.warn(`Error querying category "${originalCategoryName}": ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
 
-      try {
-        const createdCategories = await productService.createProductCategories([
-          { name: originalCategoryName, parent_category_id: parentCategoryId, is_active: true },
-        ])
-        if (!createdCategories?.length) throw new Error(`Failed to create category "${originalCategoryName}"`)
-        const categoryId = createdCategories[0].id
-
-        const [createdExtension] = await categoryExtensionService.createCategoryExtensions([
-          { original_name: originalCategoryName, description: null, seo_title: null, seo_meta_description: null },
-        ])
-        if (createdExtension?.id) {
-          await link.create({
-            [Modules.PRODUCT]: { product_category_id: categoryId },
-            [CATEGORY_EXTENSION_MODULE]: { category_extension_id: createdExtension.id },
-          })
-        }
-
-        cache.set(cacheKey, categoryId)
-        parentCategoryId = categoryId
-        this.logger_.info(`Created category "${originalCategoryName}" with ID ${categoryId}`)
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        if (errorMessage.includes('already exists') || errorMessage.includes('handle')) {
-          try {
-            const queryParams: any = { name: originalCategoryName, parent_category_id: parentCategoryId !== null ? parentCategoryId : null }
-            const existingCategories = await productService.listProductCategories(queryParams)
-            if (existingCategories?.length) {
-              const categoryId = existingCategories[0].id
-              cache.set(cacheKey, categoryId)
-              parentCategoryId = categoryId
-              continue
-            }
-            const allCategories = await productService.listProductCategories({ name: originalCategoryName })
-            const matchingCategory = allCategories?.find((cat: any) =>
-              parentCategoryId === null ? !cat.parent_category_id : cat.parent_category_id === parentCategoryId
-            )
-            if (matchingCategory) {
-              cache.set(cacheKey, matchingCategory.id)
-              parentCategoryId = matchingCategory.id
-              continue
-            }
-          } catch (findError) {
-            this.logger_.warn(`Error finding existing category: ${findError instanceof Error ? findError.message : 'Unknown'}`)
-          }
-        }
-        
-        // If we couldn't recover from the error, throw it
-        this.logger_.error(`Error creating category "${originalCategoryName}": ${errorMessage}`)
-        throw new Error(`Failed to create category "${originalCategoryName}": ${errorMessage}`)
-      }
-    }
-    
-    // Return the leaf category ID
-    if (!parentCategoryId) {
-      throw new Error(`Failed to get category ID for path: "${categoryPath}"`)
+      // Get-only: do not create categories. Create categories via InnPro import workflow.
+      this.logger_.warn(
+        `Category not found (get-only): "${originalCategoryName}" under parent ${parentCategoryId ?? 'root'}. ` +
+        `Assign categories by running InnPro import first.`
+      )
+      return null
     }
     
     return parentCategoryId

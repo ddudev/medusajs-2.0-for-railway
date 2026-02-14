@@ -53,94 +53,111 @@ class InnProXmlImporterService extends MedusaService({
 
   /**
    * Download XML file from URL and return content
-   * Handles URLs that trigger file downloads in browsers
+   * Handles URLs that trigger file downloads in browsers.
+   * Retries on 502 Bad Gateway / 503 Service Unavailable (e.g. InnPro "servers are busy").
    */
   async downloadXml(xmlUrl: string): Promise<string> {
-    try {
-      this.logger_.info(`Downloading XML from: ${xmlUrl}`)
-      
-      // Create AbortController for timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minute timeout
-      
+    const maxRetries = 3
+    const retryableStatuses = [502, 503]
+    let lastError: Error | null = null
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const response = await fetch(xmlUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/xml, text/xml, application/octet-stream, */*',
-            'User-Agent': 'MedusaJS-InnPro-Importer/1.0',
-          },
-          redirect: 'follow', // Follow redirects
-          signal: controller.signal,
-        })
+        this.logger_.info(`Downloading XML from: ${xmlUrl}${attempt > 1 ? ` (attempt ${attempt}/${maxRetries})` : ''}`)
 
-        clearTimeout(timeoutId)
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minute timeout
 
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => '')
-          this.logger_.error(`HTTP ${response.status} ${response.statusText}: ${errorText.substring(0, 200)}`)
-          throw new MedusaError(
-            MedusaError.Types.INVALID_DATA,
-            `Failed to download XML: HTTP ${response.status} ${response.statusText}${errorText ? ` - ${errorText.substring(0, 100)}` : ''}`
-          )
-        }
+        try {
+          const response = await fetch(xmlUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/xml, text/xml, application/octet-stream, */*',
+              'User-Agent': 'MedusaJS-InnPro-Importer/1.0',
+            },
+            redirect: 'follow',
+            signal: controller.signal,
+          })
 
-        // Check content type to ensure it's XML
-        const contentType = response.headers.get('content-type') || ''
-        this.logger_.info(`Response content-type: ${contentType}`)
+          clearTimeout(timeoutId)
 
-        const content = await response.text()
-        this.logger_.info(`Downloaded XML, size: ${content.length} bytes`)
-        
-        // Validate that we got actual content
-        if (!content || content.trim().length === 0) {
-          throw new MedusaError(
-            MedusaError.Types.INVALID_DATA,
-            'Downloaded XML file is empty'
-          )
-        }
+          if (!response.ok) {
+            const errorText = await response.text().catch(() => '')
+            this.logger_.error(`HTTP ${response.status} ${response.statusText}: ${errorText.substring(0, 200)}`)
+            const retryable = retryableStatuses.includes(response.status)
+            if (retryable && attempt < maxRetries) {
+              const delayMs = Math.min(2000 * Math.pow(2, attempt - 1), 15000)
+              this.logger_.warn(`Server returned ${response.status}, retrying in ${delayMs}ms...`)
+              await new Promise((r) => setTimeout(r, delayMs))
+              lastError = new MedusaError(
+                MedusaError.Types.INVALID_DATA,
+                `Failed to download XML: HTTP ${response.status} ${response.statusText}${errorText ? ` - ${errorText.substring(0, 100)}` : ''}`
+              )
+              continue
+            }
+            throw new MedusaError(
+              MedusaError.Types.INVALID_DATA,
+              `Failed to download XML: HTTP ${response.status} ${response.statusText}${errorText ? ` - ${errorText.substring(0, 100)}` : ''}`
+            )
+          }
 
-        // Basic validation - check if it looks like XML
-        if (!content.trim().startsWith('<') && !content.trim().startsWith('<?xml')) {
-          this.logger_.warn(`Content doesn't start with '<' or '<?xml', might not be XML. First 200 chars: ${content.substring(0, 200)}`)
-          // Don't throw here, let the parser handle it
-        }
-        
-        return content
-      } catch (fetchError: any) {
-        clearTimeout(timeoutId)
-        
-        if (fetchError.name === 'AbortError') {
-          throw new MedusaError(
-            MedusaError.Types.INVALID_DATA,
-            'Request timeout: XML download took longer than 5 minutes'
-          )
-        }
-        
-        // Re-throw MedusaError as-is
-        if (fetchError instanceof MedusaError) {
+          const contentType = response.headers.get('content-type') || ''
+          this.logger_.info(`Response content-type: ${contentType}`)
+
+          const content = await response.text()
+          this.logger_.info(`Downloaded XML, size: ${content.length} bytes`)
+
+          if (!content || content.trim().length === 0) {
+            throw new MedusaError(
+              MedusaError.Types.INVALID_DATA,
+              'Downloaded XML file is empty'
+            )
+          }
+
+          if (!content.trim().startsWith('<') && !content.trim().startsWith('<?xml')) {
+            this.logger_.warn(`Content doesn't start with '<' or '<?xml', might not be XML. First 200 chars: ${content.substring(0, 200)}`)
+          }
+
+          return content
+        } catch (fetchError: any) {
+          clearTimeout(timeoutId)
+
+          if (fetchError.name === 'AbortError') {
+            throw new MedusaError(
+              MedusaError.Types.INVALID_DATA,
+              'Request timeout: XML download took longer than 5 minutes'
+            )
+          }
+
+          if (fetchError instanceof MedusaError) {
+            if (attempt < maxRetries) {
+              lastError = fetchError
+              const delayMs = Math.min(2000 * Math.pow(2, attempt - 1), 15000)
+              this.logger_.warn(`Download failed, retrying in ${delayMs}ms...`)
+              await new Promise((r) => setTimeout(r, delayMs))
+              continue
+            }
+            throw fetchError
+          }
+
+          if (fetchError instanceof TypeError && fetchError.message?.includes('fetch')) {
+            throw new MedusaError(
+              MedusaError.Types.INVALID_DATA,
+              `Network error: ${fetchError.message}. Check if the URL is accessible and there are no CORS/network issues.`
+            )
+          }
+
           throw fetchError
         }
-        
-        // Handle network errors
-        if (fetchError instanceof TypeError && fetchError.message.includes('fetch')) {
-          throw new MedusaError(
-            MedusaError.Types.INVALID_DATA,
-            `Network error: ${fetchError.message}. Check if the URL is accessible and there are no CORS/network issues.`
-          )
+      } catch (error) {
+        if (error instanceof MedusaError) {
+          throw error
         }
-        
-        throw fetchError
+        lastError = error instanceof Error ? error : new Error(String(error))
       }
-    } catch (error) {
-      if (error instanceof MedusaError) {
-        throw error
-      }
-      throw new MedusaError(
-        MedusaError.Types.INVALID_DATA,
-        `Failed to download XML: ${error instanceof Error ? error.message : 'Unknown error'}`
-      )
     }
+
+    throw lastError ?? new MedusaError(MedusaError.Types.INVALID_DATA, 'Failed to download XML after retries')
   }
 
   /**

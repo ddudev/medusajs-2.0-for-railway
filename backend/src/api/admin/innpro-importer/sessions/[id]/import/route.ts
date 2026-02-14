@@ -1,12 +1,12 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework"
 import { ulid } from "ulid"
-import innproXmlImportWorkflow from "../../../../../../workflows/innpro-xml-import"
+import innproXmlImportWorkflow from "../../../../../../workflows/innpro-xml-import-optimized"
 import { INNPRO_XML_IMPORTER_MODULE } from "../../../../../../modules/innpro-xml-importer"
 import InnProXmlImporterService from "../../../../../../modules/innpro-xml-importer/service"
 
 /**
  * POST /admin/innpro-importer/sessions/:id/import
- * Trigger import workflow for selected products
+ * Trigger import workflow for selected products (uses optimized workflow with Ollama for translation/SEO and category dedup).
  */
 export async function POST(
   req: MedusaRequest<{ shippingProfileId?: string; openaiApiKey?: string; openaiModel?: string }>,
@@ -33,14 +33,12 @@ export async function POST(
       status: 'importing',
     })
 
-    // Use provided openaiApiKey or default from env
     const resolvedOpenaiApiKey = openaiApiKey || process.env.OPENAI_API_KEY
-    // Use provided openaiModel or default from env or recommended model
-    const resolvedOpenaiModel = openaiModel || process.env.OPENAI_MODEL || 'gpt-5-mini'
-    
-    logger.info(`Starting import for session ${id} with ChatGPT Model: ${resolvedOpenaiModel}`)
+    const resolvedOpenaiModel = openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    logger.info(`Starting import for session ${id} with ChatGPT (model: ${resolvedOpenaiModel})`)
 
-    // Trigger the import workflow asynchronously
+    // Trigger the optimized import workflow (GPT for translation/SEO; category longest-path dedup; single place for category creation).
+    // Ollama: pass ollamaUrl, ollamaModel if switching back
     innproXmlImportWorkflow(req.scope)
       .run({
         input: {

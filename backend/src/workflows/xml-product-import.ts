@@ -636,7 +636,7 @@ const processCategoriesStep = createStep(
 
         logger.info(`Product ${index + 1}: Processing ${categoryStrings.length} category string(s): ${categoryStrings.join(', ')}`)
 
-        // Process each category string
+        // Process each category string (get-only: only existing categories are assigned; no creation here).
         const categoryIds: string[] = []
         for (const categoryString of categoryStrings) {
           try {
@@ -646,10 +646,16 @@ const processCategoriesStep = createStep(
               container,
               categoryCache
             )
-            categoryIds.push(categoryId)
-            logger.debug(
-              `Product ${index + 1}: Converted category "${categoryString}" to ID ${categoryId}`
-            )
+            if (categoryId != null) {
+              categoryIds.push(categoryId)
+              logger.debug(
+                `Product ${index + 1}: Resolved category "${categoryString}" to ID ${categoryId}`
+              )
+            } else {
+              logger.debug(
+                `Product ${index + 1}: Category "${categoryString}" not found (get-only); skipping`
+              )
+            }
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error'
             logger.warn(

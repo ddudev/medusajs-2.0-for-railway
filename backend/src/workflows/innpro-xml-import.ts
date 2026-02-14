@@ -16,6 +16,9 @@ import { MedusaProductData, SelectionFilters } from '../modules/innpro-xml-impor
 import { ChatGPTService } from '../modules/innpro-xml-importer/services/chatgpt'
 import { extractSpecificationsTable, extractIncludedSection } from '../modules/innpro-xml-importer/utils/html-parser'
 
+/** When true, run only session + map + processCategoriesAndBrands (no translate, no SEO, no images/product import). Category names stay in source language. Set DEBUG_CATEGORIES_ONLY=true to debug category logic quickly. */
+const DEBUG_CATEGORIES_ONLY = process.env.DEBUG_CATEGORIES_ONLY === 'true'
+
 type WorkflowInput = {
   sessionId: string
   shippingProfileId?: string
@@ -710,16 +713,16 @@ const processCategoriesAndBrandsStep = createStep(
     const categoryCache = new Map<string, string>()
     const brandMap = new Map<string, string>() // brand name -> brand id
 
-    // Build map: translated path -> { sourcePath, externalId }
+    // Build map: path -> { sourcePath, externalId } (path may be in source language until we translate)
     const categoryEntries = new Map<string, { sourcePath: string; externalId: string | null }>()
     for (const product of input.products) {
       const cat = product.metadata?.category
       if (!cat?.name) continue
-      const translatedPath = cat.name
-      if (categoryEntries.has(translatedPath)) continue
-      const sourcePath = cat.original_name ?? cat.name
+      const path = (cat.name as string).trim().replace(/\s*\/\s*/g, '/')
+      if (categoryEntries.has(path)) continue
+      const sourcePath = (cat.original_name ?? cat.name) as string
       const externalId = cat.id != null ? String(cat.id) : null
-      categoryEntries.set(translatedPath, { sourcePath, externalId })
+      categoryEntries.set(path, { sourcePath, externalId })
     }
     const uniqueBrands = new Set<string>()
     for (const product of input.products) {
@@ -727,11 +730,32 @@ const processCategoriesAndBrandsStep = createStep(
       if (brandName) uniqueBrands.add(brandName)
     }
 
-    logger.info(`Processing ${categoryEntries.size} unique categories and ${uniqueBrands.size} unique brands`)
-    logger.info(`Translating categories to Bulgarian using ChatGPT with model ${openaiModel}`)
+    // Translate category paths to target language so names and SEO are correct even when product translation was skipped (e.g. DEBUG_CATEGORIES_ONLY).
+    const pathsToTranslate = [...categoryEntries.keys()]
+    const translatedCategoryEntries = new Map<string, { sourcePath: string; externalId: string | null }>()
+    if (pathsToTranslate.length > 0 && chatgptService) {
+      logger.info(`Translating ${pathsToTranslate.length} category paths to Bulgarian`)
+      try {
+        const translatedPaths = await chatgptService.translateBatch(pathsToTranslate, 'bg')
+        for (let i = 0; i < pathsToTranslate.length; i++) {
+          const originalPath = pathsToTranslate[i]
+          let translatedPath = (translatedPaths[i] ?? originalPath).trim().replace(/\s*\/\s*/g, '/')
+          if (!translatedPath) translatedPath = originalPath
+          const entry = categoryEntries.get(originalPath)
+          if (entry) translatedCategoryEntries.set(translatedPath, entry)
+        }
+      } catch (e) {
+        logger.warn(`Category path translation failed, using source paths: ${e instanceof Error ? e.message : 'Unknown'}`)
+        for (const [path, entry] of categoryEntries) translatedCategoryEntries.set(path, entry)
+      }
+    } else {
+      for (const [path, entry] of categoryEntries) translatedCategoryEntries.set(path, entry)
+    }
 
-    // Process all categories (create hierarchy; extension gets source original_name and external_id)
-    for (const [translatedPath, { sourcePath, externalId }] of categoryEntries) {
+    logger.info(`Processing ${translatedCategoryEntries.size} unique categories and ${uniqueBrands.size} unique brands`)
+
+    // Process all categories (create hierarchy; extension gets source original_name and external_id; SEO description generated on create)
+    for (const [translatedPath, { sourcePath, externalId }] of translatedCategoryEntries) {
       try {
         const categoryId = await getOrCreateCategoryHierarchy(
           translatedPath,
@@ -1318,11 +1342,12 @@ const cleanupXmlFileStep = createStep(
 /**
  * Main InnPro XML Import Workflow
  */
+/** Legacy workflow (same id caused conflict with innpro-xml-import-optimized). Use innproXmlImportWorkflow from innpro-xml-import-optimized for imports. */
 export const innproXmlImportWorkflow = createWorkflow<
   WorkflowInput,
   WorkflowOutput,
   []
->('innpro-xml-import', function (input) {
+>('innpro-xml-import-legacy', function (input) {
   const { sessionId, shippingProfileId, filters, openaiApiKey, openaiModel } = input
 
   // Step 1: Get session and extract products
@@ -1330,6 +1355,22 @@ export const innproXmlImportWorkflow = createWorkflow<
 
   // Step 2: Map products to Medusa format
   const mappedData = mapProductsStep({ products: sessionData.products })
+
+  // DEBUG: Run only categories (skip translate + SEO; use mapped products so no per-product API calls). Set env DEBUG_CATEGORIES_ONLY=true
+  if (DEBUG_CATEGORIES_ONLY) {
+    processCategoriesAndBrandsStep({
+      products: mappedData.products,
+      openaiApiKey,
+      openaiModel,
+    })
+    return new WorkflowResponse({
+      sessionId,
+      totalProducts: 0,
+      successfulProducts: 0,
+      failedProducts: 0,
+      status: 'completed',
+    })
+  }
 
   // Step 3: Translate products to Bulgarian
   const translatedData = translateProductsStep({

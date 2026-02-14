@@ -14,15 +14,24 @@ import InnProXmlImporterService from '../modules/innpro-xml-importer/service'
 import { BRAND_MODULE } from '../modules/brand'
 import { IS_DEV, MINIO_ENDPOINT } from '../lib/constants'
 import { MedusaProductData, SelectionFilters } from '../modules/innpro-xml-importer/types'
-import { OllamaService } from '../modules/innpro-xml-importer/services/ollama'
+import { ChatGPTService } from '../modules/innpro-xml-importer/services/chatgpt'
+// import { OllamaService } from '../modules/innpro-xml-importer/services/ollama' // Commented out: using GPT instead
 import { extractSpecificationsTable, extractIncludedSection } from '../modules/innpro-xml-importer/utils/html-parser'
+
+/** When true, run only session + map + processCategoriesAndBrands (no translate, no SEO, no images/product import). Category names stay in source language. Set DEBUG_CATEGORIES_ONLY=true to debug category logic quickly. */
+const DEBUG_CATEGORIES_ONLY = process.env.DEBUG_CATEGORIES_ONLY === 'true'
+
+/** Concurrency for product import loop: 0 = sequential (default until import verified); set to e.g. 5 in code to enable parallel. */
+const PRODUCT_IMPORT_CONCURRENCY = 0
 
 type WorkflowInput = {
   sessionId: string
   shippingProfileId?: string
   filters?: SelectionFilters
-  ollamaUrl?: string
-  ollamaModel?: string
+  openaiApiKey?: string
+  openaiModel?: string
+  // ollamaUrl?: string
+  // ollamaModel?: string
 }
 
 type WorkflowOutput = {
@@ -204,19 +213,19 @@ const mapProductsStep = createStep(
 const translateProductsStep = createStep(
   'translate-products',
   async (
-    input: { products: MedusaProductData[]; ollamaUrl?: string; ollamaModel?: string },
+    input: { products: MedusaProductData[]; openaiApiKey?: string; openaiModel?: string },
     { container }: { container: MedusaContainer }
   ) => {
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-    const ollamaUrl = input.ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434'
-    const ollamaModel = input.ollamaModel || process.env.OLLAMA_MODEL || 'gemma3:latest'
+    const openaiApiKey = input.openaiApiKey || process.env.OPENAI_API_KEY
+    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
-    logger.info(`Translating ${input.products.length} products to Bulgarian using Ollama at ${ollamaUrl} with model ${ollamaModel}`)
+    logger.info(`Translating ${input.products.length} products to Bulgarian using ChatGPT (model: ${openaiModel})`)
 
     try {
-      const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
-      
-      // Process products sequentially (one at a time) to avoid timeouts and overwhelming Ollama
+      const chatgptService = new ChatGPTService({ apiKey: openaiApiKey!, model: openaiModel })
+      // Ollama: const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
+      // Process products sequentially (one at a time) to avoid timeouts
       const translatedProducts: MedusaProductData[] = []
       
       for (let index = 0; index < input.products.length; index++) {
@@ -297,14 +306,14 @@ const translateProductsStep = createStep(
           let translatedTitle = product.title
           if (product.title && brandName) {
             try {
-              translatedTitle = await ollamaService.translateTitle(product.title, brandName, 'bg')
+              translatedTitle = await chatgptService.translateTitle(product.title, brandName, 'bg')
             } catch (error) {
               logger.warn(`Failed to translate title for product ${index + 1}, using original`)
             }
           } else if (product.title) {
             // Fallback to regular translation if no brand
             try {
-              translatedTitle = await ollamaService.translate(product.title, 'bg')
+              translatedTitle = await chatgptService.translate(product.title, 'bg')
             } catch (error) {
               logger.warn(`Failed to translate title for product ${index + 1}, using original`)
             }
@@ -323,7 +332,7 @@ const translateProductsStep = createStep(
           
           if (texts.length > 0) {
             logger.info(`Product ${index + 1}: Translating ${texts.length} fields (variants, options, metadata - description will be handled in SEO step)`)
-            const translations = await ollamaService.translateBatch(texts, 'bg')
+            const translations = await chatgptService.translateBatch(texts, 'bg')
             
             // Apply translations (excluding description)
             textsToTranslateWithoutTitle.forEach((item, i) => {
@@ -418,19 +427,19 @@ const translateProductsStep = createStep(
 const optimizeDescriptionsStep = createStep(
   'optimize-descriptions',
   async (
-    input: { products: MedusaProductData[]; ollamaUrl?: string; ollamaModel?: string },
+    input: { products: MedusaProductData[]; openaiApiKey?: string; openaiModel?: string },
     { container }: { container: MedusaContainer }
   ) => {
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-    const ollamaUrl = input.ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434'
-    const ollamaModel = input.ollamaModel || process.env.OLLAMA_MODEL || 'gemma3:latest'
+    const openaiApiKey = input.openaiApiKey || process.env.OPENAI_API_KEY
+    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
-    logger.info(`Optimizing descriptions for ${input.products.length} products using Ollama at ${ollamaUrl} with model ${ollamaModel}`)
+    logger.info(`Optimizing descriptions for ${input.products.length} products using ChatGPT (model: ${openaiModel})`)
 
     try {
-      const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
-
-      // Process products sequentially (one at a time) to avoid timeouts and overwhelming Ollama
+      const chatgptService = new ChatGPTService({ apiKey: openaiApiKey!, model: openaiModel })
+      // Ollama: const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
+      // Process products sequentially (one at a time) to avoid timeouts
       const optimizedProducts: MedusaProductData[] = []
       
       for (let index = 0; index < input.products.length; index++) {
@@ -449,11 +458,11 @@ const optimizeDescriptionsStep = createStep(
 
           // Step 1a: Generate meta description (for search engine snippets)
           logger.info(`Product ${index + 1}: Step 1a/4 - Generating meta description`)
-          const metaContent = await ollamaService.generateMetaDescription(product, originalDescriptionEn)
+          const metaContent = await chatgptService.generateMetaDescription(product, originalDescriptionEn)
           
           // Step 1b: Optimize product description (150-400 words for on-page)
           logger.info(`Product ${index + 1}: Step 1b/4 - Optimizing product description (${originalDescriptionEn.length} chars)`)
-          const descriptionContent = await ollamaService.optimizeDescription(product, originalDescriptionEn)
+          const descriptionContent = await chatgptService.optimizeDescription(product, originalDescriptionEn)
 
           if (!descriptionContent || (!descriptionContent.seoEnhancedDescription && !descriptionContent.technicalSafeDescription)) {
             logger.warn(`Product ${index + 1}: Failed to generate description, keeping original`)
@@ -471,7 +480,7 @@ const optimizeDescriptionsStep = createStep(
           // Step 2: Extract "What's Included" from the ORIGINAL description (not optimized)
           // The optimized description might not have this section, so extract from original
           logger.info(`Product ${index + 1}: Step 2/4 - Extracting included items from original description`)
-          const includedItems = await ollamaService.extractIncludedItems(originalDescriptionEn) || 
+          const includedItems = await chatgptService.extractIncludedItems(originalDescriptionEn) || 
                                 extractIncludedSection(originalDescriptionEn) || 
                                 undefined
 
@@ -484,7 +493,7 @@ const optimizeDescriptionsStep = createStep(
 
           // Step 3: Extract technical data/specifications from original description
           logger.info(`Product ${index + 1}: Step 3/4 - Extracting technical data`)
-          const specificationsTable = await ollamaService.extractTechnicalData(originalDescriptionEn) ||
+          const specificationsTable = await chatgptService.extractTechnicalData(originalDescriptionEn) ||
                                      extractSpecificationsTable(originalDescriptionEn) ||
                                      undefined
 
@@ -570,7 +579,7 @@ async function getOrCreateCategoryHierarchy(
   container: MedusaContainer,
   categoryCache: Map<string, string>,
   logger: any,
-  ollamaService?: OllamaService,
+  chatgptService?: ChatGPTService,
   sourceInfo?: CategorySourceInfo
 ): Promise<string | null> {
   if (!categoryPath || categoryPath.trim().length === 0) {
@@ -699,13 +708,14 @@ async function getOrCreateCategoryHierarchy(
 
       const fullPath = categoryNames.slice(0, i + 1).join('/')
       let generatedDesc: string | null = null
-      if (ollamaService) {
+      if (chatgptService) {
         try {
-          generatedDesc = await ollamaService.generateCategoryDescription(fullPath) || null
+          generatedDesc = await chatgptService.generateCategoryDescription(fullPath) || null
         } catch (e) {
           logger.debug(`Category description generation failed for "${fullPath}": ${e instanceof Error ? e.message : 'Unknown'}`)
         }
       }
+      // Ollama: if (ollamaService) { generatedDesc = await ollamaService.generateCategoryDescription(fullPath) || null }
       const extPayload = {
         original_name: originalCategoryName,
         external_id: externalIdForSegment,
@@ -754,16 +764,17 @@ async function getOrCreateCategoryHierarchy(
 const processCategoriesAndBrandsStep = createStep(
   'process-categories-brands',
   async (
-    input: { products: MedusaProductData[]; ollamaUrl?: string; ollamaModel?: string },
+    input: { products: MedusaProductData[]; openaiApiKey?: string; openaiModel?: string },
     { container }: { container: MedusaContainer }
   ) => {
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
     const productService: IProductModuleService = container.resolve(Modules.PRODUCT)
 
-    // Initialize Ollama service for category translation
-    const ollamaUrl = input.ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434'
-    const ollamaModel = input.ollamaModel || process.env.OLLAMA_MODEL || 'gemma3:latest'
-    const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
+    // Use ChatGPT for category path translation and category description/SEO
+    const openaiApiKey = input.openaiApiKey || process.env.OPENAI_API_KEY
+    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    const chatgptService = openaiApiKey ? new ChatGPTService({ apiKey: openaiApiKey, model: openaiModel }) : null
+    // Ollama: const ollamaUrl = input.ollamaUrl || process.env.OLLAMA_URL; const ollamaModel = input.ollamaModel || process.env.OLLAMA_MODEL; const ollamaService = new OllamaService({ baseUrl: ollamaUrl, model: ollamaModel })
 
     // Cache for category lookups (key: "translatedSegment|parentId" -> categoryId). Extension uses original_name and external_id.
     const categoryCache = new Map<string, string>()
@@ -796,24 +807,47 @@ const processCategoriesAndBrandsStep = createStep(
         }
       }
     }
+
+    // Translate category paths to target language (e.g. Bulgarian) so names and SEO are in the right language
+    // even when product translation was skipped (e.g. DEBUG_CATEGORIES_ONLY).
+    const pathsToTranslate = [...categoryEntries.keys()]
+    const translatedCategoryEntries = new Map<string, { sourcePath: string; externalId: string | null }>()
+    if (pathsToTranslate.length > 0 && chatgptService) {
+      logger.info(`Translating ${pathsToTranslate.length} category paths to Bulgarian`)
+      try {
+        const translatedPaths = await chatgptService.translateBatch(pathsToTranslate, 'bg')
+        for (let i = 0; i < pathsToTranslate.length; i++) {
+          const originalPath = pathsToTranslate[i]
+          let translatedPath = (translatedPaths[i] ?? originalPath).trim().replace(/\s*\/\s*/g, '/')
+          if (!translatedPath) translatedPath = originalPath
+          const entry = categoryEntries.get(originalPath)
+          if (entry) translatedCategoryEntries.set(translatedPath, entry)
+        }
+      } catch (e) {
+        logger.warn(`Category path translation failed, using source paths: ${e instanceof Error ? e.message : 'Unknown'}`)
+        for (const [path, entry] of categoryEntries) translatedCategoryEntries.set(path, entry)
+      }
+    } else {
+      for (const [path, entry] of categoryEntries) translatedCategoryEntries.set(path, entry)
+    }
+
     const uniqueBrands = new Set<string>()
     for (const product of input.products) {
       const brandName = product.metadata?.producer?.name
       if (brandName) uniqueBrands.add(brandName)
     }
 
-    logger.info(`Processing ${categoryEntries.size} unique categories and ${uniqueBrands.size} unique brands`)
-    logger.info(`Translating categories to Bulgarian using Ollama at ${ollamaUrl} with model ${ollamaModel}`)
+    logger.info(`Processing ${translatedCategoryEntries.size} unique categories and ${uniqueBrands.size} unique brands`)
 
-    // Process all categories (create hierarchy; extension gets source original_name and external_id)
-    for (const [translatedPath, { sourcePath, externalId }] of categoryEntries) {
+    // Process all categories (create hierarchy; extension gets source original_name and external_id; SEO description generated on create)
+    for (const [translatedPath, { sourcePath, externalId }] of translatedCategoryEntries) {
       try {
         const categoryId = await getOrCreateCategoryHierarchy(
           translatedPath,
           container,
           categoryCache,
           logger,
-          ollamaService,
+          chatgptService ?? undefined,
           { sourcePath, externalId }
         )
 
@@ -851,32 +885,31 @@ const processCategoriesAndBrandsStep = createStep(
       }
     }
 
-    // Attach category and brand IDs to products
-    const productsWithRelations = input.products.map((product) => {
-      const categoryPath = product.metadata?.category?.name as string | undefined
-      const categoryExternalId = product.metadata?.category?.id != null ? String(product.metadata.category.id) : null
-      const brandName = product.metadata?.producer?.name
-
-      // Get category ID from cache (full path first; then by external_id so leaf-only paths resolve to the same category)
-      const categoryId = categoryPath && categoryCache.has(categoryPath)
-        ? categoryCache.get(categoryPath)!
-        : categoryExternalId && categoryCache.has(`external_id:${categoryExternalId}`)
-          ? categoryCache.get(`external_id:${categoryExternalId}`)!
-          : null
-
-      const categories = categoryId ? [{ id: categoryId }] : undefined
-
-      // Brand will be handled separately via metadata for now
-      // (Medusa doesn't have direct brand relation on products)
-
-      return {
-        ...product,
-        categories,
+    // Build serializable category lookup for processAndImportProductsStep (external_id first, then leaf-only original name)
+    const categoryByExternalId: Record<string, string> = {}
+    const categoryByPath: Record<string, string> = {}
+    const categoryByOriginalNameLeaf: Record<string, string> = {}
+    const EXTERNAL_ID_PREFIX = 'external_id:'
+    for (const [key, categoryId] of categoryCache) {
+      if (key.startsWith(EXTERNAL_ID_PREFIX)) {
+        categoryByExternalId[key.slice(EXTERNAL_ID_PREFIX.length)] = categoryId
       }
+    }
+    for (const [translatedPath, { sourcePath }] of translatedCategoryEntries) {
+      const categoryId = categoryCache.get(translatedPath)
+      if (categoryId) {
+        categoryByPath[translatedPath] = categoryId
+        const leaf = sourcePath.split('/').map((s) => s.trim()).filter(Boolean).pop()
+        if (leaf) categoryByOriginalNameLeaf[leaf] = categoryId
+      }
+    }
+
+    logger.info(`Processed categories and brands. ${categoryCache.size} categories cached, ${brandMap.size} brands cached. Lookup: ${Object.keys(categoryByExternalId).length} by external_id, ${Object.keys(categoryByPath).length} by path, ${Object.keys(categoryByOriginalNameLeaf).length} by leaf`)
+    return new StepResponse({
+      categoryByExternalId,
+      categoryByPath,
+      categoryByOriginalNameLeaf,
     })
-    
-    logger.info(`Processed categories and brands. ${categoryCache.size} categories cached, ${brandMap.size} brands cached`)
-    return new StepResponse(productsWithRelations)
   }
 )
 
@@ -963,6 +996,238 @@ const processImagesStep = createStep(
     logger.info(`Processed images for ${processedProducts.length} products. ${productsWithImages.length} products have images.`)
 
     return new StepResponse(processedProducts)
+  }
+)
+
+/** Category lookup returned from processCategoriesAndBrandsStep (serializable). */
+export type CategoryLookup = {
+  categoryByExternalId: Record<string, string>
+  categoryByPath: Record<string, string>
+  categoryByOriginalNameLeaf: Record<string, string>
+}
+
+/**
+ * Step: Process and import products one-by-one (skip by external_id, translate → SEO → images → create → assign categories).
+ */
+const processAndImportProductsStep = createStep(
+  'process-and-import-products',
+  async (
+    input: {
+      products: MedusaProductData[]
+      categoryByExternalId: Record<string, string>
+      categoryByPath: Record<string, string>
+      categoryByOriginalNameLeaf: Record<string, string>
+      shippingProfileId: string
+      defaultSalesChannelId: string | null
+      openaiApiKey?: string
+      openaiModel?: string
+    },
+    { container }: { container: MedusaContainer }
+  ) => {
+    const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
+    const productService: IProductModuleService = container.resolve(Modules.PRODUCT)
+    const openaiApiKey = input.openaiApiKey || process.env.OPENAI_API_KEY
+    const openaiModel = input.openaiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    const chatgptService = openaiApiKey ? new ChatGPTService({ apiKey: openaiApiKey, model: openaiModel }) : null
+    const shouldUploadToMinIO = !IS_DEV && MINIO_ENDPOINT
+    const fileService = shouldUploadToMinIO ? container.resolve(Modules.FILE) : null
+
+    let successful = 0
+    let failed = 0
+    const handleToProductIdMap = new Map<string, string>()
+    const errors: string[] = []
+    const total = input.products.length
+
+    async function processOneProduct(
+      product: MedusaProductData,
+      index: number
+    ): Promise<{ skipped: boolean; productId?: string; handle?: string; error?: string }> {
+      // 1. Skip if exists by external_id
+      try {
+        const existing = await productService.listProducts({ external_id: product.external_id })
+        if (existing && existing.length > 0) {
+          logger.info(`Skipping product external_id ${product.external_id} (already exists: ${existing[0].id})`)
+          handleToProductIdMap.set(product.handle, existing[0].id)
+          return { skipped: true, productId: existing[0].id, handle: product.handle }
+        }
+      } catch (e) {
+        logger.debug(`listProducts by external_id failed: ${e instanceof Error ? e.message : 'Unknown'}`)
+      }
+
+      let current: MedusaProductData = { ...product, metadata: { ...product.metadata, original_description_en: product.description || '' } }
+
+      // 2. Translate this product (match legacy: title + metadata only; do not translate variants/options)
+      // Legacy: "Skip translating variants and options for default values. They need to stay as 'Default' to avoid mismatch errors."
+      if (chatgptService) {
+        try {
+          const brandName = current.metadata?.producer?.name
+          let translatedTitle = current.title
+          if (current.title && brandName) {
+            translatedTitle = await chatgptService.translateTitle(current.title, brandName, 'bg')
+          } else if (current.title) {
+            translatedTitle = await chatgptService.translate(current.title, 'bg')
+          }
+          current = { ...current, title: translatedTitle }
+          const textsToTranslate: Array<{ field: string; value: string }> = []
+          if (current.metadata?.unit_name) textsToTranslate.push({ field: 'unit_name', value: current.metadata.unit_name })
+          if (current.metadata?.warranty_name) textsToTranslate.push({ field: 'warranty_name', value: current.metadata.warranty_name })
+          if (current.metadata?.category?.name) textsToTranslate.push({ field: 'category_name', value: current.metadata.category.name })
+          if (textsToTranslate.length > 0) {
+            const translations = await chatgptService.translateBatch(textsToTranslate.map((t) => t.value), 'bg')
+            const translatedProduct = { ...current }
+            textsToTranslate.forEach((item, i) => {
+              const translation = translations[i] ?? item.value
+              if (item.field === 'unit_name' && translatedProduct.metadata) (translatedProduct.metadata as any).unit_name = translation
+              else if (item.field === 'warranty_name' && translatedProduct.metadata) (translatedProduct.metadata as any).warranty_name = translation
+              else if (item.field === 'category_name' && translatedProduct.metadata?.category) {
+                const cat = (translatedProduct.metadata as any).category
+                if (cat.original_name === undefined) cat.original_name = cat.name
+                cat.name = translation
+              }
+            })
+            current = translatedProduct
+          }
+        } catch (e) {
+          logger.warn(`Translate product ${index + 1} failed: ${e instanceof Error ? e.message : 'Unknown'}`)
+        }
+      }
+
+      // 3. SEO this product
+      if (chatgptService) {
+        const originalDescriptionEn = current.metadata?.original_description_en || current.description || ''
+        if (originalDescriptionEn) {
+          try {
+            const metaContent = await chatgptService.generateMetaDescription(current, originalDescriptionEn)
+            const descriptionContent = await chatgptService.optimizeDescription(current, originalDescriptionEn)
+            const description = descriptionContent?.seoEnhancedDescription || descriptionContent?.technicalSafeDescription
+            if (description) {
+              const metaTitle = metaContent?.metaTitle || descriptionContent?.shortDescription?.substring(0, 60) || ''
+              const metaDescription = metaContent?.metaDescription || descriptionContent?.shortDescription?.substring(0, 180) || ''
+              const includedItems = await chatgptService.extractIncludedItems(originalDescriptionEn) || extractIncludedSection(originalDescriptionEn) || undefined
+              const specificationsTable = await chatgptService.extractTechnicalData(originalDescriptionEn) || extractSpecificationsTable(originalDescriptionEn) || undefined
+              const { original_description_en, ...cleanMetadata } = current.metadata || {}
+              current = {
+                ...current,
+                description,
+                metadata: {
+                  ...cleanMetadata,
+                  seo_meta_title: metaTitle,
+                  seo_meta_description: metaDescription,
+                  specifications_table: specificationsTable || undefined,
+                  included_items: includedItems || undefined,
+                },
+              }
+            }
+          } catch (e) {
+            logger.warn(`SEO product ${index + 1} failed: ${e instanceof Error ? e.message : 'Unknown'}`)
+          }
+        }
+      }
+
+      // 4. Process images for this product
+      if (current.images && current.images.length > 0 && shouldUploadToMinIO && fileService) {
+        const uploadedImages: Array<{ url: string }> = []
+        for (let imgIndex = 0; imgIndex < current.images.length; imgIndex++) {
+          const img = current.images[imgIndex]
+          try {
+            const response = await fetch(img.url)
+            if (!response.ok) { uploadedImages.push(img); continue }
+            const imageBuffer = await response.arrayBuffer()
+            const contentType = response.headers.get('content-type') || 'image/jpeg'
+            const urlPath = new URL(img.url).pathname
+            const filename = urlPath.split('/').pop() || `product-${index + 1}-image-${imgIndex + 1}.jpg`
+            const [uploadResult] = await fileService.createFiles([{ filename, content: Buffer.from(imageBuffer).toString('binary'), mimeType: contentType }])
+            uploadedImages.push({ url: uploadResult.url })
+          } catch {
+            uploadedImages.push(img)
+          }
+        }
+        current = { ...current, images: uploadedImages }
+      }
+
+      // 5. Persist this single product (create with external_id). Categories assigned after create via updateProducts.
+      const productData: any = {
+        ...current,
+        external_id: product.external_id,
+        shipping_profile_id: input.shippingProfileId,
+        status: current.status || 'draft',
+      }
+      if (input.defaultSalesChannelId) productData.sales_channels = [{ id: input.defaultSalesChannelId }]
+      delete productData.categories
+
+      try {
+        const { result } = await createProductsWorkflow(container).run({ input: { products: [productData] } })
+        const created = Array.isArray(result) ? result[0] : (result as any)?.products?.[0]
+        if (!created?.id) {
+          return { skipped: false, error: 'Create returned no product id' }
+        }
+        if (created.handle) handleToProductIdMap.set(created.handle, created.id)
+
+        // 6. Resolve categories: external_id first, then leaf-only original name
+        const refs: Array<{ id?: string; name?: string; original_name?: string }> = Array.isArray(current.metadata?.categories)
+          ? current.metadata.categories
+          : current.metadata?.category
+            ? [current.metadata.category]
+            : []
+        const resolvedIds = new Set<string>()
+        for (const ref of refs) {
+          let categoryId: string | undefined
+          if (ref.id) categoryId = input.categoryByExternalId[String(ref.id)]
+          if (!categoryId) {
+            const pathOrName = (ref.original_name ?? ref.name ?? '') as string
+            const leaf = pathOrName.split('/').map((s) => s.trim()).filter(Boolean).pop()
+            if (leaf) categoryId = input.categoryByOriginalNameLeaf[leaf]
+          }
+          if (categoryId) resolvedIds.add(categoryId)
+        }
+        if (resolvedIds.size > 0) {
+          await productService.updateProducts(created.id, { category_ids: [...resolvedIds] })
+        }
+        return { skipped: false, productId: created.id, handle: created.handle }
+      } catch (e: unknown) {
+        const errMsg =
+          e instanceof Error
+            ? e.message
+            : typeof (e as { message?: string })?.message === 'string'
+              ? (e as { message: string }).message
+              : typeof e === 'object' && e !== null
+                ? JSON.stringify(e)
+                : String(e)
+        logger.error(`Create/update product ${index + 1} (${product.handle}) failed: ${errMsg}`)
+        if (e instanceof Error && e.stack) logger.debug(e.stack)
+        return { skipped: false, error: errMsg }
+      }
+    }
+
+    if (PRODUCT_IMPORT_CONCURRENCY === 0) {
+      for (let i = 0; i < input.products.length; i++) {
+        const result = await processOneProduct(input.products[i], i)
+        if (result.skipped) successful++
+        else if (result.error) { failed++; errors.push(result.error) }
+        else { successful++ }
+      }
+    } else {
+      const concurrency = PRODUCT_IMPORT_CONCURRENCY
+      const results: Promise<{ skipped: boolean; error?: string }>[] = []
+      for (let i = 0; i < input.products.length; i++) {
+        const p = processOneProduct(input.products[i], i)
+        results.push(p.then((r) => ({ skipped: r.skipped, error: r.error })))
+        if (results.length >= concurrency) {
+          const batch = await Promise.all(results.splice(0, concurrency))
+          batch.forEach((r) => (r.skipped ? successful++ : r.error ? (failed++, errors.push(r.error)) : successful++))
+        }
+      }
+      const remaining = await Promise.all(results)
+      remaining.forEach((r) => (r.skipped ? successful++ : r.error ? (failed++, errors.push(r.error)) : successful++))
+    }
+
+    return new StepResponse({
+      total,
+      successful,
+      failed,
+      handleToProductIdMap: Object.fromEntries(handleToProductIdMap),
+      errors,
+    })
   }
 )
 
@@ -1402,7 +1667,8 @@ export const innproXmlImportWorkflow = createWorkflow<
   WorkflowOutput,
   []
 >('innpro-xml-import', function (input) {
-  const { sessionId, shippingProfileId, filters, ollamaUrl, ollamaModel } = input
+  const { sessionId, shippingProfileId, filters, openaiApiKey, openaiModel } = input
+  // const { ollamaUrl, ollamaModel } = input // Ollama: commented out, using GPT
 
   // Step 1: Get session and extract products
   const sessionData = getSessionProductsStep({ sessionId })
@@ -1410,46 +1676,41 @@ export const innproXmlImportWorkflow = createWorkflow<
   // Step 2: Map products to Medusa format
   const mappedData = mapProductsStep({ products: sessionData.products })
 
-  // Step 3: Translate products to Bulgarian
-  const translatedData = translateProductsStep({
+  // Step 3: Process categories and brands first (create/translate/SEO categories, persist; return category lookup)
+  const categoryLookup = processCategoriesAndBrandsStep({
     products: mappedData.products,
-    ollamaUrl,
-    ollamaModel,
+    openaiApiKey,
+    openaiModel,
   })
 
-  // Step 4: Optimize descriptions for SEO
-  const optimizedData = optimizeDescriptionsStep({
-    products: translatedData.products,
-    ollamaUrl,
-    ollamaModel,
-  })
+  // DEBUG: Run only categories (skip product import). Set env DEBUG_CATEGORIES_ONLY=true
+  if (DEBUG_CATEGORIES_ONLY) {
+    return new WorkflowResponse({
+      sessionId,
+      totalProducts: 0,
+      successfulProducts: 0,
+      failedProducts: 0,
+      status: 'completed',
+    })
+  }
 
-  // Step 5: Process categories and brands (with translation)
-  const productsWithRelations = processCategoriesAndBrandsStep({
-    products: optimizedData.products,
-    ollamaUrl,
-    ollamaModel,
-  })
-
-  // Step 7: Process images
-  const productsWithImages = processImagesStep({
-    products: productsWithRelations,
-  })
-
-  // Step 8: Get or create shipping profile
+  // Step 4: Get or create shipping profile and default sales channel
   const resolvedShippingProfileId = getShippingProfileStep({ shippingProfileId })
-
-  // Step 8.5: Get default sales channel
   const defaultSalesChannelId = getDefaultSalesChannelStep()
 
-  // Step 9: Import products (without inventory tracking)
-  const importResult = importProductsStep({
-    products: productsWithImages,
+  // Step 5: Per-product process and import (skip by external_id → translate → SEO → images → create → assign categories)
+  const importResult = processAndImportProductsStep({
+    products: mappedData.products,
+    categoryByExternalId: categoryLookup.categoryByExternalId,
+    categoryByPath: categoryLookup.categoryByPath,
+    categoryByOriginalNameLeaf: categoryLookup.categoryByOriginalNameLeaf,
     shippingProfileId: resolvedShippingProfileId,
     defaultSalesChannelId,
+    openaiApiKey,
+    openaiModel,
   })
 
-  // Step 10: Calculate final status
+  // Step 6: Calculate final status
   const finalResult = calculateImportStatusStep({
     sessionId,
     total: importResult.total,
@@ -1457,7 +1718,7 @@ export const innproXmlImportWorkflow = createWorkflow<
     failed: importResult.failed,
   })
 
-  // Step 11: Clean up XML file from disk
+  // Step 7: Clean up XML file from disk
   cleanupXmlFileStep({ sessionId })
 
   return new WorkflowResponse(finalResult)
