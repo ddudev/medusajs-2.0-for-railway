@@ -38,12 +38,16 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
   // Shipping address is optional for Econt Office, required for other methods
   // Billing address is always set to shipping address (Bulgaria requirement)
   // For Econt Office, we can complete without shipping_address
+  const hasShippingMethod = (cart.shipping_methods?.length ?? 0) >= 1
+  const hasEcontOfficeData = Boolean(cart?.metadata?.econt && (cart.metadata.econt as { office_code?: string })?.office_code)
+  // When Econt Office is selected, accept either shipping_methods in cart OR econt metadata (in case context merge missed shipping_methods)
+  const shippingSatisfied = hasShippingMethod || (isEcontOffice && hasEcontOfficeData)
+  const addressSatisfied = isEcontOffice || (Boolean(cart?.shipping_address) && Boolean(cart?.billing_address))
   const notReady =
     !cart ||
     !cart.email ||
-    (cart.shipping_methods?.length ?? 0) < 1 ||
-    (!isEcontOffice && !cart.shipping_address) ||
-    (!isEcontOffice && !cart.billing_address)
+    !shippingSatisfied ||
+    !addressSatisfied
 
   // TODO: Add this once gift cards are implemented
   // const paidByGiftcard =
@@ -57,23 +61,36 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
     (s) => s.status === "pending"
   )
 
+  const notReadyMessages: string[] = []
+  if (notReady && cart) {
+    if (!cart.email) notReadyMessages.push(t("checkout.missingEmail"))
+    if (!shippingSatisfied) notReadyMessages.push(t("checkout.missingShipping"))
+    if (!addressSatisfied) notReadyMessages.push(t("checkout.missingAddress"))
+  }
+
   switch (true) {
     case isStripe(paymentSession?.provider_id):
       return (
         <StripePaymentButton
           notReady={notReady}
+          notReadyMessages={notReadyMessages}
           cart={cart}
           data-testid={dataTestId}
         />
       )
     case isManual(paymentSession?.provider_id):
       return (
-        <ManualTestPaymentButton notReady={notReady} data-testid={dataTestId} />
+        <ManualTestPaymentButton
+          notReady={notReady}
+          notReadyMessages={notReadyMessages}
+          data-testid={dataTestId}
+        />
       )
     case isPaypal(paymentSession?.provider_id):
       return (
         <PayPalPaymentButton
           notReady={notReady}
+          notReadyMessages={notReadyMessages}
           cart={cart}
           data-testid={dataTestId}
         />
@@ -107,10 +124,12 @@ const GiftCardPaymentButton = () => {
 const StripePaymentButton = ({
   cart,
   notReady,
+  notReadyMessages,
   "data-testid": dataTestId,
 }: {
   cart: HttpTypes.StoreCart
   notReady: boolean
+  notReadyMessages?: string[]
   "data-testid"?: string
 }) => {
   const { t } = useTranslation()
@@ -254,6 +273,18 @@ const StripePaymentButton = ({
           {t("checkout.stripeNotConfiguredHint")}
         </p>
       )}
+      {notReady && paymentFormReady && notReadyMessages && notReadyMessages.length > 0 && (
+        <div className="mt-3 rounded-md border border-border-base bg-background-base p-3" role="status" aria-live="polite">
+          <p className="text-small-regular text-ui-fg-base mb-2 font-medium">
+            {t("checkout.completeStepsToPlaceOrder")}
+          </p>
+          <ul className="list-inside list-disc space-y-1 text-small-regular text-ui-fg-muted">
+            {notReadyMessages.map((msg, i) => (
+              <li key={i}>{msg}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <ErrorMessage
         error={errorMessage}
         data-testid="stripe-payment-error-message"
@@ -265,10 +296,12 @@ const StripePaymentButton = ({
 const PayPalPaymentButton = ({
   cart,
   notReady,
+  notReadyMessages,
   "data-testid": dataTestId,
 }: {
   cart: HttpTypes.StoreCart
   notReady: boolean
+  notReadyMessages?: string[]
   "data-testid"?: string
 }) => {
   const { t } = useTranslation()
@@ -328,6 +361,18 @@ const PayPalPaymentButton = ({
           disabled={notReady || submitting || isPending}
           data-testid={dataTestId}
         />
+        {notReady && notReadyMessages && notReadyMessages.length > 0 && (
+          <div className="mt-3 rounded-md border border-border-base bg-background-base p-3" role="status" aria-live="polite">
+            <p className="text-small-regular text-ui-fg-base mb-2 font-medium">
+              {t("checkout.completeStepsToPlaceOrder")}
+            </p>
+            <ul className="list-inside list-disc space-y-1 text-small-regular text-ui-fg-muted">
+              {notReadyMessages.map((msg, i) => (
+                <li key={i}>{msg}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <ErrorMessage
           error={errorMessage}
           data-testid="paypal-payment-error-message"
@@ -337,7 +382,15 @@ const PayPalPaymentButton = ({
   }
 }
 
-const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
+const ManualTestPaymentButton = ({
+  notReady,
+  notReadyMessages,
+  "data-testid": dataTestId,
+}: {
+  notReady: boolean
+  notReadyMessages?: string[]
+  "data-testid"?: string
+}) => {
   const { t } = useTranslation()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -366,10 +419,22 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
         onClick={handlePayment}
         size="large"
         className="w-full"
-        data-testid="submit-order-button"
+        data-testid={dataTestId ?? "submit-order-button"}
       >
         {t("checkout.placeOrder")}
       </Button>
+      {notReady && notReadyMessages && notReadyMessages.length > 0 && (
+        <div className="mt-3 rounded-md border border-border-base bg-background-base p-3" role="status" aria-live="polite">
+          <p className="text-small-regular text-ui-fg-base mb-2 font-medium">
+            {t("checkout.completeStepsToPlaceOrder")}
+          </p>
+          <ul className="list-inside list-disc space-y-1 text-small-regular text-ui-fg-muted">
+            {notReadyMessages.map((msg, i) => (
+              <li key={i}>{msg}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <ErrorMessage
         error={errorMessage}
         data-testid="manual-payment-error-message"
