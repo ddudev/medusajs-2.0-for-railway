@@ -6,6 +6,7 @@ import dynamicImport from "next/dynamic"
 import Wrapper from "@modules/checkout/components/payment-wrapper"
 import CheckoutForm from "@modules/checkout/templates/checkout-form"
 import CheckoutTracker from "@modules/checkout/components/checkout-tracker"
+import CheckoutCustomerSync from "@modules/checkout/components/checkout-customer-sync"
 import SuspenseLoading from "@modules/common/components/suspense-loading"
 import { enrichLineItems, retrieveCart } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
@@ -56,6 +57,7 @@ async function CheckoutContent() {
   return (
     <QueryProvider>
       <CheckoutCartProvider initialCart={cart}>
+        <CheckoutCustomerSync customer={customer} />
         <div className="">
           <CheckoutTracker cart={cart} />
           <div className="flex flex-col lg:flex-row">

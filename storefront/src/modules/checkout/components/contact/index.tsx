@@ -64,7 +64,8 @@ const Contact = ({
       })
     }
 
-    // Pre-fill from customer if logged in and cart doesn't have email
+    // Pre-fill from customer if logged in and cart doesn't have email yet
+    // (CheckoutCustomerSync persists customer → cart on checkout init; form reflects cart/customer until then)
     if (customer && !cart?.email) {
       setFormData((prev) => ({
         email: customer.email || prev.email || "",
