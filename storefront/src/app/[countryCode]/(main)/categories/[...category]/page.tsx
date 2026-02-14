@@ -66,20 +66,16 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   "use cache"
-  // Await params in Next.js 16
   const resolvedParams = await params
-  
+
   try {
-    const normalizedCountryCode = typeof resolvedParams.countryCode === 'string' 
-      ? resolvedParams.countryCode.toLowerCase() 
-      : 'us'
-    
-    // Get translations for metadata (cached)
+    const normalizedCountryCode = typeof resolvedParams.countryCode === "string"
+      ? resolvedParams.countryCode.toLowerCase()
+      : "us"
     const translations = await getTranslations(normalizedCountryCode)
     const siteName = getTranslation(translations, "metadata.siteName")
     
-    // Validate params
-    if (!resolvedParams.category || resolvedParams.category.length === 0) {
+    if (!resolvedParams.category?.length) {
       const fallbackTitle = getTranslation(translations, "metadata.category.fallbackTitle")
       const fallbackDescription = getTranslation(translations, "metadata.category.fallbackDescription")
       return {
@@ -88,12 +84,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       }
     }
 
-    // Get category data (cached)
-    const { product_categories } = await getCategoryByHandle(
-      resolvedParams.category
-    )
+    const decodedSegments = resolvedParams.category.map((s) => decodeURIComponent(s.trim()))
+    const result = await getCategoryByHandle(decodedSegments)
+    const product_categories = result?.product_categories ?? []
 
-    if (!product_categories || product_categories.length === 0) {
+    if (!product_categories.length) {
       const fallbackTitle = getTranslation(translations, "metadata.category.fallbackTitle")
       const fallbackDescription = getTranslation(translations, "metadata.category.fallbackDescription")
       return {
@@ -108,13 +103,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       .filter(Boolean)
       .join(" | ") || fallbackCategoryTitle
 
-    // Strip HTML from category description
     const categorySuffix = getTranslation(translations, "metadata.category.categorySuffix")
     let description = stripHtml(
       product_categories[product_categories.length - 1]?.description
     ) || `${title} ${categorySuffix}.`
     
-    // Ensure description is meaningful and SEO-friendly (minimum 120 characters)
     if (!description || description.length < 120) {
       const shopProductsTemplate = getTranslation(translations, "metadata.category.shopProducts")
       description = shopProductsTemplate
@@ -122,13 +115,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         .replace("{titleLower}", title.toLowerCase())
     }
     
-    // Ensure description is optimal length (max 160 characters)
     description = htmlToMetaDescription(description, 160)
 
     const categoryPath = `/categories/${resolvedParams.category.filter(Boolean).join("/")}`
     const categoryUrl = getCanonicalUrl(categoryPath, normalizedCountryCode)
-
-    // Generate hreflang metadata (cached)
     const hreflangAlternates = await generateHreflangMetadata(
       categoryPath,
       normalizedCountryCode
@@ -182,37 +172,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-// Category page content - CategoryTemplate may access product prices (NOT cached)
 async function CategoryPageContent({ params, searchParams }: Props) {
-  // Explicitly defer to request time since CategoryTemplate accesses product prices (uncached)
   await connection()
-  
-  // Await params and searchParams in Next.js 16
   const resolvedParams = await params
   const resolvedSearchParams = await searchParams
   const { sortBy, page } = resolvedSearchParams
 
-  // Validate params
-  if (!resolvedParams.countryCode || !resolvedParams.category || resolvedParams.category.length === 0) {
+  if (!resolvedParams.countryCode || !resolvedParams.category?.length) {
     notFound()
   }
 
-  const normalizedCountryCode = typeof resolvedParams.countryCode === 'string' 
-    ? resolvedParams.countryCode.toLowerCase() 
-    : 'us'
+  const normalizedCountryCode = typeof resolvedParams.countryCode === "string"
+    ? resolvedParams.countryCode.toLowerCase()
+    : "us"
 
-  const { product_categories } = await getCategoryByHandle(
-    resolvedParams.category
-  )
+  const decodedSegments = resolvedParams.category.map((s) => decodeURIComponent(s.trim()))
+  const result = await getCategoryByHandle(decodedSegments)
+  const product_categories = result?.product_categories ?? []
 
-  if (!product_categories || product_categories.length === 0) {
+  if (!product_categories.length) {
     notFound()
   }
 
-  // Fetch collections for RefinementList (cached)
   const { collections } = await getCollectionsList(0, 100)
-
-  // Generate JSON-LD schemas
   const categoryPath = `/categories/${resolvedParams.category.filter(Boolean).join("/")}`
   const categoryUrl = getCanonicalUrl(categoryPath, normalizedCountryCode)
 
@@ -232,11 +214,8 @@ async function CategoryPageContent({ params, searchParams }: Props) {
 
   return (
     <>
-      {/* JSON-LD Structured Data */}
       <JsonLdScript id="category-schema" data={categorySchema} />
       <JsonLdScript id="breadcrumb-schema" data={breadcrumbSchema} />
-
-      {/* CategoryTemplate may access product prices (NOT cached) - wrap in Suspense */}
       <Suspense fallback={<SuspenseLoading />}>
         <CategoryTemplate
           categories={product_categories}
@@ -251,7 +230,6 @@ async function CategoryPageContent({ params, searchParams }: Props) {
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {
-  // Category page may access product prices (NOT cached) - wrap in Suspense
   return (
     <Suspense fallback={<SuspenseLoading />}>
       <CategoryPageContent params={params} searchParams={searchParams} />

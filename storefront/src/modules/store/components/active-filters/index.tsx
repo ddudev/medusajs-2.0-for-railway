@@ -98,7 +98,12 @@ const ActiveFilters = ({
   const removeCategory = (categoryId: string) => {
     const newCategoryIds = selectedCategoryIds.filter((id) => id !== categoryId)
     const query = createQueryString("category", newCategoryIds)
-    router.push(`${pathname}?${query}`, { scroll: false })
+    // On a category page the category is in the path, not the query. Navigate to store to "remove" it.
+    const isCategoryPage = pathname?.includes("/categories/")
+    const targetPath = isCategoryPage
+      ? `/${pathname.split("/").filter(Boolean)[0] ?? ""}/store`
+      : pathname
+    router.push(`${targetPath}?${query}`, { scroll: false })
   }
 
   const removeBrand = (brandId: string) => {

@@ -34,10 +34,18 @@ export async function getCategoryByHandle(
   "use cache"
   cacheLife("hours") // Cache for 1 hour
 
+  if (!categoryHandle?.length) {
+    return { product_categories: [] }
+  }
+
+  // Store API expects handle as string for single lookup; array for multiple
+  const handleFilter =
+    categoryHandle.length === 1 ? categoryHandle[0]! : categoryHandle
+
   return sdk.store.category.list(
     // TODO: Look into fixing the type
     // @ts-ignore
-    { handle: categoryHandle },
+    { handle: handleFilter, fields: "+category_children" },
     { next: { tags: ["categories"] } }
   )
 }
