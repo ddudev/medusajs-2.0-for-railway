@@ -347,14 +347,20 @@ const updateProductsStep = createStep(
       (c: any) => c.is_default
     )?.currency_code || 'eur'
 
-    // Get default stock location for inventory updates
+    // Get default stock location for inventory updates (prefer store.default_location_id when set)
     let defaultLocation: any = null
     if (input.updateInventory) {
       try {
         const locations = await stockLocationService.listStockLocations({})
-        defaultLocation = Array.isArray(locations) && locations.length > 0 ? locations[0] : null
+        const locationList = Array.isArray(locations) ? locations : []
+        if (locationList.length > 0) {
+          defaultLocation =
+            (store as any)?.default_location_id
+              ? locationList.find((loc: any) => loc.id === (store as any).default_location_id) ?? locationList[0]
+              : locationList[0]
+        }
         if (defaultLocation) {
-          logger.info(`Using default stock location: ${defaultLocation.name} (${defaultLocation.id})`)
+          logger.info(`Using stock location: ${defaultLocation.name} (${defaultLocation.id})`)
         } else {
           logger.warn('No stock location found - inventory updates will be skipped')
         }
@@ -481,21 +487,26 @@ const updateProductsStep = createStep(
                 // Wait a moment for prices to be committed
                 await new Promise(resolve => setTimeout(resolve, 200))
                 
-                // Verify prices were actually created
+                // Verify prices were actually created (prices live in Pricing module; use Query to get variant.prices)
                 try {
-                  const verifyVariants = await productService.listProductVariants({
-                    id: validVariants.map((v: any) => v.id)
+                  const query = container.resolve(ContainerRegistrationKeys.QUERY) as {
+                    graph: (opts: { entity: string; fields: string[]; filters?: Record<string, unknown> }) => Promise<{ data: Array<Record<string, unknown>> }>
+                  }
+                  const { data: verifyProducts } = await query.graph({
+                    entity: 'product',
+                    fields: ['id', 'variants.id', 'variants.prices.*'],
+                    filters: { id: [product.id] },
                   })
-                  const verifyList = (verifyVariants as any)?.variants || 
-                                   (verifyVariants as any)?.data || 
-                                   (Array.isArray(verifyVariants) ? verifyVariants : [])
-                  
+                  const verifyProduct = verifyProducts?.[0] as { variants?: Array<{ id: string; prices?: Array<{ currency_code?: string; amount?: number }> }> } | undefined
+                  const verifyList = verifyProduct?.variants || []
                   let verifiedCount = 0
                   for (const verifyVariant of verifyList) {
                     const prices = verifyVariant.prices || []
-                    const hasPrice = prices.some((p: any) => 
-                      p.currency_code === defaultCurrency && 
-                      Math.abs(parseFloat(p.amount) - customerPrice) < 0.01
+                    const hasPrice = prices.some((p: any) =>
+                      p.currency_code === defaultCurrency &&
+                      (typeof p.amount === 'number'
+                        ? Math.abs(p.amount - customerPrice) < 0.01
+                        : Math.abs(parseFloat(String(p.amount)) - customerPrice) < 0.01)
                     )
                     if (hasPrice) {
                       verifiedCount++
@@ -503,8 +514,7 @@ const updateProductsStep = createStep(
                       logger.warn(`⚠️ Price not found for variant ${verifyVariant.id} after update`)
                     }
                   }
-                  
-                  if (verifiedCount !== verifyList.length) {
+                  if (verifyList.length > 0 && verifiedCount !== verifyList.length) {
                     logger.warn(`⚠️ Price update partially verified for product ${product.id}: ${verifiedCount}/${verifyList.length} variants have prices`)
                   }
                 } catch (verifyError) {
