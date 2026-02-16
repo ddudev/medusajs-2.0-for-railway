@@ -1,5 +1,5 @@
 import { getBaseURL } from "@lib/util/env"
-import { Metadata } from "next"
+import { Metadata, Viewport } from "next"
 import { Suspense } from "react"
 import "styles/globals.css"
 import { ThemeProvider } from "next-themes"
@@ -18,6 +18,14 @@ import { BottomBannersStack } from "@/components/bottom-banners-stack"
 import { QueryProvider } from "@lib/query/provider"
 
 // Inter is loaded via <link> in head; Tailwind font-sans uses Inter (see tailwind.config.js)
+
+/** Disable zoom on mobile; prevents accidental zoom and matches app-like behavior. */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
 
 const siteName =
   process.env.NEXT_PUBLIC_SITE_NAME || "MS Store"

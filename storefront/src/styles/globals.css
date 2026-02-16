@@ -2,6 +2,18 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* Mobile: prevent horizontal scroll (e.g. iPhone) and contain overflow */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+html {
+  /* Prevent iOS rubber-band horizontal scroll */
+  position: relative;
+  overflow-x: hidden;
+}
+
 /* Global Chrome Autofill Fix - Must be outside layers for maximum specificity */
 @-webkit-keyframes autofill {
   to {
