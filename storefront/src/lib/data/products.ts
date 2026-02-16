@@ -49,7 +49,6 @@ export async function getProductByHandle(
       {
         next: {
           tags: ["products", `product-${handle}`],
-          // No revalidate - always fetch fresh prices
         } as { tags: string[] },
       }
     )
@@ -64,7 +63,11 @@ export async function getProductsList({
   countryCode,
 }: {
   pageParam?: number
-  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams & { brand_id?: string[] }
+  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams & {
+    brand_id?: string[]
+    price_min?: number
+    price_max?: number
+  }
   countryCode: string
 }): Promise<{
   response: { products: HttpTypes.StoreProduct[]; count: number }
@@ -83,116 +86,91 @@ export async function getProductsList({
     }
   }
 
-  // If brand_id is provided, use custom endpoint for server-side brand filtering
-  if (queryParams?.brand_id && queryParams.brand_id.length > 0) {
-    const BACKEND_URL =
-      process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
-      process.env.NEXT_PUBLIC_BACKEND_URL ||
-      "http://localhost:9000"
+  // Always use custom list endpoint so backend returns only products with a price for this region
+  const BACKEND_URL =
+    process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    "http://localhost:9000"
 
-    // Build query params for custom endpoint
-    const searchParams = new URLSearchParams()
-    searchParams.set("limit", limit.toString())
-    searchParams.set("offset", offset.toString())
-    searchParams.set("region_id", region.id)
-    searchParams.set("fields", "*variants.calculated_price,+variants.inventory_quantity")
+  const searchParams = new URLSearchParams()
+  searchParams.set("limit", limit.toString())
+  searchParams.set("offset", offset.toString())
+  searchParams.set("region_id", region.id)
+  searchParams.set("fields", "*variants.calculated_price,+variants.inventory_quantity")
 
+  if (queryParams?.brand_id?.length) {
     queryParams.brand_id.forEach((id) => {
       searchParams.append("brand_id", id)
     })
-
-    if (queryParams.collection_id) {
-      const collectionIds = Array.isArray(queryParams.collection_id)
-        ? queryParams.collection_id
-        : [queryParams.collection_id]
-      collectionIds.forEach((id) => {
-        searchParams.append("collection_id", id)
-      })
-    }
-
-    if (queryParams.category_id) {
-      const categoryIds = Array.isArray(queryParams.category_id)
-        ? queryParams.category_id
-        : [queryParams.category_id]
-      categoryIds.forEach((id) => {
-        searchParams.append("category_id", id)
-      })
-    }
-
-    if (queryParams.id) {
-      const ids = Array.isArray(queryParams.id)
-        ? queryParams.id
-        : [queryParams.id]
-      ids.forEach((id) => {
-        searchParams.append("id", id)
-      })
-    }
-
-    if (queryParams.order) {
-      searchParams.set("order", queryParams.order)
-    }
-
-    const headers: HeadersInit = {}
-    const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
-    if (publishableKey) {
-      headers["x-publishable-api-key"] = publishableKey
-    }
-
-    // No caching - product prices are region-specific and must be fresh
-    const response = await fetch(`${BACKEND_URL}/store/products/list?${searchParams.toString()}`, {
-      headers,
-      next: {
-        tags: ["products"],
-        // No revalidate - always fetch fresh prices
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch products: ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    const products = data.products || []
-    const count = data.count || 0
-
-    const nextPage = count > offset + limit ? pageParam + 1 : null
-
-    return {
-      response: {
-        products: products as HttpTypes.StoreProduct[],
-        count,
-      },
-      nextPage: nextPage,
-      queryParams,
-    }
   }
 
-  // Standard MedusaJS SDK call (no brand filtering)
-  // No caching - product prices are region-specific and must be fresh
-  const { products, count } = await sdk.store.product.list(
-    {
-      ...queryParams,
-      region_id: region.id,
-      limit,
-      offset,
-      fields: "*variants.calculated_price,+variants.inventory_quantity",
+  if (queryParams?.collection_id) {
+    const collectionIds = Array.isArray(queryParams.collection_id)
+      ? queryParams.collection_id
+      : [queryParams.collection_id]
+    collectionIds.forEach((id) => {
+      searchParams.append("collection_id", id)
+    })
+  }
+
+  if (queryParams?.category_id) {
+    const categoryIds = Array.isArray(queryParams.category_id)
+      ? queryParams.category_id
+      : [queryParams.category_id]
+    categoryIds.forEach((id) => {
+      searchParams.append("category_id", id)
+    })
+  }
+
+  if (queryParams?.id) {
+    const ids = Array.isArray(queryParams.id)
+      ? queryParams.id
+      : [queryParams.id]
+    ids.forEach((id) => {
+      searchParams.append("id", id)
+    })
+  }
+
+  if (queryParams?.order) {
+    searchParams.set("order", queryParams.order)
+  }
+
+  if (queryParams?.price_min != null) {
+    searchParams.set("price_min", String(queryParams.price_min))
+  }
+  if (queryParams?.price_max != null) {
+    searchParams.set("price_max", String(queryParams.price_max))
+  }
+
+  const headers: HeadersInit = {}
+  const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  if (publishableKey) {
+    headers["x-publishable-api-key"] = publishableKey
+  }
+
+  const response = await fetch(`${BACKEND_URL}/store/products/list?${searchParams.toString()}`, {
+    headers,
+    next: {
+      tags: ["products"],
     },
-    {
-      next: {
-        tags: ["products"],
-        // No revalidate - always fetch fresh prices
-      },
-    }
-  )
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch products: ${response.statusText}`)
+  }
+
+  const data = await response.json()
+  const products = data.products || []
+  const count = data.count || 0
 
   const nextPage = count > offset + limit ? pageParam + 1 : null
 
   return {
     response: {
-      products,
+      products: products as HttpTypes.StoreProduct[],
       count,
     },
-    nextPage,
+    nextPage: nextPage,
     queryParams,
   }
 }

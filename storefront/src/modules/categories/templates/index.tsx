@@ -46,8 +46,8 @@ async function PaginatedProductsWrapper({
         <ProductCount
           currentPage={page}
           pageSize={result.pageSize}
-          totalCount={result.totalCount}
-          totalPages={result.totalPages}
+          totalCount={result.totalCount ?? 0}
+          totalPages={result.totalPages ?? 0}
         />
         {/* Sort Dropdown - Hidden on mobile (sort is in sticky bar), visible on desktop */}
         <div className="hidden md:block">

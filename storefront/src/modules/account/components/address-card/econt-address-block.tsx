@@ -43,6 +43,36 @@ export function EcontAddressBlock({
     onDataChange(econtData)
   }, [econtData, onDataChange])
 
+  // When user toggles Office vs Address, sync econtData so shipping_to and type-specific fields are correct (saved address shows in the right list at checkout)
+  useEffect(() => {
+    if (!econtData) return
+    const current = econtData.shipping_to === "DOOR" ? "DOOR" : "OFFICE"
+    if (current === shippingTo) return
+    setEcontData((prev) => {
+      if (!prev) return prev
+      const base = {
+        city_id: prev.city_id,
+        city_name: prev.city_name,
+        postcode: prev.postcode,
+        shipping_to: shippingTo,
+      } as EcontData
+      if (shippingTo === "OFFICE") {
+        return { ...base, office_code: prev.office_code }
+      }
+      return {
+        ...base,
+        street: prev.street,
+        street_num: prev.street_num,
+        quarter: prev.quarter,
+        building_num: prev.building_num,
+        entrance_num: prev.entrance_num,
+        floor_num: prev.floor_num,
+        apartment_num: prev.apartment_num,
+        other: prev.other,
+      } as EcontData
+    })
+  }, [shippingTo, econtData?.shipping_to])
+
   const handleCitySelect = useCallback(
     (cityId: number, cityName: string, postcode: string) => {
       if (!cityId || !cityName) return

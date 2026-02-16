@@ -779,17 +779,31 @@ class InnProXmlImporterService extends MedusaService({
         }
       : undefined
 
-    // Debug: Log category and producer extraction
-    console.log('🔍 Category extraction:', {
-      categoryId: xmlProduct.category?.id,
-      categoryName: xmlProduct.category?.name,
-      hasCategory: !!xmlProduct.category
-    })
-    console.log('🔍 Producer extraction:', {
-      producerId: xmlProduct.producer?.id,
-      producerName: xmlProduct.producer?.name,
-      hasProducer: !!xmlProduct.producer
-    })
+    // Normalize category: support both cleaned keys (id, name) and raw XML (@_id, @_name)
+    const rawCategory = xmlProduct.category
+    const categoryId = rawCategory?.['@_id'] ?? rawCategory?.id
+    const categoryNameRaw = rawCategory?.['@_name'] ?? rawCategory?.name
+    const categoryName = typeof categoryNameRaw === 'string'
+      ? categoryNameRaw.trim()
+      : categoryNameRaw != null
+        ? (this.extractStringValue(categoryNameRaw) || undefined)
+        : undefined
+    const category = (categoryId != null || categoryName != null)
+      ? { id: categoryId != null ? String(categoryId) : undefined, name: categoryName }
+      : undefined
+
+    // Normalize producer: support both cleaned keys and raw XML (@_id, @_name)
+    const rawProducer = xmlProduct.producer
+    const producerId = rawProducer?.['@_id'] ?? rawProducer?.id
+    const producerNameRaw = rawProducer?.['@_name'] ?? rawProducer?.name
+    const producerName = typeof producerNameRaw === 'string'
+      ? producerNameRaw.trim()
+      : producerNameRaw != null
+        ? (this.extractStringValue(producerNameRaw) || undefined)
+        : undefined
+    const producer = (producerId != null || producerName != null)
+      ? { id: producerId != null ? String(producerId) : undefined, name: producerName }
+      : undefined
 
     // Build metadata with all non-core fields (comprehensive)
     const metadata: Record<string, any> = {
@@ -800,14 +814,8 @@ class InnProXmlImporterService extends MedusaService({
       product_type: productAttrs.type,
       vat_rate: productAttrs.vat,
       site_id: productAttrs.site,
-      producer: {
-        id: xmlProduct.producer?.id,
-        name: xmlProduct.producer?.name,
-      },
-      category: {
-        id: xmlProduct.category?.id,
-        name: xmlProduct.category?.name,
-      },
+      producer: producer ?? undefined,
+      category: category ?? undefined,
       // Unit fields (separate)
       unit_id: unitId,
       unit_name: unitName,

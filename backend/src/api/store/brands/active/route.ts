@@ -3,16 +3,24 @@ import { BRAND_MODULE } from "../../../../modules/brand"
 
 import BrandModuleService from "../../../../modules/brand/service"
 
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+let cache: { data: { brands: any[] }; expiresAt: number } | null = null
+
 export async function GET(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
+  const now = Date.now()
+  if (cache && cache.expiresAt > now) {
+    res.json(cache.data)
+    return
+  }
+
   const brandService = req.scope.resolve<BrandModuleService>(BRAND_MODULE)
 
   try {
     // Get all brands
     const allBrands = await brandService.listBrands({})
-    console.log(`[GET /store/brands/active] Found ${allBrands.length} total brands`)
 
     // Count products per brand using raw SQL (more reliable than link.list)
     const databaseUrl = process.env.DATABASE_URL
@@ -29,21 +37,16 @@ export async function GET(
       const brandsWithCounts = await Promise.all(
         allBrands.map(async (brand: any) => {
           try {
-            // Query the link table directly to count products
             const result = await pool.query(
               `SELECT COUNT(*) as count FROM ${linkTableName} WHERE brand_id = $1`,
               [brand.id]
             )
-
             const productCount = parseInt(result.rows[0]?.count || "0", 10)
-            console.log(`[GET /store/brands/active] Brand ${brand.id} (${brand.name}): ${productCount} products`)
-
             return {
               ...brand,
               product_count: productCount,
             }
           } catch (error) {
-            // If query fails, return brand with 0 count
             console.error(`Error counting products for brand ${brand.id}:`, error)
             return {
               ...brand,
@@ -58,10 +61,10 @@ export async function GET(
         (brand: any) => brand.product_count > 0
       )
 
-      console.log(`[GET /store/brands/active] Returning ${activeBrands.length} active brands`)
-      res.json({ brands: activeBrands })
+      const data = { brands: activeBrands }
+      cache = { data, expiresAt: now + CACHE_TTL_MS }
+      res.json(data)
     } finally {
-      // Always close the pool
       await pool.end().catch((err: any) => {
         console.error("Error closing database pool:", err)
       })

@@ -1,17 +1,67 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, Modules, QueryContext } from "@medusajs/framework/utils"
 import { BRAND_MODULE } from "../../../../modules/brand"
+
+const MAX_PRODUCTS_FOR_PRICE_FILTER = 2000
+
+/**
+ * Returns the set of product IDs that have at least one variant with a calculated price
+ * for the given region (used to exclude products without prices from storefront lists).
+ */
+async function getProductIdsWithPriceForRegion(
+  scope: { resolve: (key: string) => unknown },
+  regionId: string,
+  productIds: string[]
+): Promise<Set<string>> {
+  if (productIds.length === 0) return new Set()
+  const query = scope.resolve(ContainerRegistrationKeys.QUERY) as {
+    graph: (opts: {
+      entity: string
+      fields: string[]
+      filters: Record<string, unknown>
+      context?: Record<string, unknown>
+    }) => Promise<{ data: any[] }>
+  }
+  const { data: regions } = await query.graph({
+    entity: "region",
+    fields: ["currency_code"],
+    filters: { id: regionId },
+  })
+  const currencyCode = regions?.[0]?.currency_code
+  if (!currencyCode) return new Set()
+
+  const { data: productsWithPrices } = await query.graph({
+    entity: "product",
+    fields: ["id", "variants.calculated_price.calculated_amount"],
+    filters: { id: productIds },
+    context: {
+      variants: {
+        calculated_price: QueryContext({
+          region_id: regionId,
+          currency_code: currencyCode,
+        }),
+      },
+    },
+  })
+
+  const idsWithPrice = new Set<string>()
+  for (const p of productsWithPrices || []) {
+    const amounts = (p.variants || [])
+      .map((v: any) => v?.calculated_price?.calculated_amount)
+      .filter((n: unknown) => typeof n === "number" && (n as number) > 0)
+    if (amounts.length > 0) idsWithPrice.add(p.id)
+  }
+  return idsWithPrice
+}
 
 /**
  * GET /store/products/list
  * Get products with server-side filtering including brand filtering
- * Supports: brand_id, collection_id, category_id, limit, offset, order, region_id, id, fields
+ * Supports: brand_id, collection_id, category_id, limit, offset, order, region_id, id, fields, price_min, price_max
  * Returns: { products: StoreProduct[], count: number }
  * 
- * This endpoint extends the MedusaJS store product API with brand filtering.
- * It queries the link table to get product IDs for brands, then calls the
- * built-in MedusaJS store product API endpoint internally to ensure proper
- * formatting with pricing and variants.
+ * When price_min, price_max, or order=price_asc|price_desc are used with region_id, products are
+ * filtered/sorted by calculated price (min variant price) and paginated server-side.
  */
 export async function GET(
   req: MedusaRequest,
@@ -28,6 +78,8 @@ export async function GET(
       region_id,
       id,
       fields,
+      price_min: priceMinParam,
+      price_max: priceMaxParam,
     } = req.query
 
     // Normalize brand_id to array
@@ -171,22 +223,40 @@ export async function GET(
         : [collection_id]
       productFilters.collection_id = collectionIds
     }
+    // Product entity has many-to-many "categories", not category_id. Use categories.id filter.
     if (category_id) {
       const categoryIds = Array.isArray(category_id)
         ? category_id.filter(Boolean)
         : [category_id]
-      productFilters.category_id = categoryIds
+      productFilters.categories = { id: categoryIds }
     }
 
     const limitNum = limit ? parseInt(limit as string, 10) : 12
     const offsetNum = offset ? parseInt(offset as string, 10) : 0
+
+    const priceMin =
+      priceMinParam != null && priceMinParam !== ""
+        ? parseFloat(priceMinParam as string)
+        : null
+    const priceMax =
+      priceMaxParam != null && priceMaxParam !== ""
+        ? parseFloat(priceMaxParam as string)
+        : null
+    const isPriceOrder = order === "price_asc" || order === "price_desc"
+    const validPriceMin = priceMin == null || !Number.isNaN(priceMin)
+    const validPriceMax = priceMax == null || !Number.isNaN(priceMax)
+    const usePricePath =
+      !!region_id &&
+      (priceMin != null || priceMax != null || isPriceOrder) &&
+      validPriceMin &&
+      validPriceMax
 
     const queryOptions: any = {
       take: limitNum,
       skip: offsetNum,
     }
 
-    if (order) {
+    if (order && !usePricePath) {
       queryOptions.order = order
     }
 
@@ -198,6 +268,105 @@ export async function GET(
     let count = 0
 
     try {
+      // Price filter/sort path: get product IDs, fetch calculated prices via Query, filter/sort, paginate
+      if (usePricePath) {
+        const query = req.scope.resolve(ContainerRegistrationKeys.QUERY) as {
+          graph: (opts: {
+            entity: string
+            fields: string[]
+            filters: Record<string, unknown>
+            context?: Record<string, unknown>
+          }) => Promise<{ data: any[] }>
+        }
+
+        // Get region currency for calculated price context
+        const { data: regions } = await query.graph({
+          entity: "region",
+          fields: ["currency_code"],
+          filters: { id: region_id as string },
+        })
+        const currencyCode = regions?.[0]?.currency_code
+        if (!currencyCode) {
+          res.json({ products: [], count: 0 })
+          return
+        }
+
+        // Get up to MAX_PRODUCTS_FOR_PRICE_FILTER product IDs matching current filters
+        const listOptions: { take: number; skip: number; order?: Record<string, string> } = {
+          take: MAX_PRODUCTS_FOR_PRICE_FILTER,
+          skip: 0,
+        }
+        if (order === "created_at") {
+          listOptions.order = { created_at: "DESC" }
+        }
+        const [candidateProducts] = await productService.listAndCountProducts(
+          Object.keys(productFilters).length > 0 ? productFilters : undefined,
+          listOptions
+        )
+        const candidateIds = candidateProducts.map((p: any) => p.id).filter(Boolean)
+        if (candidateIds.length === 0) {
+          res.json({ products: [], count: 0 })
+          return
+        }
+
+        // Fetch products with calculated prices for region/currency
+        const { data: productsWithPrices } = await query.graph({
+          entity: "product",
+          fields: ["id", "variants.id", "variants.calculated_price.calculated_amount"],
+          filters: { id: candidateIds },
+          context: {
+            variants: {
+              calculated_price: QueryContext({
+                region_id: region_id as string,
+                currency_code: currencyCode,
+              }),
+            },
+          },
+        })
+
+        // Per-product price = min variant calculated_amount; exclude products with no price
+        const productPrices = new Map<string, number>()
+        for (const p of productsWithPrices || []) {
+          const amounts = (p.variants || [])
+            .map((v: any) => v?.calculated_price?.calculated_amount)
+            .filter((n: unknown) => typeof n === "number" && (n as number) > 0)
+          if (amounts.length > 0) productPrices.set(p.id, Math.min(...amounts))
+        }
+
+        let priceFilteredIds = candidateIds.filter((pid) => productPrices.has(pid))
+        if (priceMin != null) {
+          priceFilteredIds = priceFilteredIds.filter((pid) => (productPrices.get(pid) ?? 0) >= priceMin)
+        }
+        if (priceMax != null) {
+          priceFilteredIds = priceFilteredIds.filter((pid) => (productPrices.get(pid) ?? 0) <= priceMax)
+        }
+
+        if (isPriceOrder) {
+          priceFilteredIds.sort((a, b) => {
+            const pa = productPrices.get(a) ?? 0
+            const pb = productPrices.get(b) ?? 0
+            return order === "price_asc" ? pa - pb : pb - pa
+          })
+        }
+
+        count = priceFilteredIds.length
+        const pageIds = priceFilteredIds.slice(offsetNum, offsetNum + limitNum)
+
+        const fetchedProducts = await Promise.all(
+          pageIds.map((productId) =>
+            productService.retrieveProduct(productId).catch(() => null)
+          )
+        )
+        products = fetchedProducts.filter(Boolean) as any[]
+
+        const formattedProducts = products.map((product: any) => ({
+          id: product.id,
+          ...product,
+        }))
+        res.json({ products: formattedProducts, count })
+        return
+      }
+
       // If we have product IDs to filter by, fetch them individually
       // The product service might not support id array filtering
       if (finalProductIds.length > 0) {
@@ -249,23 +418,64 @@ export async function GET(
             return dateB - dateA // Newest first
           })
         }
-        
+
+        // When region_id present, exclude products without a price for this region
+        if (region_id && filteredProducts.length > 0) {
+          const idsWithPrice = await getProductIdsWithPriceForRegion(
+            req.scope,
+            region_id as string,
+            filteredProducts.map((p: any) => p.id)
+          )
+          filteredProducts = filteredProducts.filter((p: any) => idsWithPrice.has(p.id))
+        }
+
         // Apply pagination
         count = filteredProducts.length
         const startIndex = offsetNum
         const endIndex = startIndex + limitNum
         products = filteredProducts.slice(startIndex, endIndex)
-        
+
         console.log(`[GET /store/products/list] Returning ${products.length} products (${startIndex}-${endIndex} of ${count})`)
       } else {
         // No ID filtering, use standard query
         console.log(`[GET /store/products/list] Fetching products with filters:`, productFilters)
-        const [fetchedProducts, fetchedCount] = await productService.listAndCountProducts(
-          Object.keys(productFilters).length > 0 ? productFilters : undefined,
-          queryOptions
-        )
-        products = fetchedProducts
-        count = fetchedCount
+
+        if (region_id) {
+          // When region_id present: get candidates, keep only products with price, then paginate
+          const listOptions: { take: number; skip: number; order?: Record<string, string> } = {
+            take: MAX_PRODUCTS_FOR_PRICE_FILTER,
+            skip: 0,
+          }
+          if (order === "created_at") {
+            listOptions.order = { created_at: "DESC" }
+          }
+          const [candidateProducts] = await productService.listAndCountProducts(
+            Object.keys(productFilters).length > 0 ? productFilters : undefined,
+            listOptions
+          )
+          const candidateIds = candidateProducts.map((p: any) => p.id).filter(Boolean)
+          const idsWithPrice = await getProductIdsWithPriceForRegion(
+            req.scope,
+            region_id as string,
+            candidateIds
+          )
+          const filteredIds = candidateIds.filter((id: string) => idsWithPrice.has(id))
+          count = filteredIds.length
+          const pageIds = filteredIds.slice(offsetNum, offsetNum + limitNum)
+          const fetchedProducts = await Promise.all(
+            pageIds.map((productId: string) =>
+              productService.retrieveProduct(productId).catch(() => null)
+            )
+          )
+          products = fetchedProducts.filter(Boolean) as any[]
+        } else {
+          const [fetchedProducts, fetchedCount] = await productService.listAndCountProducts(
+            Object.keys(productFilters).length > 0 ? productFilters : undefined,
+            queryOptions
+          )
+          products = fetchedProducts
+          count = fetchedCount
+        }
       }
 
       // Ensure products have required fields for storefront

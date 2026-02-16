@@ -668,10 +668,12 @@ Category description:`
       const technicalSafe = (parsed.technicalSafeDescription ?? '').toString().trim()
       const seoEnhanced = (parsed.seoEnhancedDescription ?? '').toString().trim()
       const shortDesc = (parsed.shortDescription ?? '').toString().trim()
+      // Model sometimes outputs literal \n (backslash + n); convert to real newlines
+      const normalizeNewlines = (s: string) => s.replace(/\\n/g, '\n')
       return {
-        technicalSafeDescription: technicalSafe || productInfo.originalDescription,
-        seoEnhancedDescription: seoEnhanced || technicalSafe || productInfo.originalDescription,
-        shortDescription: shortDesc || productInfo.originalDescription.substring(0, 250)
+        technicalSafeDescription: normalizeNewlines(technicalSafe) || productInfo.originalDescription,
+        seoEnhancedDescription: normalizeNewlines(seoEnhanced) || normalizeNewlines(technicalSafe) || productInfo.originalDescription,
+        shortDescription: normalizeNewlines(shortDesc) || productInfo.originalDescription.substring(0, 250)
       }
     } catch (error) {
       console.error('[CHATGPT] Failed to parse description response:', error)

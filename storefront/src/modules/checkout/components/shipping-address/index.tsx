@@ -26,6 +26,24 @@ function getEcontShippingType(method: HttpTypes.StoreCartShippingOption | null |
   return "OFFICE"
 }
 
+/** Read econt metadata from address (handles object or JSON string from API) */
+function getAddressEcontMeta(
+  address: HttpTypes.StoreCustomerAddress | HttpTypes.StoreCartAddress
+): EcontData | undefined {
+  const raw = (address as { metadata?: { econt?: EcontData | string } }).metadata?.econt
+  if (!raw) return undefined
+  if (typeof raw === "object" && raw !== null) return raw as EcontData
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw) as EcontData
+      return parsed && typeof parsed === "object" ? parsed : undefined
+    } catch {
+      return undefined
+    }
+  }
+  return undefined
+}
+
 const ShippingAddress = ({
   customer,
   cart: cartProp,
@@ -66,23 +84,28 @@ const ShippingAddress = ({
   const isEcontAddress = isEcont && econtShippingTo === "DOOR"
 
   const countriesInRegion = useMemo(
-    () => cart?.region?.countries?.map((c) => c.iso_2),
+    () =>
+      cart?.region?.countries?.map((c) => (c.iso_2 ?? "").toLowerCase()).filter(Boolean) ?? [],
     [cart?.region]
   )
 
   // Saved addresses in region, then filter by method type: office vs physical
   const addressesInRegionByMethod = useMemo(() => {
     const inRegion =
-      customer?.addresses.filter(
-        (a) => a.country_code && countriesInRegion?.includes(a.country_code)
-      ) ?? []
+      customer?.addresses?.filter((a) => {
+        const cc = (a.country_code ?? "").toLowerCase()
+        return cc && countriesInRegion.length > 0 && countriesInRegion.includes(cc)
+      }) ?? []
     if (!selectedShippingMethod) return inRegion
     const isOffice = isEcontOffice
     return inRegion.filter((a) => {
-      const meta = (a as { metadata?: { econt?: EcontData } }).metadata?.econt
+      const meta = getAddressEcontMeta(a)
       if (isOffice) {
         // Show addresses saved as Econt Office: explicit OFFICE or has office_code (in case shipping_to wasn't persisted)
-        return meta?.shipping_to === "OFFICE" || (Boolean(meta?.office_code) && meta?.shipping_to !== "DOOR")
+        return (
+          meta?.shipping_to === "OFFICE" ||
+          (Boolean(meta?.office_code) && meta?.shipping_to !== "DOOR")
+        )
       }
       return meta?.shipping_to === "DOOR" || !meta
     })

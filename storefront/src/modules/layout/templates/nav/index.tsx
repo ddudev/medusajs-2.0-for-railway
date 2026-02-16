@@ -11,7 +11,11 @@ import { getMaxProductPrice } from "@lib/data/products"
 // Nav component - No longer needs to fetch cart (handled by TanStack Query client-side)
 export default async function Nav({ countryCode }: { countryCode: string }) {
   const { product_categories } = await getCategoriesList(0, 100)
-  
+
+  // Root-only categories for tree nav (side menu + category bar): show proper hierarchy
+  const rootCategories =
+    product_categories?.filter((cat) => !cat.parent_category && !cat.parent_category_id) ?? []
+
   // Fetch filter data for header filter dropdown (only used on PLP pages)
   const [{ collections }, brands, maxPrice] = await Promise.all([
     getCollectionsList(0, 100),
@@ -22,10 +26,10 @@ export default async function Nav({ countryCode }: { countryCode: string }) {
   return (
     <div className="sticky top-0 inset-x-0 z-50 group">
       {/* Top Promotional Bar - Black bar with logo, search, login, cart */}
-      <TopHeader categories={product_categories} />
+      <TopHeader categories={rootCategories} />
 
       {/* Main Header - Black bar with orange All Products button and category links */}
-      <MainHeader countryCode={countryCode} categories={product_categories} />
+      <MainHeader countryCode={countryCode} categories={rootCategories} />
       
       {/* Mobile Filter Dropdown - Attached to header, only shows on PLP pages */}
       <HeaderFilterDropdown

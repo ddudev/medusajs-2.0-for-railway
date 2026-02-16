@@ -1,33 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { User } from "@medusajs/icons"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
-import { retrieveCustomer } from "@lib/data/customer"
-import { HttpTypes } from "@medusajs/types"
+import { useCustomer } from "@lib/hooks/use-customer"
 
 const AccountLink = () => {
   const { t } = useTranslation()
-  const [customer, setCustomer] = useState<HttpTypes.StoreCustomer | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const loadCustomer = async () => {
-      setIsLoading(true)
-      try {
-        const customerData = await retrieveCustomer()
-        setCustomer(customerData)
-      } catch (error) {
-        console.error("Error loading customer:", error)
-        setCustomer(null)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadCustomer()
-  }, [])
+  const { data: customer, isLoading } = useCustomer()
 
   // Show loading state (optional - can show nothing or a spinner)
   if (isLoading) {
@@ -38,12 +18,12 @@ const AccountLink = () => {
         data-testid="nav-account-link"
       >
         <User className="w-5 h-5" viewBox="0 0 15 15" />
-        <span className="text-base font-medium md:block hidden">Вход</span>
+        <span className="text-base font-medium md:block hidden">{t("login.signIn")}</span>
       </LocalizedClientLink>
     )
   }
 
-  // If customer is logged in, show account options
+  // If customer is logged in, show account label
   if (customer) {
     return (
       <LocalizedClientLink
@@ -52,12 +32,12 @@ const AccountLink = () => {
         data-testid="nav-account-link"
       >
         <User className="w-5 h-5" viewBox="0 0 15 15" />
-        <span className="text-base font-medium md:block hidden">Вход</span>
+        <span className="text-base font-medium md:block hidden">{t("common.account")}</span>
       </LocalizedClientLink>
     )
   }
 
-  // If not logged in, show registration
+  // If not logged in, show log in label
   return (
     <LocalizedClientLink
       href="/account"
@@ -65,7 +45,7 @@ const AccountLink = () => {
       data-testid="nav-account-link"
     >
       <User className="w-5 h-5" viewBox="0 0 15 15" />
-      <span className="text-base font-medium md:block hidden">Вход</span>
+      <span className="text-base font-medium md:block hidden">{t("login.signIn")}</span>
     </LocalizedClientLink>
   )
 }

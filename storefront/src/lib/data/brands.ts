@@ -71,9 +71,7 @@ export const getActiveBrands = cache(async function (): Promise<Brand[]> {
     }
 
     const data = await response.json()
-    const brands = data.brands || []
-    console.log(`[getActiveBrands] Fetched ${brands.length} active brands:`, brands.map((b: Brand) => ({ id: b.id, name: b.name, count: b.product_count })))
-    return brands
+    return data.brands || []
   } catch (error) {
     console.error("Error fetching active brands:", error)
     return []

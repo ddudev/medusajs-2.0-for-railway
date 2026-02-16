@@ -78,8 +78,8 @@ const DescriptionTab = ({ product }: ProductTabsProps) => {
     )
   }
 
-  // Extract first paragraph as heading if available
-  const descriptionText = product.description
+  // Model output sometimes contains literal \n (backslash + n); convert to <br /> for display
+  const descriptionText = (product.description || "").replace(/\\n/g, "")
   const firstParagraph =
     descriptionText.split(/<\/?p>/).filter(Boolean)[0] || descriptionText
 
@@ -89,7 +89,7 @@ const DescriptionTab = ({ product }: ProductTabsProps) => {
         {firstParagraph.replace(/<[^>]*>/g, "").substring(0, 100)}
         {firstParagraph.length > 100 ? "..." : ""}
       </h3>
-      <div className="text-text-primary">{parse(product.description)}</div>
+      <div className="text-text-primary whitespace-pre-line">{parse(descriptionText)}</div>
     </div>
   )
 }

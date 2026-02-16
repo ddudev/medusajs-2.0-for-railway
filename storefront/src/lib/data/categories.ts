@@ -5,9 +5,15 @@ import { cacheLife } from "next/cache"
 export async function listCategories() {
   "use cache"
   cacheLife("hours") // Cache for 1 hour
-  
+
   return sdk.store.category
-    .list({ fields: "+category_children" }, { next: { tags: ["categories"] } })
+    .list(
+      {
+        fields: "+category_children,*category_children.category_children",
+        include_descendants_tree: true,
+      } as Parameters<typeof sdk.store.category.list>[0],
+      { next: { tags: ["categories"] } }
+    )
     .then(({ product_categories }) => product_categories)
 }
 
@@ -18,11 +24,14 @@ export async function getCategoriesList(
 ) {
   "use cache"
   cacheLife("hours") // Cache for 1 hour
-  
+
   return sdk.store.category.list(
-    // TODO: Look into fixing the type
-    // @ts-ignore
-    { limit, offset, fields: "+category_children" },
+    {
+      limit,
+      offset,
+      fields: "+category_children,*category_children.category_children",
+      include_descendants_tree: true,
+    } as Parameters<typeof sdk.store.category.list>[0],
     { next: { tags: ["categories"] } }
   )
 }
@@ -43,9 +52,11 @@ export async function getCategoryByHandle(
     categoryHandle.length === 1 ? categoryHandle[0]! : categoryHandle
 
   return sdk.store.category.list(
-    // TODO: Look into fixing the type
-    // @ts-ignore
-    { handle: handleFilter, fields: "+category_children" },
+    {
+      handle: handleFilter,
+      fields: "+category_children,*category_children.category_children",
+      include_descendants_tree: true,
+    } as Parameters<typeof sdk.store.category.list>[0],
     { next: { tags: ["categories"] } }
   )
 }

@@ -495,10 +495,12 @@ Return as JSON:
     try {
       const cleaned = this.cleanResponse(response)
       const parsed = JSON.parse(cleaned)
+      // Model sometimes outputs literal \n (backslash + n); convert to real newlines
+      const normalizeNewlines = (s: string) => (s || '').replace(/\\n/g, '\n')
       return {
-        technicalSafeDescription: parsed.technicalSafeDescription || '',
-        seoEnhancedDescription: parsed.seoEnhancedDescription || '',
-        shortDescription: parsed.shortDescription || ''
+        technicalSafeDescription: normalizeNewlines(parsed.technicalSafeDescription || ''),
+        seoEnhancedDescription: normalizeNewlines(parsed.seoEnhancedDescription || ''),
+        shortDescription: normalizeNewlines(parsed.shortDescription || '')
       }
     } catch (error) {
       console.error('[OLLAMA] Failed to parse description response:', error)

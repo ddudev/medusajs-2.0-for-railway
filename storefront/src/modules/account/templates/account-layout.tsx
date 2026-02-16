@@ -1,6 +1,7 @@
 import React from "react"
 
 import AccountNav from "../components/account-nav"
+import InvalidateCustomerOnMount from "../components/invalidate-customer-on-mount"
 import { HttpTypes } from "@medusajs/types"
 
 interface AccountLayoutProps {
@@ -13,10 +14,12 @@ const AccountLayout: React.FC<AccountLayoutProps> = ({
   children,
 }) => {
   return (
-    <div
-      className="flex-1 small:py-12 bg-background"
-      data-testid="account-page"
-    >
+    <>
+      {customer && <InvalidateCustomerOnMount />}
+      <div
+        className="flex-1 small:py-12 bg-background"
+        data-testid="account-page"
+      >
       <div className="flex-1 content-container h-full max-w-5xl mx-auto flex flex-col">
         <div
           className={
@@ -33,7 +36,8 @@ const AccountLayout: React.FC<AccountLayoutProps> = ({
           <div className="flex-1 w-full flex justify-center">{children}</div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
 

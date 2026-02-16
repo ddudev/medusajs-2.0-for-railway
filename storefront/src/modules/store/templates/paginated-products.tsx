@@ -1,83 +1,25 @@
-import { getProductsList, getProductsListWithSort, getProductsById } from "@lib/data/products"
+import { getProductsList, getProductsById } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import { Pagination } from "@modules/store/components/pagination"
 import { SortOptions } from "@modules/store/components/sort-dropdown"
-import { getProductPrice } from "@lib/util/get-product-price"
 import ProductTile from "@modules/products/components/product-tile"
 
 const PRODUCT_LIMIT = 12
 
 /**
- * Filter products by price range
- * Price filtering happens after fetching priced products since MedusaJS doesn't support price filtering directly
- * Supports format: "min-max" (e.g., "25-100") or "min-+" (e.g., "200-+") for max price
+ * Parse price range string into price_min and optional price_max.
+ * Format: "min-max" (e.g. "25-100") or "min-+" (e.g. "200-+") for no max.
  */
-function filterProductsByPrice(
-  products: any[],
-  priceRange?: string
-): any[] {
-  if (!priceRange) {
-    return products
-  }
-
-  // Parse price range (format: "min-max" or "min-+")
+function parsePriceRange(priceRange?: string): { price_min?: number; price_max?: number } | null {
+  if (!priceRange) return null
   const parts = priceRange.split("-")
-  if (parts.length !== 2) {
-    // Legacy format support (backward compatibility)
-    switch (priceRange) {
-      case "0-25":
-        return products.filter((product) => {
-          const { cheapestPrice } = getProductPrice({ product })
-          return cheapestPrice && cheapestPrice.calculated_price_number < 25
-        })
-      case "25-50":
-        return products.filter((product) => {
-          const { cheapestPrice } = getProductPrice({ product })
-          return cheapestPrice && cheapestPrice.calculated_price_number >= 25 && cheapestPrice.calculated_price_number < 50
-        })
-      case "50-100":
-        return products.filter((product) => {
-          const { cheapestPrice } = getProductPrice({ product })
-          return cheapestPrice && cheapestPrice.calculated_price_number >= 50 && cheapestPrice.calculated_price_number < 100
-        })
-      case "100-200":
-        return products.filter((product) => {
-          const { cheapestPrice } = getProductPrice({ product })
-          return cheapestPrice && cheapestPrice.calculated_price_number >= 100 && cheapestPrice.calculated_price_number < 200
-        })
-      case "200+":
-        return products.filter((product) => {
-          const { cheapestPrice } = getProductPrice({ product })
-          return cheapestPrice && cheapestPrice.calculated_price_number >= 200
-        })
-      default:
-        return products
-    }
-  }
-
+  if (parts.length !== 2) return null
   const minPrice = parseInt(parts[0], 10)
-  const maxPrice = parts[1] === "+" ? Infinity : parseInt(parts[1], 10)
-
-  if (isNaN(minPrice) || (parts[1] !== "+" && isNaN(maxPrice))) {
-    return products
-  }
-
-  return products.filter((product) => {
-    const { cheapestPrice } = getProductPrice({ product })
-    if (!cheapestPrice) {
-      return false
-    }
-
-    const price = cheapestPrice.calculated_price_number
-
-    if (parts[1] === "+") {
-      // Format: "min-+" means minPrice and above
-      return price >= minPrice
-    } else {
-      // Format: "min-max" means price between min and max (inclusive)
-      return price >= minPrice && price <= maxPrice
-    }
-  })
+  if (Number.isNaN(minPrice)) return null
+  if (parts[1] === "+") return { price_min: minPrice }
+  const maxPrice = parseInt(parts[1], 10)
+  if (Number.isNaN(maxPrice)) return null
+  return { price_min: minPrice, price_max: maxPrice }
 }
 
 type PaginatedProductsParams = {
@@ -87,6 +29,8 @@ type PaginatedProductsParams = {
   brand_id?: string[]
   id?: string[]
   order?: string
+  price_min?: number
+  price_max?: number
 }
 
 export default async function PaginatedProducts({
@@ -114,13 +58,15 @@ export default async function PaginatedProducts({
     return {
       products: <></>,
       totalCount: 0,
+      totalPages: 0,
       pageSize: PRODUCT_LIMIT,
     }
   }
 
-  // Build query params for backend filtering (server-side handles brand filtering)
+  // All filtering (category, collection, brand) and sorting (except price) are done by the backend.
+  // One request per page – backend returns the filtered, paginated list and total count.
   const queryParams: PaginatedProductsParams = {
-    limit: priceRange ? 100 : PRODUCT_LIMIT, // Fetch more if price filtering needed
+    limit: PRODUCT_LIMIT,
   }
 
   if (collectionIds && collectionIds.length > 0) {
@@ -131,104 +77,48 @@ export default async function PaginatedProducts({
     queryParams["category_id"] = categoryIds
   }
 
-  // Pass brand IDs for server-side filtering
   if (brandIds && brandIds.length > 0) {
     queryParams["brand_id"] = brandIds
   }
 
-  // Add explicit product IDs if provided (for other filtering scenarios)
   if (productsIds && productsIds.length > 0) {
     queryParams["id"] = productsIds
   }
 
-  // Pass sort parameter to backend for server-side sorting
-  // Only price sorts need client-side handling (after fetching priced products)
-  // Backend sorting applies to all fetches (even when price filtering)
-  if (sortBy && !["price_asc", "price_desc"].includes(sortBy)) {
+  if (sortBy) {
     queryParams["order"] = sortBy
   }
 
-  // If we have price filtering, we need to fetch more products to filter client-side
-  // Otherwise, use proper backend pagination with filters
-  const needsPriceFiltering = !!priceRange
-  // Price sorting also requires fetching all products first to sort by calculated prices
-  const needsClientSideSorting = sortBy && ["price_asc", "price_desc"].includes(sortBy)
-  const needsClientSideProcessing = needsPriceFiltering || needsClientSideSorting
-  
-  let products: any[] = []
-  let count = 0
+  const priceParsed = parsePriceRange(priceRange)
+  if (priceParsed?.price_min != null) queryParams.price_min = priceParsed.price_min
+  if (priceParsed?.price_max != null) queryParams.price_max = priceParsed.price_max
 
-  if (needsClientSideProcessing) {
-    // Fetch all matching products (up to 100) for client-side filtering/sorting
-    // Use getProductsList to get backend-filtered products, then filter/sort client-side
-    const result = await getProductsList({
-      pageParam: 1, // Fetch first page with limit 100
-      queryParams: {
-        ...queryParams,
-        limit: 100,
-      },
-      countryCode,
-    })
-    products = result.response.products
-    count = result.response.count
-  } else {
-    // Use proper backend pagination when no price filter or price sort
-    // Backend handles collection_id, category_id filtering, and created_at sorting
-    const result = await getProductsList({
-      pageParam: page,
-      queryParams: {
-        ...queryParams,
-        limit: PRODUCT_LIMIT,
-      },
-      countryCode,
-    })
-    products = result.response.products
-    count = result.response.count
-  }
+  // One request per page – backend handles category, collection, brand, price filter/sort, and pagination
+  const result = await getProductsList({
+    pageParam: page,
+    queryParams,
+    countryCode,
+  })
+  const products = result.response.products
+  const count = result.response.count
 
-  // Batch fetch priced products for all products (performance optimization)
+  // Batch fetch priced products for display (backend list returns minimal product data)
   const productIds = products.map((p) => p.id!).filter(Boolean)
   const pricedProducts = await getProductsById({
     ids: productIds,
     regionId: region.id,
   })
 
-  // Create a map for quick lookup
   const pricedProductsMap = new Map(
     pricedProducts.map((p) => [p.id, p])
   )
 
-  // Map to priced products (products already filtered by collection/category from backend)
-  let filteredProducts = products
+  const paginatedProducts = products
     .map((p) => pricedProductsMap.get(p.id!))
     .filter(Boolean) as any[]
 
-  // Filter by price range if specified (client-side since backend doesn't support it)
-  if (priceRange) {
-    filteredProducts = filterProductsByPrice(filteredProducts, priceRange)
-  }
-
-  // Sort by price if needed (always sort after getting priced products)
-  if (sortBy && ["price_asc", "price_desc"].includes(sortBy)) {
-    const { sortProducts } = await import("@lib/util/sort-products")
-    filteredProducts = sortProducts(filteredProducts, sortBy)
-  }
-
-  // Paginate results
-  let paginatedProducts = filteredProducts
-  let totalCount = count
-  let totalPages = Math.ceil(count / PRODUCT_LIMIT)
-
-  if (needsClientSideProcessing) {
-    // Client-side pagination for price-filtered or price-sorted results
-    const totalFiltered = filteredProducts.length
-    totalCount = totalFiltered
-    totalPages = Math.ceil(totalFiltered / PRODUCT_LIMIT)
-    const startIndex = (page - 1) * PRODUCT_LIMIT
-    const endIndex = startIndex + PRODUCT_LIMIT
-    paginatedProducts = filteredProducts.slice(startIndex, endIndex)
-  }
-  // If no price filter or price sort, products are already paginated and sorted by backend
+  const totalCount = count
+  const totalPages = Math.ceil(count / PRODUCT_LIMIT)
 
   const productsList = (
     <>

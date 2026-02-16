@@ -586,6 +586,22 @@ async function getOrCreateCategoryHierarchy(
     return null
   }
 
+  const normalizePath = (p: string) => p.trim().replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ')
+  const normalizedPath = normalizePath(categoryPath)
+  if (categoryCache.has(normalizedPath)) {
+    const existingId = categoryCache.get(normalizedPath)!
+    logger.debug(`Found existing category by full path "${normalizedPath}" -> ${existingId}`)
+    return existingId
+  }
+  if (sourceInfo?.sourcePath) {
+    const normalizedSource = normalizePath(sourceInfo.sourcePath)
+    if (categoryCache.has(normalizedSource)) {
+      const existingId = categoryCache.get(normalizedSource)!
+      logger.debug(`Found existing category by full source path "${normalizedSource}" -> ${existingId}`)
+      return existingId
+    }
+  }
+
   const delimiter = '/'
   const categoryNames = categoryPath
     .split(delimiter)
@@ -609,7 +625,7 @@ async function getOrCreateCategoryHierarchy(
 
   const productService: IProductModuleService = container.resolve(Modules.PRODUCT)
   const categoryExtensionService = container.resolve(CATEGORY_EXTENSION_MODULE) as {
-    listCategoryExtensions: (args: { original_name?: string; external_id?: string }) => Promise<{ id: string; external_id?: string | null }[]>
+    listCategoryExtensions: (args: { original_name?: string; external_id?: string }) => Promise<{ id: string; external_id?: string | null; original_name?: string }[]>
     createCategoryExtensions: (data: { original_name: string; external_id?: string | null; description?: string | null; seo_title?: string | null; seo_meta_description?: string | null }[]) => Promise<{ id: string }[]>
     updateCategoryExtensions: (data: { id: string; external_id?: string | null }[]) => Promise<unknown>
   }
@@ -619,6 +635,105 @@ async function getOrCreateCategoryHierarchy(
   const query = container.resolve(ContainerRegistrationKeys.QUERY) as {
     graph: (opts: { entity: string; fields: string[]; filters?: Record<string, unknown> }) => Promise<{ data: Array<Record<string, unknown>> }>
   }
+
+  // Explicit exists check: XML id → our external_id, or XML leaf → our original_name (same as other cases)
+  try {
+    if (sourceInfo?.externalId) {
+      const byExternalId = await categoryExtensionService.listCategoryExtensions({ external_id: sourceInfo.externalId })
+      if (byExternalId?.length > 0) {
+        const extensionIds = byExternalId.map((e: { id: string }) => e.id)
+        const { data: categoriesWithExtension } = await query.graph({
+          entity: 'product_category',
+          fields: ['id', 'parent_category_id', 'category_extension.id', 'categoryExtension.id'],
+        })
+        const match = categoriesWithExtension?.find(
+          (c: Record<string, unknown>) => {
+            const ext = (c.category_extension ?? c.categoryExtension) as { id: string } | { id: string }[] | undefined
+            const extId = Array.isArray(ext) ? ext[0]?.id : ext?.id
+            return extId && extensionIds.includes(extId)
+          }
+        )
+        if (match) {
+          const categoryId = match.id as string
+          categoryCache.set(normalizedPath, categoryId)
+          if (sourceInfo?.sourcePath) categoryCache.set(normalizePath(sourceInfo.sourcePath), categoryId)
+          logger.debug(`Found existing category by XML id (external_id) "${sourceInfo.externalId}" -> ${categoryId}`)
+          return categoryId
+        }
+      }
+    }
+    const leafFromXml = sourceSegmentNames[sourceSegmentNames.length - 1]?.trim() || categoryNames[categoryNames.length - 1]?.trim()
+    if (leafFromXml) {
+      const byOriginalName = await categoryExtensionService.listCategoryExtensions({ original_name: leafFromXml })
+      if (byOriginalName?.length > 0) {
+        const extensionIds = byOriginalName.map((e: { id: string }) => e.id)
+        const { data: categoriesWithExtension } = await query.graph({
+          entity: 'product_category',
+          fields: ['id', 'parent_category_id', 'category_extension.id', 'categoryExtension.id'],
+        })
+        const candidates = (categoriesWithExtension ?? []).filter(
+          (c: Record<string, unknown>) => {
+            const ext = (c.category_extension ?? c.categoryExtension) as { id: string } | { id: string }[] | undefined
+            const extId = Array.isArray(ext) ? ext[0]?.id : ext?.id
+            return extId && extensionIds.includes(extId)
+          }
+        ) as Array<Record<string, unknown>>
+        if (candidates.length === 1) {
+          const categoryId = candidates[0].id as string
+          categoryCache.set(normalizedPath, categoryId)
+          if (sourceInfo?.sourcePath) categoryCache.set(normalizePath(sourceInfo.sourcePath), categoryId)
+          logger.debug(`Found existing category by XML leaf (original_name) "${leafFromXml}" -> ${categoryId}`)
+          return categoryId
+        }
+        if (candidates.length > 1) {
+          const allCategories = (categoriesWithExtension ?? []) as Array<Record<string, unknown>>
+          const idToCat = new Map<string, { id: string; parent_category_id: string | null; extId: string }>()
+          const allExtIds = new Set<string>()
+          for (const c of allCategories) {
+            const ext = (c.category_extension ?? c.categoryExtension) as { id: string } | { id: string }[] | undefined
+            const extId = Array.isArray(ext) ? ext[0]?.id : ext?.id
+            if (c.id && extId) {
+              idToCat.set(c.id as string, { id: c.id as string, parent_category_id: (c.parent_category_id ?? null) as string | null, extId })
+              allExtIds.add(extId)
+            }
+          }
+          let extIdToOriginalName = new Map(byOriginalName.map((e) => [e.id, e.original_name ?? '']))
+          if (allExtIds.size > byOriginalName.length) {
+            try {
+              const allExts = await categoryExtensionService.listCategoryExtensions({ id: [...allExtIds] } as { original_name?: string; external_id?: string; id?: string[] })
+              if (allExts?.length) extIdToOriginalName = new Map((allExts as Array<{ id: string; original_name?: string }>).map((e) => [e.id, e.original_name ?? '']))
+            } catch (_) { /* use only leaf extensions */ }
+          }
+          const buildPathFromLeaf = (leafCategoryId: string): string => {
+            const pathSegments: string[] = []
+            let currentId: string | null = leafCategoryId
+            while (currentId) {
+              const cat = idToCat.get(currentId)
+              if (!cat) break
+              const name = extIdToOriginalName.get(cat.extId) ?? ''
+              pathSegments.unshift(name.trim())
+              currentId = cat.parent_category_id
+            }
+            return normalizePath(pathSegments.join('/'))
+          }
+          const normalizedSource = sourceInfo?.sourcePath ? normalizePath(sourceInfo.sourcePath) : normalizedPath
+          for (const c of candidates) {
+            const categoryId = c.id as string
+            const candidatePath = buildPathFromLeaf(categoryId)
+            if (candidatePath === normalizedSource) {
+              categoryCache.set(normalizedPath, categoryId)
+              if (sourceInfo?.sourcePath) categoryCache.set(normalizePath(sourceInfo.sourcePath), categoryId)
+              logger.debug(`Found existing category by XML leaf + path match "${leafFromXml}" -> ${categoryId}`)
+              return categoryId
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    logger.debug(`Exists check (external_id / original_name) failed: ${e instanceof Error ? e.message : 'Unknown'}`)
+  }
+
   let parentCategoryId: string | null = null
 
   for (let i = 0; i < categoryNames.length; i++) {
@@ -759,6 +874,135 @@ async function getOrCreateCategoryHierarchy(
 }
 
 /**
+ * Pre-load existing product categories (with extensions) into cache and lookups so we use them
+ * instead of creating/translating again. Call at the start of processCategoriesAndBrandsStep.
+ */
+async function preLoadExistingCategories(
+  container: MedusaContainer,
+  categoryCache: Map<string, string>,
+  categoryByExternalId: Record<string, string>,
+  categoryByPath: Record<string, string>,
+  categoryByOriginalNameLeaf: Record<string, string>,
+  logger: { info: (msg: string) => void; debug: (msg: string) => void }
+): Promise<void> {
+  const productService: IProductModuleService = container.resolve(Modules.PRODUCT)
+  const query = container.resolve(ContainerRegistrationKeys.QUERY) as {
+    graph: (opts: { entity: string; fields: string[]; filters?: Record<string, unknown> }) => Promise<{ data: Array<Record<string, unknown>> }>
+  }
+  const categoryExtensionService = container.resolve(CATEGORY_EXTENSION_MODULE) as {
+    listCategoryExtensions: (args: { id?: string[] }) => Promise<Array<{ id: string; external_id?: string | null; original_name?: string }>>
+  }
+
+  let categories: Array<{ id: string; name?: string; parent_category_id?: string | null }> = []
+  try {
+    categories = await productService.listProductCategories({}, { take: 1000 })
+  } catch (e) {
+    logger.debug(`Pre-load listProductCategories failed: ${e instanceof Error ? e.message : 'Unknown'}`)
+    return
+  }
+  if (!categories?.length) return
+
+  const categoryIds = categories.map((c) => c.id)
+  let withExt: Array<Record<string, unknown>> = []
+  try {
+    const result = await query.graph({
+      entity: 'product_category',
+      fields: ['id', 'name', 'parent_category_id', 'category_extension.id', 'categoryExtension.id'],
+      filters: { id: categoryIds },
+    })
+    withExt = result?.data ?? []
+  } catch (e) {
+    logger.debug(`Pre-load query.graph categories failed: ${e instanceof Error ? e.message : 'Unknown'}`)
+    return
+  }
+
+  const extIds = new Set<string>()
+  const categoryIdToExtId = new Map<string, string>()
+  for (const c of withExt) {
+    const ext = (c.category_extension ?? c.categoryExtension) as { id: string } | { id: string }[] | undefined
+    const extId = Array.isArray(ext) ? ext[0]?.id : ext?.id
+    if (extId && c.id) {
+      extIds.add(extId)
+      categoryIdToExtId.set(c.id as string, extId)
+    }
+  }
+
+  let extensions: Array<{ id: string; external_id?: string | null; original_name?: string }> = []
+  if (extIds.size > 0) {
+    try {
+      extensions = await categoryExtensionService.listCategoryExtensions({ id: [...extIds] }) ?? []
+    } catch (e) {
+      logger.debug(`Pre-load listCategoryExtensions failed: ${e instanceof Error ? e.message : 'Unknown'}`)
+    }
+  }
+  const extIdToData = new Map(extensions.map((e) => [e.id, e]))
+
+  const idToCategory = new Map<string, { id: string; name: string; parent_category_id: string | null; external_id: string | null; original_name: string }>()
+  for (const c of withExt) {
+    const id = c.id as string
+    const name = (c.name as string) ?? ''
+    const parentId = (c.parent_category_id ?? null) as string | null
+    const extId = categoryIdToExtId.get(id)
+    const ext = extId ? extIdToData.get(extId) : undefined
+    idToCategory.set(id, {
+      id,
+      name,
+      parent_category_id: parentId,
+      external_id: ext?.external_id ?? null,
+      original_name: ext?.original_name ?? name,
+    })
+  }
+
+  function buildPath(categoryId: string): { pathNames: string[]; pathOriginalNames: string[]; pathIds: string[] } {
+    const pathNames: string[] = []
+    const pathOriginalNames: string[] = []
+    const pathIds: string[] = []
+    let currentId: string | null = categoryId
+    while (currentId) {
+      const cat = idToCategory.get(currentId)
+      if (!cat) break
+      pathIds.unshift(cat.id)
+      pathNames.unshift(cat.name || cat.original_name || '')
+      pathOriginalNames.unshift(cat.original_name || cat.name || '')
+      currentId = cat.parent_category_id
+    }
+    return { pathNames, pathOriginalNames, pathIds }
+  }
+
+  const normalizePath = (p: string) => p.trim().replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ')
+  const EXTERNAL_ID_PREFIX = 'external_id:'
+  for (const [categoryId, cat] of idToCategory) {
+    const { pathNames, pathOriginalNames, pathIds } = buildPath(categoryId)
+    if (pathIds.length === 0) continue
+    const fullPath = normalizePath(pathNames.join('/'))
+    const fullPathSource = normalizePath(pathNames.map((_, i) => idToCategory.get(pathIds[i])?.original_name ?? pathNames[i]).join('/'))
+    let parentId: string | null = null
+    for (let i = 0; i < pathIds.length; i++) {
+      const segmentName = (pathNames[i] ?? '').trim() || pathIds[i]
+      const segmentOriginal = (pathOriginalNames[i] ?? '').trim() || pathIds[i]
+      const cacheKeyByName = `${segmentName}|${parentId ?? 'null'}`
+      const cacheKeyByOriginal = `${segmentOriginal}|${parentId ?? 'null'}`
+      if (!categoryCache.has(cacheKeyByName)) categoryCache.set(cacheKeyByName, pathIds[i])
+      if (!categoryCache.has(cacheKeyByOriginal)) categoryCache.set(cacheKeyByOriginal, pathIds[i])
+      parentId = pathIds[i]
+    }
+    categoryCache.set(fullPath, categoryId)
+    categoryCache.set(fullPathSource, categoryId)
+    if (cat.external_id) {
+      categoryCache.set(`${EXTERNAL_ID_PREFIX}${cat.external_id}`, categoryId)
+      categoryByExternalId[cat.external_id] = categoryId
+    }
+    categoryByPath[fullPath] = categoryId
+    categoryByPath[fullPathSource] = categoryId
+    const leaf = pathNames[pathNames.length - 1]?.trim()
+    const leafSource = fullPathSource.split('/').map((s) => s.trim()).filter(Boolean).pop()
+    if (leaf) categoryByOriginalNameLeaf[leaf] = categoryId
+    if (leafSource) categoryByOriginalNameLeaf[leafSource] = categoryId
+  }
+  logger.info(`Pre-loaded ${idToCategory.size} existing categories into lookup (${Object.keys(categoryByExternalId).length} by external_id, ${Object.keys(categoryByPath).length} by path, ${Object.keys(categoryByOriginalNameLeaf).length} by leaf)`)
+}
+
+/**
  * Step: Process categories and brands
  */
 const processCategoriesAndBrandsStep = createStep(
@@ -779,6 +1023,12 @@ const processCategoriesAndBrandsStep = createStep(
     // Cache for category lookups (key: "translatedSegment|parentId" -> categoryId). Extension uses original_name and external_id.
     const categoryCache = new Map<string, string>()
     const brandMap = new Map<string, string>() // brand name -> brand id
+
+    // Pre-load existing categories so we use them instead of creating/translating again (fixes re-import and category assignment)
+    const categoryByExternalId: Record<string, string> = {}
+    const categoryByPath: Record<string, string> = {}
+    const categoryByOriginalNameLeaf: Record<string, string> = {}
+    await preLoadExistingCategories(container, categoryCache, categoryByExternalId, categoryByPath, categoryByOriginalNameLeaf, logger)
 
     // Build map: translated path -> { sourcePath, externalId }. Prefer longest path per external_id so we never
     // create a leaf as top-level when it should be a child (e.g. avoid creating "Инструменти..." top-level when
@@ -885,14 +1135,12 @@ const processCategoriesAndBrandsStep = createStep(
       }
     }
 
-    // Build serializable category lookup for processAndImportProductsStep (external_id first, then leaf-only original name)
-    const categoryByExternalId: Record<string, string> = {}
-    const categoryByPath: Record<string, string> = {}
-    const categoryByOriginalNameLeaf: Record<string, string> = {}
+    // Merge newly created/resolved categories into lookup (pre-loaded ones already in categoryBy*)
     const EXTERNAL_ID_PREFIX = 'external_id:'
     for (const [key, categoryId] of categoryCache) {
       if (key.startsWith(EXTERNAL_ID_PREFIX)) {
-        categoryByExternalId[key.slice(EXTERNAL_ID_PREFIX.length)] = categoryId
+        const k = key.slice(EXTERNAL_ID_PREFIX.length)
+        if (!categoryByExternalId[k]) categoryByExternalId[k] = categoryId
       }
     }
     for (const [translatedPath, { sourcePath }] of translatedCategoryEntries) {
@@ -1038,17 +1286,58 @@ const processAndImportProductsStep = createStep(
     const errors: string[] = []
     const total = input.products.length
 
+    /** Resolve category IDs from product metadata using category lookups (shared for existing and new products). */
+    function resolveCategoryIdsFromProduct(prod: MedusaProductData): Set<string> {
+      const refs: Array<{ id?: string; name?: string; original_name?: string }> = Array.isArray(prod.metadata?.categories)
+        ? prod.metadata.categories
+        : prod.metadata?.category
+          ? [prod.metadata.category]
+          : []
+      const resolvedIds = new Set<string>()
+      for (const ref of refs) {
+        let categoryId: string | undefined
+        if (ref.id) categoryId = input.categoryByExternalId[String(ref.id)]
+        const pathOrName = ((ref.original_name ?? ref.name) ?? '') as string
+        if (!categoryId && ref.name) categoryId = input.categoryByPath[ref.name as string]
+        if (!categoryId && ref.original_name) categoryId = input.categoryByPath[ref.original_name as string]
+        if (!categoryId && pathOrName) categoryId = input.categoryByPath[pathOrName]
+        if (!categoryId && pathOrName) {
+          const leaf = pathOrName.split('/').map((s) => s.trim()).filter(Boolean).pop()
+          if (leaf) categoryId = input.categoryByOriginalNameLeaf[leaf]
+        }
+        if (categoryId) resolvedIds.add(categoryId)
+      }
+      return resolvedIds
+    }
+
     async function processOneProduct(
       product: MedusaProductData,
       index: number
     ): Promise<{ skipped: boolean; productId?: string; handle?: string; error?: string }> {
-      // 1. Skip if exists by external_id
+      // 1. If exists by external_id: fix category assignment if needed, then skip (no translation/SEO/images)
       try {
         const existing = await productService.listProducts({ external_id: product.external_id })
         if (existing && existing.length > 0) {
-          logger.info(`Skipping product external_id ${product.external_id} (already exists: ${existing[0].id})`)
-          handleToProductIdMap.set(product.handle, existing[0].id)
-          return { skipped: true, productId: existing[0].id, handle: product.handle }
+          const existingId = existing[0].id
+          handleToProductIdMap.set(product.handle, existingId)
+
+          const expectedCategoryIds = resolveCategoryIdsFromProduct(product)
+          if (expectedCategoryIds.size > 0) {
+            const existingProduct = await productService.retrieveProduct(existingId)
+            const currentCategoryIds = new Set<string>(
+          (existingProduct.categories as { id: string }[] | undefined)?.map((c) => c.id) ?? []
+            )
+            const needsUpdate =
+              expectedCategoryIds.size !== currentCategoryIds.size ||
+              [...expectedCategoryIds].some((id) => !currentCategoryIds.has(id))
+            if (needsUpdate) {
+              await productService.updateProducts(existingId, { category_ids: [...expectedCategoryIds] })
+              logger.info(`Updated categories for existing product external_id ${product.external_id} (${existingId}): ${[...expectedCategoryIds].join(', ')}`)
+            }
+          }
+
+          logger.info(`Skipping product external_id ${product.external_id} (already exists: ${existingId})`)
+          return { skipped: true, productId: existingId, handle: product.handle }
         }
       } catch (e) {
         logger.debug(`listProducts by external_id failed: ${e instanceof Error ? e.message : 'Unknown'}`)
@@ -1163,25 +1452,21 @@ const processAndImportProductsStep = createStep(
         }
         if (created.handle) handleToProductIdMap.set(created.handle, created.id)
 
-        // 6. Resolve categories: external_id first, then leaf-only original name
-        const refs: Array<{ id?: string; name?: string; original_name?: string }> = Array.isArray(current.metadata?.categories)
-          ? current.metadata.categories
-          : current.metadata?.category
-            ? [current.metadata.category]
-            : []
-        const resolvedIds = new Set<string>()
-        for (const ref of refs) {
-          let categoryId: string | undefined
-          if (ref.id) categoryId = input.categoryByExternalId[String(ref.id)]
-          if (!categoryId) {
-            const pathOrName = (ref.original_name ?? ref.name ?? '') as string
-            const leaf = pathOrName.split('/').map((s) => s.trim()).filter(Boolean).pop()
-            if (leaf) categoryId = input.categoryByOriginalNameLeaf[leaf]
-          }
-          if (categoryId) resolvedIds.add(categoryId)
-        }
+        // 6. Resolve categories and assign (use current so translated original_name is used)
+        const resolvedIds = resolveCategoryIdsFromProduct(current)
         if (resolvedIds.size > 0) {
           await productService.updateProducts(created.id, { category_ids: [...resolvedIds] })
+        } else {
+          const refs = Array.isArray(current.metadata?.categories) ? current.metadata.categories : current.metadata?.category ? [current.metadata.category] : []
+          if (refs.length > 0 && index < 5) {
+            const externalIdKeys = Object.keys(input.categoryByExternalId)
+            const leafKeys = Object.keys(input.categoryByOriginalNameLeaf)
+            logger.warn(
+              `Category not assigned for product "${product.handle}" (index ${index}): refs=${JSON.stringify(refs)}, ` +
+              `categoryByExternalId keys (${externalIdKeys.length}): ${externalIdKeys.slice(0, 5).join(', ')}..., ` +
+              `categoryByOriginalNameLeaf keys (${leafKeys.length}): ${leafKeys.slice(0, 5).join(', ')}...`
+            )
+          }
         }
         return { skipped: false, productId: created.id, handle: created.handle }
       } catch (e: unknown) {

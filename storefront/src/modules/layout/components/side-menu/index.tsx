@@ -27,7 +27,9 @@ type SideMenuProps = {
   panelWidth?: "full" | "narrow"
 }
 
-type ViewType = "main" | "subcategory"
+type ViewStackItem =
+  | { type: "main" }
+  | { type: "subcategory"; category: HttpTypes.StoreProductCategory }
 type SlideDirection = "left" | "right"
 
 const SideMenu = ({ categories = [], triggerSlot, panelWidth = "full" }: SideMenuProps) => {
@@ -35,32 +37,29 @@ const SideMenu = ({ categories = [], triggerSlot, panelWidth = "full" }: SideMen
   const pathname = usePathname()
   const closeMenuRef = useRef<(() => void) | null>(null)
 
-  // Close menu when route changes (e.g. after clicking a link)
   useEffect(() => {
     closeMenuRef.current?.()
   }, [pathname])
 
-  const [currentView, setCurrentView] = useState<ViewType>("main")
-  const [selectedCategory, setSelectedCategory] = useState<HttpTypes.StoreProductCategory | null>(null)
+  const [viewStack, setViewStack] = useState<ViewStackItem[]>([{ type: "main" }])
   const [slideDirection, setSlideDirection] = useState<SlideDirection>("left")
+
+  const currentView = viewStack[viewStack.length - 1]
 
   const handleCategoryClick = (category: HttpTypes.StoreProductCategory, close: () => void) => {
     const hasChildren = category.category_children && category.category_children.length > 0
-    
+
     if (hasChildren) {
-      setSelectedCategory(category)
       setSlideDirection("left")
-      setCurrentView("subcategory")
+      setViewStack((prev) => [...prev, { type: "subcategory", category }])
     } else {
-      // No children, navigate directly to PLP
       close()
     }
   }
 
   const handleBack = () => {
     setSlideDirection("right")
-    setCurrentView("main")
-    setSelectedCategory(null)
+    setViewStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev))
   }
 
   const handleSubcategoryClick = (close: () => void) => {
@@ -68,9 +67,7 @@ const SideMenu = ({ categories = [], triggerSlot, panelWidth = "full" }: SideMen
   }
 
   const handleClose = (close: () => void) => {
-    // Reset state when closing
-    setCurrentView("main")
-    setSelectedCategory(null)
+    setViewStack([{ type: "main" }])
     close()
   }
 
@@ -149,7 +146,7 @@ const SideMenu = ({ categories = [], triggerSlot, panelWidth = "full" }: SideMen
                   >
                     {/* Header - Clean with orange close button */}
                     <div className="bg-white flex items-center justify-between px-5 pt-3 pb-3 flex-shrink-0 border-b border-border-base shadow-lg z-10">
-                      {currentView === "subcategory" && (
+                      {currentView.type === "subcategory" && (
                         <button
                           onClick={handleBack}
                           className="flex items-center gap-1 text-xs text-gray-600"
@@ -159,10 +156,10 @@ const SideMenu = ({ categories = [], triggerSlot, panelWidth = "full" }: SideMen
                           <span className="font-medium">Назад</span>
                         </button>
                       )}
-                      
-                      {currentView === "subcategory" && selectedCategory && (
+
+                      {currentView.type === "subcategory" && (
                         <h2 className="text-gray-800 font-semibold text-sm flex-1 text-center">
-                          {selectedCategory.name}
+                          {currentView.category.name}
                         </h2>
                       )}
                       
@@ -179,7 +176,7 @@ const SideMenu = ({ categories = [], triggerSlot, panelWidth = "full" }: SideMen
                     {/* Scrollable Content Area */}
                     <div className="flex-1 overflow-y-auto overscroll-contain bg-white">
                       <AnimatePresence mode="wait" initial={false}>
-                        {currentView === "main" ? (
+                        {currentView.type === "main" ? (
                           <motion.div
                             key="main"
                             initial={{ x: slideDirection === "right" ? "-100%" : 0 }}
@@ -195,7 +192,7 @@ const SideMenu = ({ categories = [], triggerSlot, panelWidth = "full" }: SideMen
                           </motion.div>
                         ) : (
                           <motion.div
-                            key="subcategory"
+                            key={`subcategory-${currentView.category.id}`}
                             initial={{ x: slideDirection === "left" ? "100%" : 0 }}
                             animate={{ x: 0 }}
                             exit={{ x: slideDirection === "right" ? "100%" : "-100%" }}
@@ -203,8 +200,11 @@ const SideMenu = ({ categories = [], triggerSlot, panelWidth = "full" }: SideMen
                             className="min-h-full"
                           >
                             <SubcategoryMenuView
-                              category={selectedCategory}
+                              category={currentView.category}
                               onSubcategoryClick={() => handleSubcategoryClick(close)}
+                              onCategoryWithChildrenClick={(category) =>
+                                handleCategoryClick(category, close)
+                              }
                             />
                           </motion.div>
                         )}
@@ -285,13 +285,15 @@ const MainMenuView = ({
   )
 }
 
-// Subcategory Menu View Component
+// Subcategory Menu View Component (supports 3+ levels: items with children drill down)
 const SubcategoryMenuView = ({
   category,
   onSubcategoryClick,
+  onCategoryWithChildrenClick,
 }: {
   category: HttpTypes.StoreProductCategory | null
   onSubcategoryClick: () => void
+  onCategoryWithChildrenClick?: (category: HttpTypes.StoreProductCategory) => void
 }) => {
   if (!category || !category.category_children) {
     return null
@@ -299,20 +301,43 @@ const SubcategoryMenuView = ({
 
   return (
     <ul className="divide-y divide-gray-200">
-      {category.category_children.map((subcategory) => (
-        <li key={subcategory.id}>
-          <LocalizedClientLink
-            href={`/categories/${subcategory.handle}`}
-            onClick={onSubcategoryClick}
-            className="block px-5 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors"
-          >
-            <span className="text-[15px] text-gray-600 flex items-start">
-              <span className="mr-2">•</span>
-              <span>{subcategory.name}</span>
-            </span>
-          </LocalizedClientLink>
-        </li>
-      ))}
+      {category.category_children.map((subcategory) => {
+        const hasChildren =
+          subcategory.category_children && subcategory.category_children.length > 0
+
+        if (hasChildren && onCategoryWithChildrenClick) {
+          return (
+            <li key={subcategory.id}>
+              <button
+                type="button"
+                onClick={() => onCategoryWithChildrenClick(subcategory)}
+                className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
+              >
+                <span className="text-[15px] text-gray-600 flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>{subcategory.name}</span>
+                </span>
+                <ChevronRight className="w-5 h-5 text-primary flex-shrink-0" />
+              </button>
+            </li>
+          )
+        }
+
+        return (
+          <li key={subcategory.id}>
+            <LocalizedClientLink
+              href={`/categories/${subcategory.handle}`}
+              onClick={onSubcategoryClick}
+              className="block px-5 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            >
+              <span className="text-[15px] text-gray-600 flex items-start">
+                <span className="mr-2">•</span>
+                <span>{subcategory.name}</span>
+              </span>
+            </LocalizedClientLink>
+          </li>
+        )
+      })}
     </ul>
   )
 }

@@ -302,6 +302,24 @@ function parseEcontFromFormData(formData: FormData): Record<string, unknown> | u
   }
 }
 
+/** Ensure econt metadata has correct shipping_to so office vs address show in the right list at checkout */
+function normalizeEcontForSave(econt: Record<string, unknown>): Record<string, unknown> {
+  const hasOffice = typeof econt.office_code === "string" && econt.office_code.length > 0
+  const hasDoor =
+    typeof econt.street === "string" ||
+    typeof econt.street_num === "string" ||
+    typeof econt.building_num === "string" ||
+    typeof econt.apartment_num === "string"
+  if (hasOffice && !hasDoor) {
+    return { ...econt, shipping_to: "OFFICE" }
+  }
+  if (hasDoor || (econt.shipping_to !== "OFFICE" && !hasOffice)) {
+    const { office_code: _oc, ...rest } = econt
+    return { ...rest, shipping_to: "DOOR" }
+  }
+  return econt
+}
+
 /**
  * Saves the cart's shipping address to the customer's saved addresses if the customer
  * is logged in and the address does not already exist (avoids duplicates).
@@ -336,7 +354,9 @@ export async function saveAddressFromCartWithoutDuplicate(
     phone: addr.phone ?? "",
   }
   if (withMeta.metadata?.econt) {
-    payload.metadata = { econt: withMeta.metadata.econt }
+    payload.metadata = {
+      econt: normalizeEcontForSave(withMeta.metadata.econt as Record<string, unknown>),
+    }
   }
 
   await sdk.store.customer.createAddress(
@@ -365,7 +385,7 @@ export const addCustomerAddress = async (
   }
   const econt = parseEcontFromFormData(formData)
   if (econt) {
-    address.metadata = { econt }
+    address.metadata = { econt: normalizeEcontForSave(econt) }
   }
 
   const authHeaders = await getAuthHeaders()
@@ -415,7 +435,7 @@ export const updateCustomerAddress = async (
   }
   const econt = parseEcontFromFormData(formData)
   if (econt) {
-    address.metadata = { econt }
+    address.metadata = { econt: normalizeEcontForSave(econt) }
   }
 
   const authHeaders = await getAuthHeaders()
