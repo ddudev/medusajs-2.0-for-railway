@@ -84,6 +84,7 @@ export function CookieConsentProvider({
   const [hasGoogleScripts, setHasGoogleScripts] = React.useState(false)
 
   const previousCategoriesRef = React.useRef(getDefaultCategories())
+  const lastSyncedConsentRef = React.useRef<string | null>(null)
 
   const effectiveGoogleConsentMode = React.useMemo(():
     | GoogleConsentModeConfig
@@ -170,6 +171,39 @@ export function CookieConsentProvider({
       setHasGoogleScripts(true)
     }
   }, [])
+
+  // Sync consent to GTM/gtag when we have consent (restore or after user action).
+  // Only after init (so we use restored state, not initial). Retry until gtag exists.
+  // Push only when consent actually changed to avoid spamming gtag and breaking tag firing.
+  React.useEffect(() => {
+    if (!isInitialized || !state.hasConsented || !effectiveGoogleConsentMode?.enabled) return
+
+    const categories = state.categories
+    const consentKey = JSON.stringify(categories)
+
+    const tryUpdate = () => {
+      if (typeof window === "undefined") return false
+      const gtag = (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag
+      if (!gtag || !(window as unknown as { dataLayer?: unknown[] }).dataLayer) return false
+      if (lastSyncedConsentRef.current === consentKey) return true
+      lastSyncedConsentRef.current = consentKey
+      updateGoogleConsentMode(categories)
+      return true
+    }
+
+    if (tryUpdate()) return
+
+    const delays = [100, 400, 1000, 2500]
+    const timeouts: ReturnType<typeof setTimeout>[] = []
+    delays.forEach((delay) => {
+      timeouts.push(
+        window.setTimeout(() => {
+          tryUpdate()
+        }, delay)
+      )
+    })
+    return () => timeouts.forEach((t) => clearTimeout(t))
+  }, [isInitialized, state.hasConsented, state.categories, effectiveGoogleConsentMode?.enabled, updateGoogleConsentMode])
 
   const saveAndTrack = React.useCallback(
     async (
