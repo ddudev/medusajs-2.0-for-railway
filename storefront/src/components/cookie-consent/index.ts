@@ -8,6 +8,7 @@ export {
 } from "./cookie-provider"
 export { CookieSettings } from "./cookie-settings"
 export { CookieTrigger } from "./cookie-trigger"
+export { CookieTriggerSafe } from "./cookie-trigger-safe"
 export { GoogleConsentMode } from "./google-consent-mode"
 export { useConsentScript } from "./use-consent-script"
 export {

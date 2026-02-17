@@ -14,6 +14,7 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 import Spinner from "@modules/common/icons/spinner"
 import Thumbnail from "@modules/products/components/thumbnail"
 import { useUpdateLineItem } from "@lib/hooks/use-cart"
+import { ItemPreview } from "./item-preview"
 
 type ItemProps = {
   item: HttpTypes.StoreCartLineItem
@@ -21,60 +22,21 @@ type ItemProps = {
 }
 
 const Item = ({ item, type = "full" }: ItemProps) => {
+  if (type === "preview") {
+    return <ItemPreview item={item} />
+  }
+
   const updateLineItem = useUpdateLineItem()
   const { t } = useTranslation()
-
   const { handle } = item.variant?.product ?? {}
 
   const changeQuantity = (quantity: number) => {
-    // Use TanStack Query mutation with optimistic updates
-    updateLineItem.mutate({
-      lineId: item.id,
-      quantity,
-    })
+    updateLineItem.mutate({ lineId: item.id, quantity })
   }
-
-  // Get updating state from mutation
   const updating = updateLineItem.isPending
   const error = updateLineItem.error?.message || null
-
-  // TODO: Update this to grab the actual max inventory
   const maxQtyFromInventory = 10
   const maxQuantity = item.variant?.manage_inventory ? 10 : maxQtyFromInventory
-
-  if (type === "preview") {
-    return (
-      <div className="flex gap-4 py-4 border-b border-gray-100" data-testid="product-row">
-        <LocalizedClientLink
-          href={`/products/${handle}`}
-          className="flex-shrink-0"
-        >
-          <Thumbnail
-            thumbnail={item.variant?.product?.thumbnail}
-            images={item.variant?.product?.images}
-            size="square"
-            productName={item.product_title || item.variant?.product?.title}
-            className="w-16 h-16 object-cover rounded-lg"
-          />
-        </LocalizedClientLink>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full min-w-0">
-          <div className="flex-1 flex flex-col gap-1 mr-auto min-w-0">
-            <Text className="text-sm font-medium text-gray-900" data-testid="product-title">
-              {item.product_title}
-            </Text>
-            <LineItemOptions variant={item.variant} data-testid="product-variant" />
-          </div>
-          <div className="flex-shrink-0 text-right ml-auto">
-            <LineItemPrice item={item} style="tight" />
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <Text className="text-gray-400 text-xs">{item.quantity}x</Text>
-              <LineItemUnitPrice item={item} style="tight" className="text-xs" />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="flex gap-4 py-6 border-b border-gray-100 last:border-b-0" data-testid="product-row">

@@ -140,18 +140,20 @@ export function trackMetaPurchase(params: {
   // For deduplication with server-side events
   event_id?: string
 }) {
-  trackMetaEvent('Purchase', {
-    content_ids: params.content_ids,
-    content_name: params.content_name,
-    content_type: params.content_type,
-    currency: params.currency,
-    value: params.value,
-    num_items: params.num_items,
-    contents: params.contents,
-    order_id: params.order_id,
-    // Event ID for deduplication
-    eventID: params.event_id,
-  })
+  trackMetaEvent(
+    'Purchase',
+    {
+      content_ids: params.content_ids,
+      content_name: params.content_name,
+      content_type: params.content_type,
+      currency: params.currency,
+      value: params.value,
+      num_items: params.num_items,
+      contents: params.contents,
+      order_id: params.order_id,
+    },
+    params.event_id ? { eventID: params.event_id } : undefined
+  )
 }
 
 /**

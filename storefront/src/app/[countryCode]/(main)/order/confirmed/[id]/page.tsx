@@ -39,18 +39,19 @@ export default async function OrderConfirmedPage({ params }: Props) {
     return notFound()
   }
 
+  // Single event_id for server + client so Meta/GA4 can deduplicate
+  const { generateEventId } = await import("@lib/analytics/privacy")
+  const eventId = generateEventId()
+
   // Track order confirmation page view (server-side)
   try {
-    // Import server-side tracking functions
+    // Import server-side tracking functions (Meta Purchase is sent only from client via /api/analytics/conversions)
     const { trackOrderConfirmed } = await import("@lib/analytics/server")
     const { trackGA4Purchase, generateClientId } = await import("@lib/analytics/server-gtm")
-    const { trackMetaPurchaseServer } = await import("@lib/analytics/server-meta")
-    const { generateEventId } = await import("@lib/analytics/privacy")
-    
+
     const orderTotal = order.total ? Number(order.total) : 0
     const itemsCount = order.items?.length || 0
-    const eventId = generateEventId()
-    
+
     // Track to PostHog (existing)
     await trackOrderConfirmed(
       order.id,
@@ -60,7 +61,7 @@ export default async function OrderConfirmedPage({ params }: Props) {
       order.email || undefined
     )
     
-    // Prepare items for GTM/Meta
+    // Prepare items for GTM
     const items = (order.items || []).map((item: any) => ({
       item_id: item.product_id || item.variant_id || '',
       item_name: item.title || item.product_title || '',
@@ -105,36 +106,14 @@ export default async function OrderConfirmedPage({ params }: Props) {
       },
       user_id: order.customer_id || undefined,
     })
-    
-    // Track to Meta Conversions API (server-side)
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://localhost:8000'
-    await trackMetaPurchaseServer({
-      transaction_id: order.id,
-      value: orderTotal,
-      currency: order.currency_code || 'EUR',
-      contents: items.map(item => ({
-        id: item.variant_id || item.product_id,
-        quantity: item.quantity,
-        item_price: item.price,
-      })),
-      num_items: itemsCount,
-      email,
-      phone,
-      firstName,
-      lastName,
-      city,
-      state,
-      postalCode,
-      country,
-      eventSourceUrl: `${baseUrl}/order/confirmed/${order.id}`,
-      eventId,
-    })
   } catch (error) {
     // Don't block page render if analytics fails
     console.error("Failed to track order confirmation:", error)
   }
 
   // Client-side purchase event for GTM + Meta Pixel + PostHog (thank-you page view)
+  // event_id is passed so client can send same id to conversions API for server-side + dedup
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || ""
   const shippingAddress = order.shipping_address
   const billingAddress = order.billing_address
   const purchasePayload = {
@@ -144,6 +123,8 @@ export default async function OrderConfirmedPage({ params }: Props) {
     tax: order.tax_total ? Number(order.tax_total) : undefined,
     shipping: order.shipping_total ? Number(order.shipping_total) : undefined,
     customer_id: order.customer_id || undefined,
+    event_id: eventId,
+    event_source_url: baseUrl ? `${baseUrl.replace(/\/$/, "")}/order/confirmed/${order.id}` : "",
     items: (order.items || []).map((item: any) => ({
       item_id: item.product_id || item.variant_id || "",
       item_name: item.title || item.product_title || "",

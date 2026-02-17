@@ -44,67 +44,75 @@ export async function POST(request: NextRequest) {
     // Get client IP and user agent from headers
     const clientIp = await getClientIp(request.headers)
     const userAgent = request.headers.get('user-agent') || undefined
-    
-    // Extract Facebook cookies
+
+    // Extract Facebook cookies (for Meta CAPI matching + dedup)
     const cookieHeader = request.headers.get('cookie')
     const { fbc, fbp } = await extractFacebookCookies(cookieHeader || '')
 
-    // Track to GA4 (server-side)
-    await trackGA4Purchase({
-      client_id: client_id || (await generateClientId()),
-      transaction_id,
-      value,
-      currency,
-      tax,
-      shipping,
-      coupon,
-      items: items.map((item: any) => ({
-        item_id: item.product_id || item.item_id,
-        item_name: item.product_name || item.item_name,
-        item_category: item.product_category || item.item_category,
-        item_variant: item.variant_id || item.item_variant,
-        price: item.price,
-        quantity: item.quantity,
-      })),
-      email,
-      phone_number: phone,
-      address: {
-        first_name,
-        last_name,
-        city,
-        region: state,
-        postal_code,
-        country,
-      },
-      user_id: customer_id,
-    })
+    // Track to GA4 (server-side) – don't fail the request if GA4 errors
+    try {
+      await trackGA4Purchase({
+        client_id: client_id || (await generateClientId()),
+        transaction_id,
+        value,
+        currency,
+        tax,
+        shipping,
+        coupon,
+        items: (items || []).map((item: any) => ({
+          item_id: item.product_id || item.item_id,
+          item_name: item.product_name || item.item_name,
+          item_category: item.product_category || item.item_category,
+          item_variant: item.variant_id || item.item_variant,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        email,
+        phone_number: phone,
+        address: {
+          first_name,
+          last_name,
+          city,
+          region: state,
+          postal_code,
+          country,
+        },
+        user_id: customer_id,
+      })
+    } catch (ga4Error) {
+      console.warn('GA4 server-side purchase failed:', ga4Error)
+    }
 
-    // Track to Meta Conversions API (server-side)
-    await trackMetaPurchaseServer({
-      transaction_id,
-      value,
-      currency,
-      contents: items.map((item: any) => ({
-        id: item.variant_id || item.product_id || item.item_id,
-        quantity: item.quantity,
-        item_price: item.price,
-      })),
-      num_items,
-      email,
-      phone,
-      firstName: first_name,
-      lastName: last_name,
-      city,
-      state,
-      postalCode: postal_code,
-      country,
-      clientIp,
-      userAgent,
-      eventSourceUrl: event_source_url,
-      eventId: event_id,
-      fbc,
-      fbp,
-    })
+    // Track to Meta Conversions API (server-side) – don't fail the request if Meta errors
+    try {
+      await trackMetaPurchaseServer({
+        transaction_id,
+        value,
+        currency,
+        contents: (items || []).map((item: any) => ({
+          id: item.variant_id || item.product_id || item.item_id,
+          quantity: item.quantity,
+          item_price: item.price,
+        })),
+        num_items: num_items ?? (items || []).reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+        email,
+        phone,
+        firstName: first_name,
+        lastName: last_name,
+        city,
+        state,
+        postalCode: postal_code,
+        country,
+        clientIp,
+        userAgent,
+        eventSourceUrl: event_source_url || '',
+        eventId: event_id || `purchase_${transaction_id}_${Date.now()}`,
+        fbc,
+        fbp,
+      })
+    } catch (metaError) {
+      console.warn('Meta Conversions API server-side purchase failed:', metaError)
+    }
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

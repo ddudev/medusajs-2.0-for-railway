@@ -12,7 +12,7 @@ const MapComponent = dynamic(() => import("./office-map"), {
 
 type OfficeSelectorProps = {
   cityId: number
-  onOfficeSelect: (officeCode: string) => void
+  onOfficeSelect: (office: EcontOffice) => void
   selectedOfficeCode: string | null
 }
 
@@ -156,7 +156,7 @@ const OfficeSelector: React.FC<OfficeSelectorProps> = ({
   )
 
   const handleOfficeClick = (office: EcontOffice) => {
-    onOfficeSelect(office.office_code)
+    onOfficeSelect(office)
     setIsOpen(false)
     setSearchQuery("")
   }
@@ -207,7 +207,10 @@ const OfficeSelector: React.FC<OfficeSelectorProps> = ({
             <MapComponent
               offices={officesWithCoords}
               selectedOfficeCode={selectedOfficeCode}
-              onOfficeSelect={onOfficeSelect}
+              onOfficeSelect={(code) => {
+                const office = offices.find((o) => o.office_code === code)
+                if (office) onOfficeSelect(office)
+              }}
             />
           ) : (
             <div className="text-sm text-gray-500 p-4 border border-gray-200 rounded-md bg-gray-50">

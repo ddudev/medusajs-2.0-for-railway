@@ -302,7 +302,7 @@ function parseEcontFromFormData(formData: FormData): Record<string, unknown> | u
   }
 }
 
-/** Ensure econt metadata has correct shipping_to so office vs address show in the right list at checkout */
+/** Ensure econt metadata has correct shipping_to and explicitly preserve office_name, office_code, office_address for display and selection */
 function normalizeEcontForSave(econt: Record<string, unknown>): Record<string, unknown> {
   const hasOffice = typeof econt.office_code === "string" && econt.office_code.length > 0
   const hasDoor =
@@ -311,7 +311,16 @@ function normalizeEcontForSave(econt: Record<string, unknown>): Record<string, u
     typeof econt.building_num === "string" ||
     typeof econt.apartment_num === "string"
   if (hasOffice && !hasDoor) {
-    return { ...econt, shipping_to: "OFFICE" }
+    return {
+      ...econt,
+      shipping_to: "OFFICE",
+      office_code: econt.office_code,
+      office_name: econt.office_name ?? undefined,
+      office_address: econt.office_address ?? undefined,
+      city_id: econt.city_id,
+      city_name: econt.city_name,
+      postcode: econt.postcode ?? econt.postal_code,
+    }
   }
   if (hasDoor || (econt.shipping_to !== "OFFICE" && !hasOffice)) {
     const { office_code: _oc, ...rest } = econt
@@ -341,6 +350,10 @@ export async function saveAddressFromCartWithoutDuplicate(
   if (!authHeaders || !("authorization" in authHeaders)) return
 
   const withMeta = addr as typeof addr & { metadata?: { econt?: unknown } }
+  const cartWithMeta = cart as { metadata?: { econt?: unknown } } | null
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/8b9af399-e3f7-4648-a911-e99a39dfc51e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer.ts:saveAddressFromCartWithoutDuplicate',message:'Saving address from cart',data:{hasAddrEcont:!!withMeta.metadata?.econt,hasCartEcont:!!cartWithMeta?.metadata?.econt,address_1:addr?.address_1?.substring(0,30)},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
   const payload: Record<string, unknown> = {
     first_name: addr.first_name ?? "",
     last_name: addr.last_name ?? "",
@@ -357,7 +370,14 @@ export async function saveAddressFromCartWithoutDuplicate(
     payload.metadata = {
       econt: normalizeEcontForSave(withMeta.metadata.econt as Record<string, unknown>),
     }
+  } else if (cartWithMeta?.metadata?.econt && typeof cartWithMeta.metadata.econt === "object") {
+    payload.metadata = {
+      econt: normalizeEcontForSave(cartWithMeta.metadata.econt as Record<string, unknown>),
+    }
   }
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/8b9af399-e3f7-4648-a911-e99a39dfc51e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer.ts:saveAddressFromCartWithoutDuplicate',message:'Payload before createAddress',data:{hasPayloadMetadata:!!payload.metadata,usedCartEcont:!!(cartWithMeta?.metadata?.econt && !withMeta.metadata?.econt)},timestamp:Date.now(),hypothesisId:'H1',runId:'post-fix'})}).catch(()=>{});
+  // #endregion
 
   await sdk.store.customer.createAddress(
     payload as Parameters<typeof sdk.store.customer.createAddress>[0],

@@ -52,6 +52,10 @@ export interface EcontData {
   city_name?: string
   postcode?: string
   office_code?: string
+  /** Office display name (e.g. "Еконт Офис Русе 1") - for saved-address display */
+  office_name?: string
+  /** Full office street address - for saved-address display */
+  office_address?: string
   machine_code?: string
   street?: string
   quarter?: string

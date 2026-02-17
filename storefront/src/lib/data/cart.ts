@@ -30,7 +30,7 @@ export async function retrieveCart() {
       .retrieve(
         cartId,
         {
-          fields: "+items.*,+items.variant.*,+items.variant.calculated_price,+items.variant.product.*,+payment_collection.*,+payment_collection.payment_sessions.*"
+          fields: "+items.*,+items.variant.*,+items.variant.calculated_price,+items.variant.product.*,+payment_collection.*,+payment_collection.payment_sessions.*,+metadata"
         },
         { next: { tags: ["cart"] }, ...authHeaders }
       )
@@ -607,6 +607,8 @@ export type UpdateCartShippingAddressPayload = {
   first_name?: string
   last_name?: string
   phone?: string
+  /** When provided (e.g. from Econt form), merged into cart so saved address includes office_name, office_address, etc. */
+  econtData?: Record<string, unknown>
 }
 
 /**
@@ -644,7 +646,18 @@ export async function updateCartShippingAddress(
       billing_address: shippingAddress,
     }
     await updateCart(data)
-    const updatedCart = await retrieveCart()
+    let updatedCart = await retrieveCart()
+    // When caller provides econtData (e.g. from Econt form), merge so saved address gets office_name, office_address, etc.
+    if (payload.econtData && updatedCart) {
+      updatedCart = {
+        ...updatedCart,
+        metadata: { ...(updatedCart.metadata || {}), econt: payload.econtData },
+      } as typeof updatedCart
+    }
+    // #region agent log
+    const cartMeta = updatedCart as { metadata?: { econt?: unknown } } | null
+    fetch('http://127.0.0.1:7242/ingest/8b9af399-e3f7-4648-a911-e99a39dfc51e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cart.ts:updateCartShippingAddress',message:'Cart before saveAddressFromCart',data:{hasCartMetadataEcont:!!cartMeta?.metadata?.econt,shippingAddressHasEcont:!!(updatedCart?.shipping_address as { metadata?: { econt?: unknown } })?.metadata?.econt},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     const { saveAddressFromCartWithoutDuplicate } = await import("./customer")
     await saveAddressFromCartWithoutDuplicate(updatedCart).catch(() => {})
     return { error: null, cart: updatedCart }

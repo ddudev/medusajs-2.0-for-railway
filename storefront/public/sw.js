@@ -1,5 +1,5 @@
 // Service Worker for PWA - Aggressive Caching Strategy
-// Version: 2.0.0
+// Version: 2.1.0 - same-origin only (no third-party intercept)
 const CACHE_VERSION = 'v2'
 const STATIC_CACHE = `ms-store-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `ms-store-dynamic-${CACHE_VERSION}`
@@ -27,7 +27,7 @@ const STATIC_ASSETS = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installing v2.0.0...')
+  console.log('[Service Worker] Installing v2.1.0...')
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       console.log('[Service Worker] Caching static assets')
@@ -41,7 +41,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activating v2.0.0...')
+  console.log('[Service Worker] Activating v2.1.0...')
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -74,6 +74,16 @@ self.addEventListener('fetch', (event) => {
 
   // Skip chrome-extension and other non-http(s) requests
   if (!url.protocol.startsWith('http')) {
+    return
+  }
+
+  // Only handle same-origin requests; never intercept third-party (GTM, Meta, etc.)
+  // Cross-origin fetches from SW often fail with "Failed to fetch" / 503
+  try {
+    if (url.origin !== self.location.origin) {
+      return
+    }
+  } catch (_) {
     return
   }
 

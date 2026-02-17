@@ -6,11 +6,37 @@ import { Fragment, useEffect, useMemo, useState } from "react"
 
 import Radio from "@modules/common/components/radio"
 import compareAddresses from "@lib/util/compare-addresses"
+import type { EcontData } from "@lib/data/econt"
 import { HttpTypes } from "@medusajs/types"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { Button } from "@/components/ui/button"
 
 const ADD_NEW_VALUE = "__new__"
+
+function getEcontMeta(address: HttpTypes.StoreCustomerAddress): EcontData | undefined {
+  const raw = (address as { metadata?: { econt?: EcontData | string } }).metadata?.econt
+  if (!raw) return undefined
+  if (typeof raw === "object" && raw !== null) return raw as EcontData
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw) as EcontData
+      return parsed && typeof parsed === "object" ? parsed : undefined
+    } catch {
+      return undefined
+    }
+  }
+  return undefined
+}
+
+/** Primary line for address display: office name + address for Econt Office, else address_1 */
+function addressPrimaryLine(address: HttpTypes.StoreCustomerAddress): string {
+  const meta = getEcontMeta(address)
+  if (meta?.shipping_to === "OFFICE" && (meta.office_name || meta.office_address)) {
+    return [meta.office_name, meta.office_address].filter(Boolean).join(" · ") ?? address.address_1 ?? ""
+  }
+  return address.address_1 ?? ""
+}
+
 
 type AddressSelectProps = {
   addresses: HttpTypes.StoreCustomerAddress[]
@@ -57,7 +83,7 @@ const AddressSelect = ({
   }
 
   const buttonLabel = selectedAddress
-    ? selectedAddress.address_1
+    ? addressPrimaryLine(selectedAddress) || selectedAddress.address_1
     : addNewSelected
       ? t("checkout.addNewAddress")
       : t("checkout.chooseAddress")
@@ -115,8 +141,8 @@ const AddressSelect = ({
                         )}
                         <div className="flex flex-col text-left text-base-regular mt-2">
                           <span>
-                            {address.address_1}
-                            {address.address_2 && (
+                            {addressPrimaryLine(address)}
+                            {address.address_2 && getEcontMeta(address)?.shipping_to !== "OFFICE" && (
                               <span>, {address.address_2}</span>
                             )}
                           </span>

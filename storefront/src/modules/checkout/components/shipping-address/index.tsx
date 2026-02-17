@@ -20,7 +20,8 @@ function getEcontShippingType(method: HttpTypes.StoreCartShippingOption | null |
   if (name.includes("office")) return "OFFICE"
   if (name.includes("address") || name.includes("door")) return "DOOR"
   const data = method.data as Record<string, unknown> | undefined
-  const id = (data?.id ?? data?.fulfillment_option_id ?? data?.option_data?.id ?? "") as string
+  const optionData = data?.option_data as Record<string, unknown> | undefined
+  const id = (data?.id ?? data?.fulfillment_option_id ?? optionData?.id ?? "") as string
   if (id.includes("office") || id === "econt-office") return "OFFICE"
   if (id.includes("door") || id.includes("address") || id === "econt-door" || id === "econt-standard" || id === "econt-express") return "DOOR"
   return "OFFICE"
@@ -102,14 +103,34 @@ const ShippingAddress = ({
       const meta = getAddressEcontMeta(a)
       if (isOffice) {
         // Show addresses saved as Econt Office: explicit OFFICE or has office_code (in case shipping_to wasn't persisted)
-        return (
+        const hasOfficeMeta =
           meta?.shipping_to === "OFFICE" ||
           (Boolean(meta?.office_code) && meta?.shipping_to !== "DOOR")
-        )
+        const looksLikeEcontOffice =
+          !meta &&
+          (a.address_1 ?? "").toLowerCase().includes("econt") &&
+          (a.address_1 ?? "").toLowerCase().includes("office")
+        return hasOfficeMeta || looksLikeEcontOffice
       }
       return meta?.shipping_to === "DOOR" || !meta
     })
   }, [customer?.addresses, countriesInRegion, selectedShippingMethod, isEcontOffice])
+
+  // #region agent log
+  useEffect(() => {
+    const addrs = customer?.addresses ?? []
+    if (addrs.length === 0) return
+    const details = addrs.map((a) => {
+      const meta = getAddressEcontMeta(a)
+      return { id: a.id?.slice(0, 8), country_code: a.country_code, shipping_to: meta?.shipping_to, hasOfficeCode: !!meta?.office_code, address_1: (a.address_1 ?? '').slice(0, 20) }
+    })
+    const inRegion = addrs.filter((a) => {
+      const cc = (a.country_code ?? "").toLowerCase()
+      return cc && countriesInRegion.length > 0 && countriesInRegion.includes(cc)
+    })
+    fetch('http://127.0.0.1:7242/ingest/8b9af399-e3f7-4648-a911-e99a39dfc51e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'shipping-address:addressesInRegionByMethod',message:'Checkout address filter',data:{addressCount:addrs.length,inRegionCount:inRegion.length,shownCount:addressesInRegionByMethod.length,isEcontOffice,shippingMethodName:selectedShippingMethod?.name,addressDetails:details,countriesInRegion},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{})
+  }, [customer?.addresses, countriesInRegion, selectedShippingMethod, isEcontOffice, addressesInRegionByMethod.length])
+  // #endregion
 
   const setFormAddress = useCallback(
     (address?: HttpTypes.StoreCartAddress, _email?: string) => {
@@ -123,9 +144,9 @@ const ShippingAddress = ({
       }
       setFormData((prevState: Record<string, unknown>) => ({
         ...prevState,
-        "shipping_address.address_1": address?.address_1 || "",
-        "shipping_address.postal_code": address?.postal_code || "",
-        "shipping_address.city": address?.city || "",
+        "shipping_address.address_1": address?.address_1 ?? "",
+        "shipping_address.postal_code": address?.postal_code ?? "",
+        "shipping_address.city": address?.city ?? "",
       }))
       const withMeta = address as HttpTypes.StoreCartAddress & { metadata?: { econt?: EcontData } }
       const econt = withMeta?.metadata?.econt
@@ -140,9 +161,8 @@ const ShippingAddress = ({
     async (address?: HttpTypes.StoreCartAddress) => {
       setFormAddress(address)
       if (!address || !cart?.id) return
-      const withMeta = address as HttpTypes.StoreCartAddress & { metadata?: { econt?: EcontData } }
-      const econt = withMeta?.metadata?.econt
-      if (econt && typeof econt === "object") {
+      const econt = getAddressEcontMeta(address)
+      if (econt) {
         saveEcontCartData(cart.id, econt).catch(() => {})
       }
       const result = await updateCartShippingAddress({
@@ -153,7 +173,13 @@ const ShippingAddress = ({
         last_name: address.last_name ?? undefined,
         phone: address.phone ?? undefined,
       })
-      if (result.cart) updateCartData(result.cart)
+      if (result.cart) {
+        // Merge selected address econt into cart so EcontShipping prefills immediately
+        const mergedCart = econt
+          ? { ...result.cart, metadata: { ...result.cart?.metadata, econt } }
+          : result.cart
+        updateCartData(mergedCart)
+      }
     },
     [cart?.id, setFormAddress, updateCartData]
   )
@@ -220,7 +246,8 @@ const ShippingAddress = ({
   const showAddressContent = selectedShippingMethod != null
   const showEcontUI = isEcont && cart
 
-  // When Econt Office data is saved, set minimal shipping_address so Place order can enable
+  // When Econt Office data is saved, set minimal shipping_address and pass econt so saved address gets office_name, office_code, etc.
+  // Only run when office is selected so saved address metadata includes office_id and office_name.
   const handleEcontDataChange = useCallback(
     (data: EcontData | null) => {
       if (
@@ -231,10 +258,13 @@ const ShippingAddress = ({
         !cart?.id
       )
         return
+      // Don't save address until user has selected an office (so metadata has office_code and office_name)
+      if (!data.office_code || !data.office_name) return
       updateCartShippingAddress({
         address_1: "Econt Office",
         city: data.city_name,
         postal_code: data.postcode,
+        econtData: data as unknown as Record<string, unknown>,
       }).then((result) => {
         if (result.cart) updateCartData(result.cart)
       })
@@ -260,9 +290,13 @@ const ShippingAddress = ({
               <AddressSelect
                 addresses={addressesInRegionByMethod ?? []}
                 addressInput={
-                  mapKeys(formData, (_, key) =>
-                    key.replace("shipping_address.", "")
-                  ) as HttpTypes.StoreCartAddress
+                  {
+                    ...(cart?.shipping_address ?? {}),
+                    ...(mapKeys(
+                      formData,
+                      (_, key) => key.replace("shipping_address.", "")
+                    ) as Record<string, unknown>),
+                  } as HttpTypes.StoreCartAddress
                 }
                 onSelect={handleSelectAddress}
                 onAddNew={() => setFormAddress(undefined)}

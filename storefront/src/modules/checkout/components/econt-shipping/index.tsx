@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { HttpTypes } from "@medusajs/types"
-import { getEcontCities, saveEcontCartData, type EcontData } from "@lib/data/econt"
+import { getEcontCities, saveEcontCartData, type EcontData, type EcontOffice } from "@lib/data/econt"
 import { useRouter } from "next/navigation"
 import CitySelector from "./city-selector"
 import OfficeSelector from "./office-selector"
@@ -261,16 +261,18 @@ const EcontShipping: React.FC<EcontShippingProps> = ({ cart, shippingMethod, onD
     setEcontData(newData)
   }
 
-  const handleOfficeSelect = (officeCode: string) => {
-    // Mark that user has made local selections
+  const handleOfficeSelect = (office: EcontOffice) => {
     hasLocalSelectionsRef.current = true
-    
-    setSelectedOffice(officeCode)
+    setSelectedOffice(office.office_code)
     setEcontData({
       ...econtData,
       shipping_to: "OFFICE",
-      office_code: officeCode,
+      office_code: office.office_code,
+      office_name: office.name,
+      office_address: office.address,
       city_id: selectedCity!,
+      city_name: selectedCityName ?? undefined,
+      postcode: selectedCityPostcode ?? undefined,
     } as EcontData)
   }
 

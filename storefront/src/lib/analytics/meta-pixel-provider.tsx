@@ -7,6 +7,8 @@ import { useConsentValue } from '@/components/cookie-consent'
 // Meta Pixel ID from environment
 const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || null
 const META_DEBUG = process.env.NEXT_PUBLIC_META_PIXEL_DEBUG === 'true'
+/** When set, browser events show in Events Manager > Test Events (copy code from Test Events page) */
+const META_TEST_EVENT_CODE = process.env.NEXT_PUBLIC_META_PIXEL_TEST_EVENT_CODE || null
 
 // Declare fbq types
 declare global {
@@ -59,12 +61,11 @@ export function MetaPixelProvider({ children }: MetaPixelProviderProps) {
       'https://connect.facebook.net/en_US/fbevents.js'
     )
 
-    // Initialize the pixel
-    window.fbq!('init', META_PIXEL_ID)
-    
-    // Track initial page view
-    window.fbq!('track', 'PageView')
+    // Initialize the pixel (with test_event_code when testing so events show in Test Events)
+    const initOptions = META_TEST_EVENT_CODE ? { test_event_code: META_TEST_EVENT_CODE } : undefined
+    window.fbq!('init', META_PIXEL_ID, initOptions)
 
+    // PageView is fired only from the pathname effect below (one per page load/navigation)
     setIsInitialized(true)
 
     if (META_DEBUG) {
@@ -72,61 +73,87 @@ export function MetaPixelProvider({ children }: MetaPixelProviderProps) {
     }
   }, [isInitialized, marketingConsent])
 
-  // Track page views on route change
+  // Track page views on route change with server-side dedup
   useEffect(() => {
     if (!isInitialized || !META_PIXEL_ID || !window.fbq || !pathname) return
 
-    // Track page view
-    window.fbq('track', 'PageView')
+    const eventId = getEventId()
+    window.fbq('track', 'PageView', {}, { eventID: eventId })
+    sendMetaEventToServer('PageView', eventId, {})
 
-    if (META_DEBUG) {
-      console.log('Meta Pixel PageView:', pathname)
-    }
+    if (META_DEBUG) console.log('Meta Pixel PageView:', pathname, { eventID: eventId })
   }, [pathname, isInitialized])
 
   return <>{children}</>
 }
 
-/**
- * Track Meta Pixel standard event
- */
-export function trackMetaEvent(
+/** Generate event_id for Pixel + CAPI deduplication */
+function getEventId(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID()
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+}
+
+/** Send event to our API so server can forward to Meta CAPI (same event_id = dedup) */
+function sendMetaEventToServer(
   eventName: string,
-  parameters?: Record<string, any>
+  eventId: string,
+  customData?: Record<string, unknown>
 ) {
-  if (!META_PIXEL_ID || !window.fbq) {
-    if (META_DEBUG) {
-      console.warn('Meta Pixel not configured, skipping event:', eventName)
-    }
-    return
-  }
-
-  window.fbq('track', eventName, parameters)
-
-  if (META_DEBUG) {
-    console.log('Meta Pixel event:', eventName, parameters)
-  }
+  const url = typeof window !== "undefined" ? window.location.href : ""
+  fetch("/api/analytics/meta-server", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event_name: eventName,
+      event_id: eventId,
+      event_source_url: url,
+      custom_data: customData ?? undefined,
+    }),
+  }).catch((err) => {
+    if (META_DEBUG) console.warn("Meta server event request failed:", err)
+  })
 }
 
 /**
- * Track Meta Pixel custom event
+ * Track Meta Pixel standard event with server-side deduplication.
+ * Generates event_id, sends to Pixel and to CAPI so Meta can dedupe.
  */
-export function trackMetaCustomEvent(
+export function trackMetaEvent(
   eventName: string,
-  parameters?: Record<string, any>
+  parameters?: Record<string, any>,
+  options?: { eventID?: string }
 ) {
   if (!META_PIXEL_ID || !window.fbq) {
-    if (META_DEBUG) {
-      console.warn('Meta Pixel not configured, skipping custom event:', eventName)
-    }
+    if (META_DEBUG) console.warn("Meta Pixel not configured, skipping event:", eventName)
     return
   }
 
-  window.fbq('trackCustom', eventName, parameters)
+  const eventId = options?.eventID ?? getEventId()
+  window.fbq("track", eventName, parameters, { eventID: eventId })
+  sendMetaEventToServer(eventName, eventId, parameters)
 
-  if (META_DEBUG) {
-    console.log('Meta Pixel custom event:', eventName, parameters)
+  if (META_DEBUG) console.log("Meta Pixel event:", eventName, parameters, { eventID: eventId })
+}
+
+/**
+ * Track Meta Pixel custom event with server-side deduplication.
+ */
+export function trackMetaCustomEvent(
+  eventName: string,
+  parameters?: Record<string, any>,
+  options?: { eventID?: string }
+) {
+  if (!META_PIXEL_ID || !window.fbq) {
+    if (META_DEBUG) console.warn("Meta Pixel not configured, skipping custom event:", eventName)
+    return
   }
+
+  const eventId = options?.eventID ?? getEventId()
+  window.fbq("trackCustom", eventName, parameters, { eventID: eventId })
+  sendMetaEventToServer(eventName, eventId, parameters)
+
+  if (META_DEBUG) console.log("Meta Pixel custom event:", eventName, parameters, { eventID: eventId })
 }
 
 /**

@@ -1,14 +1,25 @@
 /**
  * Server-side Meta Conversions API event tracking
  * Reference: https://developers.facebook.com/docs/marketing-api/conversions-api
+ * User data: fn, ln, ct, st, zp, country must be SHA256 hashed (em, ph already hashed).
  */
 
 "use server"
 
-import { hashEmail, hashPhone, normalizeFirstName, normalizeLastName, normalizeCity, normalizeState, normalizeCountry, normalizePostalCode } from './privacy'
+import { createHash } from "crypto"
+import { hashEmail, hashPhone, normalizeFirstName, normalizeLastName, normalizeCity, normalizeState, normalizeCountry, normalizePostalCode } from "./privacy"
+
+/** Hash a string as SHA256 hex for Meta CAPI (required for fn, ln, ct, st, zp, country). */
+function hashSHA256Hex(value: string): string {
+  if (!value || !value.trim()) return ""
+  const normalized = value.trim().toLowerCase()
+  return createHash("sha256").update(normalized, "utf8").digest("hex")
+}
 
 const META_PIXEL_ID = process.env.META_CONVERSIONS_API_PIXEL_ID || process.env.NEXT_PUBLIC_META_PIXEL_ID
 const META_ACCESS_TOKEN = process.env.META_CONVERSIONS_API_ACCESS_TOKEN
+/** When set, server-side events are sent as test events and show in Events Manager > Test Events */
+const META_TEST_EVENT_CODE = process.env.META_CONVERSIONS_API_TEST_EVENT_CODE || null
 const META_CONVERSIONS_ENDPOINT = `https://graph.facebook.com/v18.0/${META_PIXEL_ID}/events`
 
 /**
@@ -21,21 +32,22 @@ interface MetaConversionsContent {
 }
 
 /**
- * Meta Conversions API User Data (hashed)
+ * Meta Conversions API User Data
+ * em, ph, fn, ln, ct, st, zp, country must be SHA256 hashed; client_user_agent, fbc, fbp stay plain.
  */
 interface MetaConversionsUserData {
-  em?: string // email (hashed)
-  ph?: string // phone (hashed)
-  fn?: string // first name (lowercase)
-  ln?: string // last name (lowercase)
-  ct?: string // city (lowercase)
-  st?: string // state (lowercase)
-  zp?: string // zip code
-  country?: string // country code (lowercase)
+  em?: string // email (SHA256 hashed)
+  ph?: string // phone (SHA256 hashed)
+  fn?: string // first name (SHA256 hashed)
+  ln?: string // last name (SHA256 hashed)
+  ct?: string // city (SHA256 hashed)
+  st?: string // state (SHA256 hashed)
+  zp?: string // zip (SHA256 hashed)
+  country?: string // country code (SHA256 hashed)
   client_ip_address?: string
   client_user_agent?: string
-  fbc?: string // Facebook click ID cookie
-  fbp?: string // Facebook browser ID cookie
+  fbc?: string
+  fbp?: string
 }
 
 /**
@@ -56,16 +68,18 @@ async function sendMetaConversionEvent(params: {
   }
 
   try {
-    const payload = {
-      data: [{
-        event_name: params.event_name,
-        event_time: params.event_time,
-        event_source_url: params.event_source_url,
-        event_id: params.event_id, // For deduplication with client-side events
-        action_source: params.action_source || 'website',
-        user_data: params.user_data,
-        custom_data: params.custom_data,
-      }],
+    const eventPayload = {
+      event_name: params.event_name,
+      event_time: params.event_time,
+      event_source_url: params.event_source_url,
+      event_id: params.event_id,
+      action_source: params.action_source || 'website',
+      user_data: params.user_data,
+      custom_data: params.custom_data,
+    }
+    const payload: { data: typeof eventPayload[]; test_event_code?: string } = { data: [eventPayload] }
+    if (META_TEST_EVENT_CODE) {
+      payload.test_event_code = META_TEST_EVENT_CODE
     }
 
     const response = await fetch(
@@ -121,27 +135,33 @@ async function prepareMetaUserData(params: {
   }
 
   if (params.firstName) {
-    userData.fn = normalizeFirstName(params.firstName)
+    const normalized = normalizeFirstName(params.firstName)
+    if (normalized) userData.fn = hashSHA256Hex(normalized)
   }
 
   if (params.lastName) {
-    userData.ln = normalizeLastName(params.lastName)
+    const normalized = normalizeLastName(params.lastName)
+    if (normalized) userData.ln = hashSHA256Hex(normalized)
   }
 
   if (params.city) {
-    userData.ct = normalizeCity(params.city)
+    const normalized = normalizeCity(params.city)
+    if (normalized) userData.ct = hashSHA256Hex(normalized)
   }
 
   if (params.state) {
-    userData.st = normalizeState(params.state)
+    const normalized = normalizeState(params.state)
+    if (normalized) userData.st = hashSHA256Hex(normalized)
   }
 
   if (params.postalCode) {
-    userData.zp = normalizePostalCode(params.postalCode)
+    const normalized = normalizePostalCode(params.postalCode)
+    if (normalized) userData.zp = hashSHA256Hex(normalized)
   }
 
   if (params.country) {
-    userData.country = normalizeCountry(params.country)
+    const normalized = normalizeCountry(params.country)
+    if (normalized) userData.country = hashSHA256Hex(normalized)
   }
 
   if (params.clientIp) {
@@ -295,7 +315,44 @@ export async function trackMetaLeadServer(params: {
 }
 
 /**
- * Extract Facebook cookies from request headers
+ * Send any Meta event to CAPI for server-side deduplication with Pixel.
+ * Use from API route with event_id matching the client's fbq('track', ..., { eventID }).
+ */
+export async function sendMetaEventServer(params: {
+  event_name: string
+  event_id: string
+  event_source_url: string
+  custom_data?: Record<string, unknown>
+  user_data?: {
+    fbc?: string
+    fbp?: string
+    clientIp?: string
+    userAgent?: string
+  }
+}) {
+  const userData: MetaConversionsUserData = {}
+  const fbc = params.user_data?.fbc?.trim()
+  const fbp = params.user_data?.fbp?.trim()
+  const clientIp = params.user_data?.clientIp?.trim()
+  const userAgent = params.user_data?.userAgent?.trim()
+  if (fbc) userData.fbc = fbc
+  if (fbp) userData.fbp = fbp
+  if (clientIp) userData.client_ip_address = clientIp
+  if (userAgent) userData.client_user_agent = userAgent
+
+  return sendMetaConversionEvent({
+    event_name: params.event_name,
+    event_time: Math.floor(Date.now() / 1000),
+    event_source_url: params.event_source_url,
+    event_id: params.event_id,
+    user_data: userData,
+    custom_data: params.custom_data,
+  })
+}
+
+/**
+ * Extract Facebook cookies from request headers.
+ * Meta Pixel sets _fbc (click id) and _fbp (browser id) as first-party cookies.
  */
 export async function extractFacebookCookies(cookieHeader?: string): Promise<{
   fbc?: string
@@ -304,26 +361,33 @@ export async function extractFacebookCookies(cookieHeader?: string): Promise<{
   if (!cookieHeader) return {}
 
   const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-    const [key, value] = cookie.trim().split('=')
+    const trimmed = cookie.trim()
+    const eq = trimmed.indexOf('=')
+    if (eq === -1) return acc
+    const key = trimmed.slice(0, eq).trim()
+    const value = trimmed.slice(eq + 1).trim()
     acc[key] = value
     return acc
   }, {} as Record<string, string>)
 
   return {
-    fbc: cookies._fbc,
-    fbp: cookies._fbp,
+    fbc: cookies._fbc || undefined,
+    fbp: cookies._fbp || undefined,
   }
 }
 
 /**
- * Get client IP from request
+ * Get client IP from request (set by reverse proxy / host).
+ * Meta uses this for match quality; include whenever available.
  */
 export async function getClientIp(headers: Headers): Promise<string | undefined> {
-  // Check various headers for client IP
-  return (
-    headers.get('x-forwarded-for')?.split(',')[0] ||
+  const raw =
+    headers.get('x-forwarded-for') ||
     headers.get('x-real-ip') ||
     headers.get('cf-connecting-ip') || // Cloudflare
+    headers.get('x-client-ip') ||
+    headers.get('true-client-ip') || // Akamai, Cloudflare
     undefined
-  )
+  const first = raw?.split(',')[0]?.trim()
+  return first && first.length > 0 ? first : undefined
 }

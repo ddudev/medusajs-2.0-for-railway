@@ -4,7 +4,7 @@ import repeat from "@lib/util/repeat"
 import { HttpTypes } from "@medusajs/types"
 import { Table, clx } from "@medusajs/ui"
 
-import Item from "@modules/cart/components/item"
+import { ItemPreview } from "@modules/cart/components/item/item-preview"
 import SkeletonLineItem from "@modules/skeletons/components/skeleton-line-item"
 
 type ItemsTemplateProps = {
@@ -25,7 +25,7 @@ const ItemsPreviewTemplate = ({ items }: ItemsTemplateProps) => {
       {items ? (
         [...items]
           .toSorted((a, b) => ((a.created_at ?? "") > (b.created_at ?? "") ? -1 : 1))
-          .map((item) => <Item key={item.id} item={item} type="preview" />)
+          .map((item) => <ItemPreview key={item.id} item={item} />)
       ) : (
         <Table>
           <Table.Body>

@@ -31,7 +31,10 @@ export interface OrderConfirmedPayload {
   region?: string
   postal_code?: string
   country?: string
+  /** For Meta/GA4 deduplication; also sent to conversions API for server-side events. */
   event_id?: string
+  /** Canonical URL of order confirmed page; sent to conversions API. */
+  event_source_url?: string
 }
 
 /**
@@ -108,6 +111,43 @@ export function OrderConfirmedTracker({ order }: { order: OrderConfirmedPayload 
       currency: order.currency,
       item_count: order.items.reduce((sum, i) => sum + i.quantity, 0),
     })
+
+    // Server-side conversions (Meta CAPI + GA4) via API route so Events Manager shows server events
+    const eventSourceUrl = order.event_source_url || (typeof window !== "undefined" ? window.location.href : "")
+    const eventId = order.event_id || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "")
+    if (eventId && eventSourceUrl && order.transaction_id) {
+      fetch("/api/analytics/conversions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transaction_id: order.transaction_id,
+          value: order.value,
+          currency: order.currency,
+          tax: order.tax,
+          shipping: order.shipping,
+          items: order.items.map((item) => ({
+            product_id: item.product_id || item.item_id,
+            product_name: item.item_name,
+            variant_id: item.variant_id || item.item_variant,
+            price: item.price,
+            quantity: item.quantity,
+          })),
+          num_items: order.items.reduce((sum, i) => sum + i.quantity, 0),
+          email: order.email,
+          phone: order.phone,
+          first_name: order.first_name,
+          last_name: order.last_name,
+          city: order.city,
+          state: order.region,
+          postal_code: order.postal_code,
+          country: order.country,
+          event_id: eventId,
+          event_source_url: eventSourceUrl,
+          customer_id: order.customer_id,
+        }),
+      }).catch((err) => console.warn("Conversions API request failed:", err))
+    }
   }, [order, trackEvent, identifyUser])
 
   return null
