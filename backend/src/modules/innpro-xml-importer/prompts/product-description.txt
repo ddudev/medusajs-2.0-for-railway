@@ -44,6 +44,12 @@ WORD COUNT REQUIREMENTS (MANDATORY):
 - Focus on QUALITY over strict length - content must be valuable and clear
 - NO filler content - every word should add value, but you MUST reach the minimum word count
 
+PRESERVE IMAGES FROM ORIGINAL (CRITICAL):
+- If the "Original Description (English)" contains HTML <img> tags, you MUST keep every <img> tag in your output.
+- Do NOT remove, strip, or omit any <img> tags. Copy each <img> tag exactly (same src, alt, and other attributes).
+- You may translate surrounding text and reorganize sections, but every <img> from the original must appear in seoEnhancedDescription and technicalSafeDescription.
+- Place preserved <img> tags in context (e.g. after the paragraph that describes what they show). Do not drop images.
+
 CONTENT REQUIREMENTS:
 - HTML format with proper structure
 - Use <h2> headings for major sections (Основни предимства, Как се използва, За кого е подходящ, Технически характеристики, etc.)
@@ -64,7 +70,8 @@ KEYWORD INTEGRATION (Natural, NOT stuffed):
 - Maintain natural, readable Bulgarian - prioritize user experience
 
 IMAGE PLACEMENT (CRITICAL):
-- Include ALL {{imageCount}} images using HTML <img> tags
+- PRESERVE all <img> tags from the Original Description: copy them exactly (same src and attributes) into your output. Do not remove images.
+- If {{imageCount}} > 0, also include those images using HTML <img> tags
 - Place images CONTEXTUALLY - immediately after paragraphs that describe what they show
 - Each image should be relevant to the surrounding text
 - Use descriptive alt text with keywords: <img src="URL" alt="[Primary Keyword] [description]" />
@@ -108,5 +115,6 @@ JSON FORMATTING RULES
 FINAL REMINDER BEFORE GENERATING:
 ⚠️ Check your word count! The seoEnhancedDescription must be {{targetWordCountMin}}-{{targetWordCountMax}} words.
 ⚠️ Check your word count! The technicalSafeDescription must be {{targetWordCountMin}}-{{targetWordCountMax}} words.
+⚠️ PRESERVE IMAGES: Every <img> tag from the original description must appear in both seoEnhancedDescription and technicalSafeDescription. Do not remove or omit any img tags.
 Both descriptions should be roughly the same length as the original description ({{targetWordCount}} words).
 If your description is too short, expand on features, benefits, use cases, and technical details from the original content.

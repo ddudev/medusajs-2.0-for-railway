@@ -38,7 +38,7 @@ const FilterCategory = ({
   }
 
   const items = [
-    ...categories.map((category) => ({
+    ...(categories ?? []).map((category) => ({
       value: category.id,
       label: category.name || category.handle,
     })),

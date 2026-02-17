@@ -4,6 +4,7 @@ import { useHits, useSearchBox } from "react-instantsearch-hooks-web"
 import { ProductHit } from "@modules/search/components/hit"
 import Thumbnail from "@modules/products/components/thumbnail"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import { stripHtml } from "@lib/util/strip-html"
 import { useTranslation } from "@lib/i18n/hooks/use-translation"
 import { useRouter } from "next/navigation"
 
@@ -58,18 +59,18 @@ const SearchResults = ({
                 thumbnail={hit.thumbnail}
                 size="square"
                 className="w-full h-full object-cover"
-                productName={hit.title}
+                productName={stripHtml(hit.title ?? "")}
               />
             </div>
 
             {/* Product Info */}
             <div className="flex-1 min-w-0 py-1">
               <h4 className="text-sm md:text-base font-medium text-text-primary mb-1.5 line-clamp-2 leading-tight">
-                {hit.title}
+                {stripHtml(hit.title ?? "")}
               </h4>
               {hit.description && (
                 <p className="text-xs md:text-sm text-text-secondary line-clamp-2 leading-relaxed">
-                  {hit.description}
+                  {stripHtml(hit.description)}
                 </p>
               )}
             </div>

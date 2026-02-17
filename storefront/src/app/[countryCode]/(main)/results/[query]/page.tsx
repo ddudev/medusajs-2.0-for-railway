@@ -59,17 +59,17 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 type Params = {
   params: Promise<{ query: string; countryCode: string }>
-  searchParams: {
+  searchParams: Promise<{
     sortBy?: SortOptions
     page?: string
-  }
+  }>
 }
 
 export default async function SearchResults({ params, searchParams }: Params) {
-  // Await params in Next.js 16
   const resolvedParams = await params
+  const resolvedSearchParams = await searchParams
   const { query, countryCode } = resolvedParams
-  const { sortBy, page } = searchParams
+  const { sortBy, page } = resolvedSearchParams
 
   const hits = await search(query).then((data) => data)
 

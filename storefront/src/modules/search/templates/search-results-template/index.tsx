@@ -15,7 +15,28 @@ type SearchResultsTemplateProps = {
   countryCode: string
 }
 
-const SearchResultsTemplate = ({
+/** Wrapper that calls PaginatedProducts (returns object) and renders result.products so we don't render an object as React child. */
+async function SearchResultsProducts({
+  ids,
+  sortBy,
+  pageNumber,
+  countryCode,
+}: {
+  ids: string[]
+  sortBy?: SortOptions
+  pageNumber: number
+  countryCode: string
+}) {
+  const result = await PaginatedProducts({
+    productsIds: ids,
+    sortBy,
+    page: pageNumber,
+    countryCode,
+  })
+  return <>{result.products}</>
+}
+
+const SearchResultsTemplate = async ({
   query,
   ids,
   sortBy,
@@ -46,10 +67,10 @@ const SearchResultsTemplate = ({
           <>
             <RefinementList sortBy={sortBy || "created_at"} search />
             <div className="content-container">
-              <PaginatedProducts
-                productsIds={ids}
+              <SearchResultsProducts
+                ids={ids}
                 sortBy={sortBy}
-                page={pageNumber}
+                pageNumber={pageNumber}
                 countryCode={countryCode}
               />
             </div>

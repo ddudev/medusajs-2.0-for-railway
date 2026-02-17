@@ -83,7 +83,24 @@ export const useUpdateReviewsStatus = (
     mutationFn: async (payload) => {
       return await sdk.client.fetch("/admin/reviews/status", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: payload,
+      })
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: reviewsQueryKeys.lists() })
+      options?.onSuccess?.(data, variables, context)
+    },
+    ...options,
+  })
+}
+
+export const useDeleteReview = (
+  options?: UseMutationOptions<any, FetchError, string>
+) => {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return await sdk.client.fetch(`/admin/reviews/${id}`, {
+        method: "DELETE",
       })
     },
     onSuccess: (data, variables, context) => {

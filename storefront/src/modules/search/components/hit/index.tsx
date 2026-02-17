@@ -2,6 +2,7 @@ import { Container, Text } from "@medusajs/ui"
 
 import Thumbnail from "@modules/products/components/thumbnail"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import { stripHtml } from "@lib/util/strip-html"
 import { HttpTypes } from "@medusajs/types"
 
 export type ProductHit = {
@@ -20,6 +21,7 @@ type HitProps = {
 }
 
 const Hit = ({ hit }: HitProps) => {
+  const title = stripHtml(hit.title ?? "")
   return (
     <LocalizedClientLink
       href={`/products/${hit.handle}`}
@@ -33,7 +35,7 @@ const Hit = ({ hit }: HitProps) => {
           thumbnail={hit.thumbnail}
           size="square"
           className="group h-12 w-12 sm:h-full sm:w-full"
-          productName={hit.title}
+          productName={title}
         />
         <div className="flex flex-col justify-between group">
           <div className="flex flex-col">
@@ -41,7 +43,7 @@ const Hit = ({ hit }: HitProps) => {
               className="text-ui-fg-subtle"
               data-testid="search-result-title"
             >
-              {hit.title}
+              {title}
             </Text>
           </div>
         </div>
