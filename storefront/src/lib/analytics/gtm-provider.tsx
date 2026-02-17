@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { getStoredConsentUpdateForGTM } from '@/components/cookie-consent'
 
 // GTM Container ID from environment
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || null
 const GTM_DEBUG = process.env.NEXT_PUBLIC_GTM_DEBUG === 'true'
+const CONSENT_VERSION = process.env.NEXT_PUBLIC_CONSENT_VERSION || '1.0.0'
 
 // Declare gtag types
 declare global {
@@ -59,6 +61,12 @@ export function GTMProvider({ children }: GTMProviderProps) {
       personalization_storage: 'denied',
       security_storage: 'granted',
     })
+
+    // If user has already consented (stored), apply it now before any events
+    const storedConsent = getStoredConsentUpdateForGTM(CONSENT_VERSION)
+    if (storedConsent) {
+      gtag('consent', 'update', storedConsent)
+    }
 
     // Initialize with timestamp
     gtag('js', new Date())

@@ -76,12 +76,13 @@ export default async function ProductRail({
             }
             return (
               <li key={product.id} className="flex-shrink-0 w-[260px] md:w-[280px]">
-                <ProductTile 
-                  product={product} 
+                <ProductTile
+                  product={product}
                   region={region}
                   countryCode={countryCode}
                   priority={isFirstRail ? index === 0 : index < 4} // LCP: single image on first rail; else first 4
                   pricedProduct={pricedProduct}
+                  assumeAvailableWhenZeroInventory
                 />
               </li>
             )

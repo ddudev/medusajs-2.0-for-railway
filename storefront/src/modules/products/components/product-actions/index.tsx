@@ -85,28 +85,15 @@ export default function ProductActions({
     }
   }
 
-  // check if the selected variant is in stock
+  // In stock: only false when we have explicit inventory_quantity === 0
   const inStock = useMemo(() => {
-    // If we don't manage inventory, we can always add to cart
-    if (selectedVariant && !selectedVariant.manage_inventory) {
-      return true
+    if (!selectedVariant) return false
+    if (!selectedVariant.manage_inventory) return true
+    if (selectedVariant.allow_backorder) return true
+    if (typeof selectedVariant.inventory_quantity === "number") {
+      return selectedVariant.inventory_quantity > 0
     }
-
-    // If we allow back orders on the variant, we can add to cart
-    if (selectedVariant?.allow_backorder) {
-      return true
-    }
-
-    // If there is inventory available, we can add to cart
-    if (
-      selectedVariant?.manage_inventory &&
-      (selectedVariant?.inventory_quantity || 0) > 0
-    ) {
-      return true
-    }
-
-    // Otherwise, we can't add to cart
-    return false
+    return true
   }, [selectedVariant])
 
   const actionsRef = useRef<HTMLDivElement>(null)

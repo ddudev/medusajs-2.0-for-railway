@@ -55,19 +55,13 @@ const QuickBuyModal = ({ product, isOpen, onClose }: QuickBuyModalProps) => {
   }, [product.variants, options])
 
   const inStock = useMemo(() => {
-    if (selectedVariant && !selectedVariant.manage_inventory) {
-      return true
+    if (!selectedVariant) return false
+    if (!selectedVariant.manage_inventory) return true
+    if (selectedVariant.allow_backorder) return true
+    if (typeof selectedVariant.inventory_quantity === "number") {
+      return selectedVariant.inventory_quantity > 0
     }
-    if (selectedVariant?.allow_backorder) {
-      return true
-    }
-    if (
-      selectedVariant?.manage_inventory &&
-      (selectedVariant?.inventory_quantity || 0) > 0
-    ) {
-      return true
-    }
-    return false
+    return true
   }, [selectedVariant])
 
   const setOptionValue = (title: string, value: string) => {

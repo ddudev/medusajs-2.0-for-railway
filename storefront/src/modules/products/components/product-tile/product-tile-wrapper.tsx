@@ -15,6 +15,7 @@ type ProductTileWrapperProps = {
   pricedProduct: HttpTypes.StoreProduct
   countryCode: string
   priority?: boolean
+  assumeAvailableWhenZeroInventory?: boolean
 }
 
 /**
@@ -26,6 +27,7 @@ export default function ProductTileWrapper({
   pricedProduct,
   countryCode,
   priority = false,
+  assumeAvailableWhenZeroInventory = false,
 }: ProductTileWrapperProps) {
   return (
     <ProductTileContent
@@ -33,6 +35,7 @@ export default function ProductTileWrapper({
       pricedProduct={pricedProduct}
       countryCode={countryCode}
       priority={priority}
+      assumeAvailableWhenZeroInventory={assumeAvailableWhenZeroInventory}
     />
   )
 }

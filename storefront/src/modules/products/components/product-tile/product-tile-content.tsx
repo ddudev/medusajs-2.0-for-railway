@@ -25,11 +25,14 @@ export default function ProductTileContent({
   pricedProduct,
   countryCode,
   priority = false,
+  assumeAvailableWhenZeroInventory = false,
 }: {
   product: HttpTypes.StoreProduct
   pricedProduct: HttpTypes.StoreProduct
   countryCode: string
   priority?: boolean
+  /** When true (e.g. carousel), always show "Add to cart" in this tile; PDP/cart enforce real stock. */
+  assumeAvailableWhenZeroInventory?: boolean
 }) {
   const { t } = useTranslation()
   const params = useParams()
@@ -39,7 +42,7 @@ export default function ProductTileContent({
   const actualCountryCode = (params?.countryCode as string) || countryCode
   const [quickViewOpen, setQuickViewOpen] = useState(false)
   
-  // Get loading state from mutation
+  // Per-tile mutation: isPending is true only while this tile's add is in progress
   const isAdding = addToCartMutation.isPending
 
   const { cheapestPrice } = getProductPrice({
@@ -50,28 +53,30 @@ export default function ProductTileContent({
   const hasPriceFallback = !!cheapestPrice
 
   const thumbnail = product.thumbnail || product.images?.[0]?.url
-  const hasVariants = product.variants && product.variants.length > 0
+  // Use pricedProduct for variants when available (has inventory_quantity from API)
+  const variantsForStock = pricedProduct.variants?.length
+    ? pricedProduct.variants
+    : product.variants
+  const hasVariants = !!variantsForStock?.length
   const hasMultipleVariants = (product.variants?.length ?? 0) > 1
 
-  // Get the first available variant (or first variant if no inventory management)
-  const defaultVariant = product.variants?.[0]
+  // Prefer product.variants for default; carousel list may omit variants so fallback to pricedProduct
+  const defaultVariant = product.variants?.[0] ?? pricedProduct.variants?.[0]
 
-  // Comprehensive stock status check
-  const isInStock = hasVariants && (product.variants || []).some((v: any) => {
-    // If inventory is not managed, product is always available
-    if (!v.manage_inventory) {
-      return true
-    }
-    // If backorders are allowed, product is available
-    if (v.allow_backorder) {
-      return true
-    }
-    // If inventory is managed and quantity > 0, product is available
-    if (v.manage_inventory && (v.inventory_quantity || 0) > 0) {
-      return true
-    }
-    return false
-  })
+  // Stock: in stock when no variant data, or when any variant is purchasable. Missing inventory_quantity = assume available.
+  // When assumeAvailableWhenZeroInventory (carousel): don't show "Not available" in this tile – always show "Add to cart".
+  const isInStock = assumeAvailableWhenZeroInventory
+    ? true
+    : !hasVariants
+      ? true
+      : (variantsForStock || []).some((v: any) => {
+          if (!v) return true
+          if (!v.manage_inventory) return true
+          if (v.allow_backorder) return true
+          if (typeof v.inventory_quantity !== "number") return true
+          if (v.inventory_quantity > 0) return true
+          return false
+        })
 
   const productUrl = `/${actualCountryCode}/products/${product.handle}`
 

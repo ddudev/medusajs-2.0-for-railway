@@ -1,6 +1,15 @@
 import type { ConsentCategories, ConsentState } from "./types"
 
 const STORAGE_KEY = "cookie-consent"
+const DEFAULT_GTM_MAPPING: Record<string, keyof ConsentCategories> = {
+  analytics_storage: "analytics",
+  ad_storage: "marketing",
+  ad_user_data: "marketing",
+  ad_personalization: "marketing",
+  functionality_storage: "preferences",
+  personalization_storage: "preferences",
+  security_storage: "necessary",
+}
 const VISITOR_ID_KEY = "cookie-consent-visitor-id"
 
 export function generateUUID(): string {
@@ -58,6 +67,35 @@ export function loadConsentState(): ConsentState | null {
   } catch {
     return null
   }
+}
+
+/**
+ * Build the object for gtag('consent', 'update', ...) from our categories.
+ * Used at GTM init (from storage) and when user accepts (from cookie-provider).
+ */
+export function buildGTMConsentUpdate(
+  categories: ConsentCategories,
+  mapping: Record<string, keyof ConsentCategories> = DEFAULT_GTM_MAPPING
+): Record<string, string> {
+  const update: Record<string, string> = {}
+  for (const [googleType, category] of Object.entries(mapping)) {
+    update[googleType] = category && categories[category] ? "granted" : "denied"
+  }
+  return update
+}
+
+/**
+ * Read stored consent and return gtag consent update if user has already consented.
+ * Call this at GTM container init (before config/events) so first paint has correct consent.
+ */
+export function getStoredConsentUpdateForGTM(
+  consentVersion: string
+): Record<string, string> | null {
+  if (typeof window === "undefined") return null
+  const stored = loadConsentState()
+  if (!stored || stored.consentVersion !== consentVersion || !stored.hasConsented)
+    return null
+  return buildGTMConsentUpdate(stored.categories)
 }
 
 export function clearConsentState(): void {

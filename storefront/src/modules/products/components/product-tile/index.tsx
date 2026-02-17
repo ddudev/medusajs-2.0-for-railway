@@ -11,6 +11,8 @@ type ProductTileProps = {
   countryCode: string
   priority?: boolean // For above-the-fold images
   pricedProduct?: HttpTypes.StoreProduct // Optional pre-fetched priced product
+  /** When true (e.g. carousel), treat inventory_quantity === 0 as available so batch API doesn't falsely show "Not available" */
+  assumeAvailableWhenZeroInventory?: boolean
 }
 
 /**
@@ -28,6 +30,7 @@ export default async function ProductTile({
   countryCode,
   priority = false,
   pricedProduct: preFetchedPricedProduct,
+  assumeAvailableWhenZeroInventory = false,
 }: ProductTileProps) {
   // Use pre-fetched priced product if provided, otherwise fetch it
   let pricedProduct = preFetchedPricedProduct
@@ -50,6 +53,7 @@ export default async function ProductTile({
       pricedProduct={pricedProduct}
       countryCode={countryCode}
       priority={priority}
+      assumeAvailableWhenZeroInventory={assumeAvailableWhenZeroInventory}
     />
   )
 }

@@ -45,7 +45,9 @@ export {
 } from "./script-manager"
 export { retryFailedRecords, trackConsent } from "./tracker"
 export {
+  buildGTMConsentUpdate,
   generateUUID,
+  getStoredConsentUpdateForGTM,
   getVisitorId,
   isGoogleScript,
 } from "./utils"
